@@ -1,3 +1,28 @@
+# Binaries
 /vauxhall
+/praude
+/tandemonium
 *.exe
+
+# OS files
 .DS_Store
+
+# IDE/Editor
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Go
+vendor/
+
+# Node (for mcp-client/mcp-server)
+node_modules/
+
+# Environment
+.env
+.env.local
+
+# Build artifacts
+dist/
+build/
