@@ -8,6 +8,7 @@ import (
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/mistakeknot/vauxpraudemonium/internal/praude/agents"
+	"github.com/mistakeknot/vauxpraudemonium/internal/praude/specs"
 )
 
 func TestInterviewCreatesSpecWithWarnings(t *testing.T) {
@@ -27,13 +28,17 @@ func TestInterviewCreatesSpecWithWarnings(t *testing.T) {
 		t.Fatal(err)
 	}
 	m := NewModel()
-	m = pressKey(m, "g")
+	m = pressKey(m, "n")
 	m = pressKey(m, "2")
 	m = pressKey(m, "1")
-	m = typeAndEnter(m, "Vision statement")
-	m = typeAndEnter(m, "Primary users")
-	m = typeAndEnter(m, "Problem to solve")
-	m = typeAndEnter(m, "First requirement")
+	m = typeText(m, "Vision statement")
+	m = pressKey(m, "]")
+	m = typeText(m, "Primary users")
+	m = pressKey(m, "]")
+	m = typeText(m, "Problem to solve")
+	m = pressKey(m, "]")
+	m = typeText(m, "First requirement")
+	m = pressKey(m, "]")
 	m = pressKey(m, "2")
 	entries, err := os.ReadDir(filepath.Join(root, ".praude", "specs"))
 	if err != nil {
@@ -58,7 +63,7 @@ func TestInterviewCreatesSpecWithWarnings(t *testing.T) {
 func TestInterviewMentionsPMFocusedAgent(t *testing.T) {
 	m := NewModel()
 	m.mode = "interview"
-	m.interview = startInterview(m.root)
+	m.interview = startInterview(m.root, specs.Spec{}, "")
 	out := m.View()
 	if !strings.Contains(out, "PM-focused") {
 		t.Fatalf("expected PM-focused agent hint")
@@ -82,7 +87,7 @@ func TestInterviewShowsStepAndInputField(t *testing.T) {
 		t.Fatal(err)
 	}
 	m := NewModel()
-	m = pressKey(m, "g")
+	m = pressKey(m, "n")
 	m = pressKey(m, "2")
 	m = pressKey(m, "1")
 	out := m.View()
@@ -112,7 +117,7 @@ func TestInterviewShowsStepSidebar(t *testing.T) {
 		t.Fatal(err)
 	}
 	m := NewModel()
-	m = pressKey(m, "g")
+	m = pressKey(m, "n")
 	out := m.View()
 	clean := stripANSI(out)
 	if !strings.Contains(clean, "STEPS") {
@@ -180,13 +185,17 @@ args = []
 		t.Fatal(err)
 	}
 	m := NewModel()
-	m = pressKey(m, "g")
+	m = pressKey(m, "n")
 	m = pressKey(m, "2")
 	m = pressKey(m, "1")
-	m = typeAndEnter(m, "Vision statement")
-	m = typeAndEnter(m, "Primary users")
-	m = typeAndEnter(m, "Problem to solve")
-	m = typeAndEnter(m, "First requirement")
+	m = typeText(m, "Vision statement")
+	m = pressKey(m, "]")
+	m = typeText(m, "Primary users")
+	m = pressKey(m, "]")
+	m = typeText(m, "Problem to solve")
+	m = pressKey(m, "]")
+	m = typeText(m, "First requirement")
+	m = pressKey(m, "]")
 	m = pressKey(m, "2")
 	entries, err := os.ReadDir(filepath.Join(root, ".praude", "specs"))
 	if err != nil {
@@ -231,4 +240,13 @@ func typeAndEnter(m Model, input string) Model {
 	}
 	updated, _ := m.Update(tea.KeyMsg{Type: tea.KeyEnter})
 	return updated.(Model)
+}
+
+func typeText(m Model, input string) Model {
+	for _, r := range input {
+		msg := tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{r}}
+		updated, _ := m.Update(msg)
+		m = updated.(Model)
+	}
+	return m
 }
