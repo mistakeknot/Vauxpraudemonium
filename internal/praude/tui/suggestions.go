@@ -22,10 +22,11 @@ type suggestionsState struct {
 }
 
 func (m *Model) enterSuggestions() {
-	if len(m.summaries) == 0 {
+	sel := m.selectedSummary()
+	if sel == nil {
 		return
 	}
-	id := m.summaries[m.selected].ID
+	id := sel.ID
 	dir := project.SuggestionsDir(m.root)
 	sugg, path, err := suggestions.LoadLatest(dir, id)
 	if err != nil {

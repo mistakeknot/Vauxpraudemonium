@@ -20,6 +20,10 @@ import (
 type Model struct {
 	summaries      []specs.Summary
 	selected       int
+	viewOffset     int
+	groupExpanded  map[string]bool
+	groupTree      *GroupTree
+	flatItems      []Item
 	err            string
 	root           string
 	mode           string
@@ -44,14 +48,18 @@ func NewModel() Model {
 		return Model{err: err.Error(), mode: "list"}
 	}
 	if _, err := os.Stat(project.RootDir(cwd)); err != nil {
-		model := Model{err: "Not initialized", root: cwd, mode: "list", router: Router{active: "list"}, width: 120, mdCache: NewMarkdownCache(), focus: "LIST"}
+		model := Model{err: "Not initialized", root: cwd, mode: "list", router: Router{active: "list"}, width: 120, height: 40, mdCache: NewMarkdownCache(), focus: "LIST"}
 		model.searchOverlay = NewSearchOverlay()
+		model.groupExpanded = defaultExpanded()
+		model.rebuildGroups()
 		return model
 	}
 	list, _ := specs.LoadSummaries(project.SpecsDir(cwd))
-	model := Model{summaries: list, root: cwd, mode: "list", router: Router{active: "list"}, width: 120, mdCache: NewMarkdownCache(), focus: "LIST"}
+	model := Model{summaries: list, root: cwd, mode: "list", router: Router{active: "list"}, width: 120, height: 40, mdCache: NewMarkdownCache(), focus: "LIST"}
 	model.searchOverlay = NewSearchOverlay()
 	model.searchOverlay.SetItems(list)
+	model.groupExpanded = defaultExpanded()
+	model.rebuildGroups()
 	return model
 }
 
@@ -107,6 +115,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					m.search.Query = ""
 				}
 			}
+			m.rebuildGroups()
 			return m, nil
 		}
 		if m.mode == "interview" {
@@ -143,6 +152,8 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		switch key {
 		case "q", "ctrl+c":
 			return m, tea.Quit
+		case "enter":
+			m.toggleSelectedGroup()
 		case "/":
 			if m.searchOverlay != nil {
 				m.searchOverlay.SetItems(m.summaries)
@@ -181,7 +192,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.enterSuggestions()
 			}
 		case "j", "down":
-			if m.selected < len(m.summaries)-1 {
+			if m.selected < len(m.flatItems)-1 {
 				m.selected++
 			}
 		case "k", "up":
@@ -189,10 +200,11 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.selected--
 			}
 		case "G":
-			if len(m.summaries) > 0 {
-				m.selected = len(m.summaries) - 1
+			if len(m.flatItems) > 0 {
+				m.selected = len(m.flatItems) - 1
 			}
 		}
+		m.viewOffset = clampViewOffset(m.selected, m.viewOffset, m.listContentHeight(), len(m.flatItems))
 	case tea.WindowSizeMsg:
 		if msg.Width > 0 {
 			m.width = msg.Width
@@ -244,9 +256,19 @@ func (m Model) View() string {
 		right := m.renderSuggestions()
 		body = renderSplitView(m.width, left, right)
 	} else {
-		left := m.renderList()
-		right := m.renderDetail()
-		body = renderSplitView(m.width, left, right)
+		contentHeight := m.height - 2
+		mode := layoutMode(m.width)
+		listHeight := m.listContentHeight()
+		listContent := m.renderGroupListContent(listHeight)
+		detailContent := strings.Join(m.renderDetail(), "\n")
+		switch mode {
+		case LayoutModeSingle:
+			body = renderSingleColumnLayout("PRDs", listContent, m.width, contentHeight)
+		case LayoutModeStacked:
+			body = renderStackedLayout("PRDs", listContent, "DETAILS", detailContent, m.width, contentHeight)
+		default:
+			body = renderDualColumnLayout("PRDs", listContent, "DETAILS", detailContent, m.width, contentHeight)
+		}
 	}
 	header := renderHeader(title, focus)
 	footer := renderFooter(defaultKeys(), m.status)
@@ -254,12 +276,14 @@ func (m Model) View() string {
 	return renderFrame(header, body, footer)
 }
 
-func (m Model) renderList() []string {
+func (m Model) renderGroupListContent(height int) string {
 	if m.err != "" {
-		return []string{"PRDs", m.err}
+		return "PRDs\n" + m.err
 	}
-	state := &SharedState{Summaries: m.summaries, Selected: m.selected, Filter: m.search.Query}
-	return renderList(state)
+	if len(m.flatItems) == 0 {
+		return "No PRDs yet."
+	}
+	return renderGroupList(m.flatItems, m.selected, m.viewOffset, height)
 }
 
 func (m Model) renderDetail() []string {
@@ -268,11 +292,11 @@ func (m Model) renderDetail() []string {
 		lines = append(lines, "Initialize with praude init.")
 		return lines
 	}
-	if len(m.summaries) == 0 {
+	sel := m.selectedSummary()
+	if sel == nil {
 		lines = append(lines, "No PRD selected.")
 		return lines
 	}
-	sel := m.summaries[m.selected]
 	if spec, err := specs.LoadSpec(sel.Path); err == nil {
 		markdown := detailMarkdown(spec)
 		hash := specs.SpecHash(spec)
@@ -307,17 +331,95 @@ func (m *Model) reloadSummaries() {
 	if m.searchOverlay != nil {
 		m.searchOverlay.SetItems(list)
 	}
-	if m.selected >= len(m.summaries) {
-		m.selected = 0
+	m.rebuildGroups()
+}
+
+func (m *Model) rebuildGroups() {
+	m.ensureExpandedDefaults()
+	filtered := m.summaries
+	if strings.TrimSpace(m.search.Query) != "" {
+		filtered = filterSummaries(m.summaries, m.search.Query)
+	}
+	tree := NewGroupTree(filtered, m.groupExpanded)
+	m.groupTree = tree
+	m.flatItems = tree.Flatten()
+	if m.selected >= len(m.flatItems) {
+		if len(m.flatItems) == 0 {
+			m.selected = 0
+		} else {
+			m.selected = len(m.flatItems) - 1
+		}
+	}
+	if len(m.flatItems) > 0 && m.flatItems[m.selected].Type == ItemTypeGroup {
+		if idx := firstPRDIndex(m.flatItems); idx >= 0 {
+			m.selected = idx
+		}
+	}
+	m.viewOffset = clampViewOffset(m.selected, m.viewOffset, m.listContentHeight(), len(m.flatItems))
+}
+
+func (m *Model) ensureExpandedDefaults() {
+	if m.groupExpanded == nil {
+		m.groupExpanded = defaultExpanded()
+		return
+	}
+	for _, status := range StatusOrder {
+		if _, ok := m.groupExpanded[status]; !ok {
+			m.groupExpanded[status] = true
+		}
+	}
+}
+
+func (m Model) selectedSummary() *specs.Summary {
+	if len(m.flatItems) == 0 {
+		return nil
+	}
+	item := m.flatItems[m.selected]
+	if item.Type != ItemTypePRD {
+		return nil
+	}
+	return item.Summary
+}
+
+func (m *Model) toggleSelectedGroup() {
+	if len(m.flatItems) == 0 {
+		return
+	}
+	item := m.flatItems[m.selected]
+	if item.Type != ItemTypeGroup || item.Group == nil {
+		return
+	}
+	if m.groupExpanded == nil {
+		m.groupExpanded = defaultExpanded()
+	}
+	m.groupExpanded[item.Group.Name] = !item.Group.Expanded
+	m.rebuildGroups()
+}
+
+func (m Model) listContentHeight() int {
+	contentHeight := m.height - 2
+	if contentHeight < 1 {
+		contentHeight = 1
+	}
+	switch layoutMode(m.width) {
+	case LayoutModeStacked:
+		listHeight := (contentHeight * 60) / 100
+		if listHeight < 3 {
+			listHeight = 3
+		}
+		return max(1, listHeight-2)
+	default:
+		return max(1, contentHeight-2)
 	}
 }
 
 func (m *Model) runResearchForSelected() {
-	if len(m.summaries) == 0 {
+	sel := m.selectedSummary()
+	if sel == nil {
 		m.status = "No PRD selected"
 		return
 	}
-	id := m.summaries[m.selected].ID
+	id := sel.ID
 	now := time.Now()
 	researchDir := project.ResearchDir(m.root)
 	if err := os.MkdirAll(researchDir, 0o755); err != nil {
@@ -357,11 +459,12 @@ func (m *Model) runResearchForSelected() {
 }
 
 func (m *Model) runSuggestionsForSelected() {
-	if len(m.summaries) == 0 {
+	sel := m.selectedSummary()
+	if sel == nil {
 		m.status = "No PRD selected"
 		return
 	}
-	id := m.summaries[m.selected].ID
+	id := sel.ID
 	now := time.Now()
 	suggDir := project.SuggestionsDir(m.root)
 	if err := os.MkdirAll(suggDir, 0o755); err != nil {
@@ -433,6 +536,56 @@ func formatCUJDetail(spec specs.Spec) string {
 func indexOfSummaryID(summaries []specs.Summary, id string) int {
 	for i, summary := range summaries {
 		if summary.ID == id {
+			return i
+		}
+	}
+	return -1
+}
+
+func defaultExpanded() map[string]bool {
+	expanded := make(map[string]bool, len(StatusOrder))
+	for _, status := range StatusOrder {
+		expanded[status] = true
+	}
+	return expanded
+}
+
+func clampViewOffset(cursor, viewOffset, height, total int) int {
+	if total <= 0 {
+		return 0
+	}
+	if height < 1 {
+		height = 1
+	}
+	visible := height
+	if viewOffset > 0 {
+		visible--
+		if visible < 1 {
+			visible = 1
+		}
+	}
+	if cursor < viewOffset {
+		viewOffset = cursor
+	}
+	if cursor >= viewOffset+visible {
+		viewOffset = cursor - visible + 1
+	}
+	if viewOffset < 0 {
+		viewOffset = 0
+	}
+	maxOffset := total - visible
+	if maxOffset < 0 {
+		maxOffset = 0
+	}
+	if viewOffset > maxOffset {
+		viewOffset = maxOffset
+	}
+	return viewOffset
+}
+
+func firstPRDIndex(items []Item) int {
+	for i, item := range items {
+		if item.Type == ItemTypePRD {
 			return i
 		}
 	}

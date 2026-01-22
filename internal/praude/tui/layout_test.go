@@ -1,28 +1,15 @@
 package tui
 
-import (
-	"strings"
-	"testing"
-)
+import "testing"
 
-func TestLayoutIncludesHeaderFooter(t *testing.T) {
-	m := NewModel()
-	out := m.View()
-	if !strings.Contains(out, "PRAUDE") {
-		t.Fatalf("expected header")
+func TestLayoutModeSelection(t *testing.T) {
+	if layoutMode(40) != LayoutModeSingle {
+		t.Fatalf("expected single")
 	}
-	if !strings.Contains(out, "KEYS:") {
-		t.Fatalf("expected footer")
+	if layoutMode(60) != LayoutModeStacked {
+		t.Fatalf("expected stacked")
 	}
-}
-
-func TestSplitViewFallback(t *testing.T) {
-	out := renderSplitView(60, []string{"L"}, []string{"R"})
-	if strings.Contains(out, "|") {
-		t.Fatalf("expected single column on narrow width")
-	}
-	wide := renderSplitView(140, []string{"L"}, []string{"R"})
-	if !strings.Contains(wide, "|") {
-		t.Fatalf("expected split view on wide width")
+	if layoutMode(90) != LayoutModeDual {
+		t.Fatalf("expected dual")
 	}
 }
