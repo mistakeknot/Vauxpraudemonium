@@ -17,6 +17,20 @@
         </button>
     </div>
 
+    <form
+        hx-post="/api/sessions/new"
+        hx-swap="none"
+        class="bg-gray-800 rounded-lg p-4 flex flex-wrap items-center gap-3 text-sm">
+        <span class="text-gray-400">New session</span>
+        <input name="name" placeholder="name" class="px-2 py-1 bg-gray-900 rounded border border-gray-700 text-gray-200" />
+        <input name="project_path" placeholder="/path/to/project" class="px-2 py-1 bg-gray-900 rounded border border-gray-700 text-gray-200 flex-1 min-w-[16rem]" />
+        <select name="agent_type" class="px-2 py-1 bg-gray-900 rounded border border-gray-700 text-gray-200">
+            <option value="claude">claude</option>
+            <option value="codex">codex</option>
+        </select>
+        <button class="px-3 py-1 bg-blue-700 hover:bg-blue-600 rounded">Create</button>
+    </form>
+
     <div id="sessions-list">
     {{if .Sessions}}
     <div class="space-y-4">
@@ -55,11 +69,31 @@
                 <p class="text-gray-500">Terminal output will appear here (M5)...</p>
             </div>
 
-            <div class="mt-4 flex items-center justify-between text-xs text-gray-500">
-                <span>Last activity: {{.LastActivity.Format "Jan 2 15:04:05"}}</span>
-                <span class="{{if .Attached}}text-green-500{{else}}text-gray-500{{end}}">
-                    {{if .Attached}}Attached{{else}}Detached{{end}}
-                </span>
+            <div class="mt-4 space-y-3 text-xs text-gray-500">
+                <div class="flex items-center justify-between">
+                    <span>Last activity: {{.LastActivity.Format "Jan 2 15:04:05"}}</span>
+                    <span class="{{if .Attached}}text-green-500{{else}}text-gray-500{{end}}">
+                        {{if .Attached}}Attached{{else}}Detached{{end}}
+                    </span>
+                </div>
+                <div class="flex flex-wrap items-center gap-2">
+                    <button
+                        hx-post="/api/sessions/{{.Name}}/restart"
+                        hx-swap="none"
+                        class="px-2 py-1 bg-red-900/40 hover:bg-red-900/70 rounded">
+                        Restart
+                    </button>
+                    <form hx-post="/api/sessions/{{.Name}}/rename" hx-swap="none" class="flex items-center gap-2">
+                        <input name="name" placeholder="new name" class="px-2 py-1 bg-gray-900 rounded border border-gray-700 text-gray-200" />
+                        <button class="px-2 py-1 bg-gray-700 hover:bg-gray-600 rounded">Rename</button>
+                    </form>
+                    <form hx-post="/api/sessions/{{.Name}}/fork" hx-swap="none" class="flex items-center gap-2">
+                        <input name="name" placeholder="fork name (optional)" class="px-2 py-1 bg-gray-900 rounded border border-gray-700 text-gray-200" />
+                        <button class="px-2 py-1 bg-gray-700 hover:bg-gray-600 rounded">Fork</button>
+                    </form>
+                    <span class="text-gray-600">Attach:</span>
+                    <code class="px-2 py-1 bg-gray-900 rounded text-gray-300">tmux attach -t {{.Name}}</code>
+                </div>
             </div>
         </div>
         {{end}}

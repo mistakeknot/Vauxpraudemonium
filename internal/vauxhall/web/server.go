@@ -12,7 +12,10 @@ import (
 	"strings"
 
 	"github.com/mistakeknot/vauxpraudemonium/internal/vauxhall/aggregator"
+	"github.com/mistakeknot/vauxpraudemonium/internal/vauxhall/agentmail"
 	"github.com/mistakeknot/vauxpraudemonium/internal/vauxhall/config"
+	"github.com/mistakeknot/vauxpraudemonium/internal/vauxhall/discovery"
+	"github.com/mistakeknot/vauxpraudemonium/internal/vauxhall/tandemonium"
 )
 
 //go:embed templates/*.html
@@ -21,13 +24,32 @@ var templateFS embed.FS
 // Server is the HTTP server for Vauxhall
 type Server struct {
 	cfg       config.ServerConfig
-	agg       *aggregator.Aggregator
+	agg       aggregatorAPI
 	templates map[string]*template.Template
 	srv       *http.Server
 }
 
+type aggregatorAPI interface {
+	GetState() aggregator.State
+	Refresh(ctx context.Context) error
+	GetProject(path string) *discovery.Project
+	GetProjectTasks(projectPath string) (map[string][]tandemonium.Task, error)
+	GetAgent(name string) *aggregator.Agent
+	GetAgentMailAgent(name string) (*agentmail.Agent, error)
+	GetAgentMessages(agentID int, limit int) ([]agentmail.Message, error)
+	GetAgentReservations(agentID int) ([]agentmail.FileReservation, error)
+	GetActiveReservations() ([]agentmail.FileReservation, error)
+	NewSession(name, projectPath, agentType string) error
+	RestartSession(name, projectPath, agentType string) error
+	RenameSession(oldName, newName string) error
+	ForkSession(name, projectPath, agentType string) error
+	AttachSession(name string) error
+	StartMCP(ctx context.Context, projectPath, component string) error
+	StopMCP(projectPath, component string) error
+}
+
 // NewServer creates a new web server
-func NewServer(cfg config.ServerConfig, agg *aggregator.Aggregator) *Server {
+func NewServer(cfg config.ServerConfig, agg aggregatorAPI) *Server {
 	s := &Server{
 		cfg:       cfg,
 		agg:       agg,
@@ -72,6 +94,9 @@ func (s *Server) ListenAndServe(addr string) error {
 	mux.HandleFunc("/agents", s.handleAgents)
 	mux.HandleFunc("/agents/", s.handleAgentDetail)
 	mux.HandleFunc("/sessions", s.handleSessions)
+	mux.HandleFunc("/api/sessions/new", s.handleSessionNew)
+	mux.HandleFunc("/api/sessions/", s.handleSessionAction)
+	mux.HandleFunc("/api/projects/", s.handleProjectMCPAction)
 	mux.HandleFunc("/api/refresh", s.handleRefresh)
 	mux.HandleFunc("/api/agents", s.handleAgentsAPI)
 
@@ -107,6 +132,7 @@ func (s *Server) handleProjects(w http.ResponseWriter, r *http.Request) {
 	state := s.agg.GetState()
 	s.render(w, "projects.html", map[string]any{
 		"Projects": state.Projects,
+		"MCP":      state.MCP,
 	})
 }
 
@@ -176,6 +202,138 @@ func (s *Server) handleSessions(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
+type sessionActionPayload struct {
+	Name        string `json:"name"`
+	ProjectPath string `json:"project_path"`
+	AgentType   string `json:"agent_type"`
+}
+
+type renamePayload struct {
+	Name string `json:"name"`
+}
+
+func (s *Server) handleSessionNew(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+	var payload sessionActionPayload
+	if strings.Contains(r.Header.Get("Content-Type"), "application/json") {
+		if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
+			http.Error(w, "invalid payload", http.StatusBadRequest)
+			return
+		}
+	} else {
+		if err := r.ParseForm(); err != nil {
+			http.Error(w, "invalid form", http.StatusBadRequest)
+			return
+		}
+		payload.Name = r.FormValue("name")
+		payload.ProjectPath = r.FormValue("project_path")
+		payload.AgentType = r.FormValue("agent_type")
+	}
+	if payload.Name == "" || payload.ProjectPath == "" {
+		http.Error(w, "missing fields", http.StatusBadRequest)
+		return
+	}
+	if payload.AgentType == "" {
+		payload.AgentType = "claude"
+	}
+	if err := s.agg.NewSession(payload.Name, payload.ProjectPath, payload.AgentType); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	w.WriteHeader(http.StatusOK)
+}
+
+func (s *Server) handleSessionAction(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+	path := strings.TrimPrefix(r.URL.Path, "/api/sessions/")
+	parts := strings.Split(path, "/")
+	if len(parts) < 2 {
+		http.NotFound(w, r)
+		return
+	}
+	name := parts[0]
+	action := parts[1]
+
+	switch action {
+	case "restart":
+		session, ok := findSession(s.agg.GetState(), name)
+		if !ok {
+			http.NotFound(w, r)
+			return
+		}
+		if session.AgentType == "" {
+			http.Error(w, "unknown agent type", http.StatusBadRequest)
+			return
+		}
+		if err := s.agg.RestartSession(name, session.ProjectPath, session.AgentType); err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		w.WriteHeader(http.StatusOK)
+		return
+	case "rename":
+		var payload renamePayload
+		if strings.Contains(r.Header.Get("Content-Type"), "application/json") {
+			if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
+				http.Error(w, "invalid payload", http.StatusBadRequest)
+				return
+			}
+		} else {
+			if err := r.ParseForm(); err != nil {
+				http.Error(w, "invalid form", http.StatusBadRequest)
+				return
+			}
+			payload.Name = r.FormValue("name")
+		}
+		if payload.Name == "" {
+			http.Error(w, "missing name", http.StatusBadRequest)
+			return
+		}
+		if err := s.agg.RenameSession(name, payload.Name); err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		w.WriteHeader(http.StatusOK)
+		return
+	case "fork":
+		var payload renamePayload
+		if strings.Contains(r.Header.Get("Content-Type"), "application/json") {
+			_ = json.NewDecoder(r.Body).Decode(&payload)
+		} else {
+			_ = r.ParseForm()
+			payload.Name = r.FormValue("name")
+		}
+		newName := payload.Name
+		if newName == "" {
+			newName = name + "-fork"
+		}
+		session, ok := findSession(s.agg.GetState(), name)
+		if !ok {
+			http.NotFound(w, r)
+			return
+		}
+		if session.AgentType == "" {
+			http.Error(w, "unknown agent type", http.StatusBadRequest)
+			return
+		}
+		if err := s.agg.ForkSession(newName, session.ProjectPath, session.AgentType); err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		w.WriteHeader(http.StatusOK)
+		return
+	default:
+		http.NotFound(w, r)
+		return
+	}
+}
+
 func (s *Server) handleRefresh(w http.ResponseWriter, r *http.Request) {
 	if err := s.agg.Refresh(r.Context()); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -195,6 +353,55 @@ func (s *Server) handleAgentsAPI(w http.ResponseWriter, r *http.Request) {
 	state := s.agg.GetState()
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(state.Agents)
+}
+
+func (s *Server) handleProjectMCPAction(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+	path := strings.TrimPrefix(r.URL.Path, "/api/projects")
+	if !strings.Contains(path, "/mcp/") {
+		http.NotFound(w, r)
+		return
+	}
+	parts := strings.SplitN(path, "/mcp/", 2)
+	projectPath := strings.TrimLeft(parts[0], "/")
+	projectPath = "/" + projectPath
+	rest := parts[1]
+	segments := strings.Split(rest, "/")
+	if len(segments) < 2 {
+		http.NotFound(w, r)
+		return
+	}
+	component := segments[0]
+	action := segments[1]
+
+	switch action {
+	case "start":
+		if err := s.agg.StartMCP(r.Context(), projectPath, component); err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		w.WriteHeader(http.StatusOK)
+	case "stop":
+		if err := s.agg.StopMCP(projectPath, component); err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		w.WriteHeader(http.StatusOK)
+	default:
+		http.NotFound(w, r)
+	}
+}
+
+func findSession(state aggregator.State, name string) (aggregator.TmuxSession, bool) {
+	for _, s := range state.Sessions {
+		if s.Name == name {
+			return s, true
+		}
+	}
+	return aggregator.TmuxSession{}, false
 }
 
 func (s *Server) render(w http.ResponseWriter, name string, data any) {
