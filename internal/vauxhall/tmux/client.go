@@ -48,6 +48,7 @@ type cachedSession struct {
 // Client interacts with tmux via CLI commands
 type Client struct {
 	tmuxPath string
+	runner   Runner
 	cache    *sessionCache
 }
 
@@ -65,6 +66,20 @@ func NewClient() *Client {
 			ttl:      2 * time.Second, // Cache valid for 2 seconds (4 ticks at 500ms)
 		},
 	}
+}
+
+// NewClientWithRunner creates a client with an injected command runner (for tests).
+func NewClientWithRunner(r Runner) *Client {
+	c := NewClient()
+	c.runner = r
+	return c
+}
+
+func (c *Client) run(args ...string) (string, string, error) {
+	if c.runner == nil {
+		c.runner = &execRunner{}
+	}
+	return c.runner.Run(c.tmuxPath, args...)
 }
 
 // IsAvailable checks if tmux is installed and running
@@ -172,6 +187,39 @@ func (c *Client) ListSessions() ([]Session, error) {
 	}
 
 	return sessions, nil
+}
+
+// NewSession creates a detached tmux session with optional working directory and command.
+func (c *Client) NewSession(name, path string, command []string) error {
+	args := []string{"new-session", "-d", "-s", name}
+	if path != "" {
+		args = append(args, "-c", path)
+	}
+	args = append(args, command...)
+
+	_, stderr, err := c.run(args...)
+	if err != nil {
+		return fmt.Errorf("failed to create session: %w: %s", err, stderr)
+	}
+	return nil
+}
+
+// RenameSession renames an existing tmux session.
+func (c *Client) RenameSession(oldName, newName string) error {
+	_, stderr, err := c.run("rename-session", "-t", oldName, newName)
+	if err != nil {
+		return fmt.Errorf("failed to rename session: %w: %s", err, stderr)
+	}
+	return nil
+}
+
+// KillSession terminates an existing tmux session.
+func (c *Client) KillSession(name string) error {
+	_, stderr, err := c.run("kill-session", "-t", name)
+	if err != nil {
+		return fmt.Errorf("failed to kill session: %w: %s", err, stderr)
+	}
+	return nil
 }
 
 // GetSession returns a specific session from cache
