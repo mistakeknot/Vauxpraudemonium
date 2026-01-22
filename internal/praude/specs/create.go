@@ -85,3 +85,19 @@ priority: 1
 `, id, now.UTC().Format(time.RFC3339))
 	return path, os.WriteFile(path, []byte(doc), 0o644)
 }
+
+func CreateBlank(dir string, now time.Time) (string, string, error) {
+	id, err := NextID(dir)
+	if err != nil {
+		return "", "", err
+	}
+	path := filepath.Join(dir, id+".yaml")
+	doc := fmt.Sprintf(`id: "%s"
+title: ""
+created_at: "%s"
+status: "draft"
+summary: ""
+requirements: []
+`, id, now.UTC().Format(time.RFC3339))
+	return path, id, os.WriteFile(path, []byte(doc), 0o644)
+}

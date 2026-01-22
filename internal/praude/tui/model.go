@@ -235,10 +235,11 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.overlay = "tutorial"
 		case "g":
 			if m.err == "" {
-				m.mode = "interview"
-				m.interview = startInterview(m.root)
-				m.input = ""
-				m.interviewFocus = "question"
+				m.startInterviewForSelected()
+			}
+		case "n":
+			if m.err == "" {
+				m.startNewInterview()
 			}
 		case "r":
 			if m.err == "" {
@@ -583,6 +584,54 @@ func (m *Model) runSuggestionsForSelected() {
 	m.status = "launched suggestions agent " + agentName
 }
 
+func (m *Model) startNewInterview() {
+	if m.root == "" {
+		m.status = "Not initialized"
+		return
+	}
+	specDir := project.SpecsDir(m.root)
+	if err := os.MkdirAll(specDir, 0o755); err != nil {
+		m.status = "New PRD failed: " + err.Error()
+		return
+	}
+	path, id, err := specs.CreateBlank(specDir, time.Now())
+	if err != nil {
+		m.status = "New PRD failed: " + err.Error()
+		return
+	}
+	spec, err := specs.LoadSpec(path)
+	if err != nil {
+		m.status = "New PRD failed: " + err.Error()
+		return
+	}
+	m.reloadSummaries()
+	m.selected = selectedIndexFromID(m.flatItems, id)
+	m.viewOffset = clampViewOffset(m.selected, m.viewOffset, m.listContentHeight(), len(m.flatItems))
+	m.status = "Created " + id
+	m.enterInterview(spec, path)
+}
+
+func (m *Model) startInterviewForSelected() {
+	sel := m.selectedSummary()
+	if sel == nil {
+		m.status = "Select a PRD first"
+		return
+	}
+	spec, err := specs.LoadSpec(sel.Path)
+	if err != nil {
+		m.status = "Load failed: " + err.Error()
+		return
+	}
+	m.enterInterview(spec, sel.Path)
+}
+
+func (m *Model) enterInterview(spec specs.Spec, path string) {
+	m.mode = "interview"
+	m.interview = startInterview(m.root, spec, path)
+	m.interviewFocus = "question"
+	m.input = m.interview.answerForStep(m.interview.step)
+}
+
 func formatCompleteness(spec specs.Spec) string {
 	summary := "no"
 	if strings.TrimSpace(spec.Summary) != "" {
@@ -888,7 +937,7 @@ func visibleWidth(s string) int {
 }
 
 func defaultKeys() string {
-	return "j/k move  enter toggle  / search  tab focus  a archive  d delete  u undo  h archived  g interview  r research  p suggestions  s review  ? help  q quit"
+	return "j/k move  enter toggle  / search  tab focus  n new  g interview  [ ] prev/next  a archive  d delete  u undo  h archived  r research  p suggestions  s review  ? help  q quit"
 }
 
 func padBodyToHeight(body string, height int) string {

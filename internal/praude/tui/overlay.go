@@ -12,14 +12,16 @@ func renderHelpOverlay() string {
 		sharedtui.HelpKeyStyle.Render("j/k") + sharedtui.HelpDescStyle.Render(": move  ") +
 			sharedtui.HelpKeyStyle.Render("enter") + sharedtui.HelpDescStyle.Render(": toggle group  ") +
 			sharedtui.HelpKeyStyle.Render("/") + sharedtui.HelpDescStyle.Render(": search"),
-		sharedtui.HelpKeyStyle.Render("g") + sharedtui.HelpDescStyle.Render(": interview  ") +
-			sharedtui.HelpKeyStyle.Render("r") + sharedtui.HelpDescStyle.Render(": research  ") +
+		sharedtui.HelpKeyStyle.Render("n") + sharedtui.HelpDescStyle.Render(": new PRD  ") +
+			sharedtui.HelpKeyStyle.Render("g") + sharedtui.HelpDescStyle.Render(": interview"),
+		sharedtui.HelpKeyStyle.Render("r") + sharedtui.HelpDescStyle.Render(": research  ") +
 			sharedtui.HelpKeyStyle.Render("p") + sharedtui.HelpDescStyle.Render(": suggestions  ") +
 			sharedtui.HelpKeyStyle.Render("s") + sharedtui.HelpDescStyle.Render(": review"),
 		sharedtui.HelpKeyStyle.Render("a") + sharedtui.HelpDescStyle.Render(": archive  ") +
 			sharedtui.HelpKeyStyle.Render("d") + sharedtui.HelpDescStyle.Render(": delete  ") +
 			sharedtui.HelpKeyStyle.Render("u") + sharedtui.HelpDescStyle.Render(": undo  ") +
 			sharedtui.HelpKeyStyle.Render("h") + sharedtui.HelpDescStyle.Render(": archived"),
+		sharedtui.HelpKeyStyle.Render("[ ]") + sharedtui.HelpDescStyle.Render(": interview prev/next"),
 		sharedtui.HelpKeyStyle.Render("?") + sharedtui.HelpDescStyle.Render(": help  ") +
 			sharedtui.HelpKeyStyle.Render("`") + sharedtui.HelpDescStyle.Render(": tutorial  ") +
 			sharedtui.HelpKeyStyle.Render("q") + sharedtui.HelpDescStyle.Render(": quit"),

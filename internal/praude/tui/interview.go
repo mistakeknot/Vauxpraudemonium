@@ -31,22 +31,50 @@ const (
 )
 
 type interviewState struct {
-	step         interviewStep
-	root         string
-	draft        specs.Spec
-	scanSummary  string
-	vision       string
-	users        string
-	problem      string
-	requirements string
-	warnings     []string
-	specID       string
-	specPath     string
-	optionIndex  int
+	step        interviewStep
+	root        string
+	scanSummary string
+	warnings    []string
+	targetID    string
+	targetPath  string
+	baseSpec    specs.Spec
+	answers     map[interviewStep]string
+	drafts      map[interviewStep]string
+	optionIndex int
+	finalized   bool
 }
 
-func startInterview(root string) interviewState {
-	return interviewState{step: stepScanPrompt, root: root, optionIndex: 0}
+func startInterview(root string, base specs.Spec, targetPath string) interviewState {
+	state := interviewState{
+		step:        stepScanPrompt,
+		root:        root,
+		targetID:    base.ID,
+		targetPath:  targetPath,
+		baseSpec:    base,
+		answers:     map[interviewStep]string{},
+		drafts:      map[interviewStep]string{},
+		optionIndex: 0,
+	}
+	if strings.TrimSpace(base.Title) != "" {
+		state.answers[stepVision] = base.Title
+	}
+	if strings.TrimSpace(base.UserStory.Text) != "" {
+		state.answers[stepUsers] = base.UserStory.Text
+	}
+	if strings.TrimSpace(base.Summary) != "" {
+		state.answers[stepProblem] = base.Summary
+	}
+	if len(base.Requirements) > 0 {
+		state.answers[stepRequirements] = strings.Join(base.Requirements, "\n")
+	}
+	return state
+}
+
+func (s interviewState) answerForStep(step interviewStep) string {
+	if s.answers == nil {
+		return ""
+	}
+	return s.answers[step]
 }
 
 func (m *Model) handleInterviewInput(key string) {
@@ -54,53 +82,45 @@ func (m *Model) handleInterviewInput(key string) {
 		m.toggleInterviewFocus()
 		return
 	}
+	if key == "[" {
+		m.prevInterviewStep()
+		return
+	}
+	if key == "]" {
+		m.nextInterviewStep()
+		return
+	}
 	switch m.interview.step {
 	case stepScanPrompt:
 		m.handleOptionStep(key, func() {
 			res, _ := scan.ScanRepo(m.interview.root, scan.Options{})
 			m.interview.scanSummary = renderScanSummary(res)
-			m.interview.draft = buildDraftSpec(m.interview.scanSummary)
 			m.interview.step = stepDraftConfirm
 			m.interview.optionIndex = 0
 		}, func() {
-			m.interview.draft = buildDraftSpec(m.interview.scanSummary)
 			m.interview.step = stepDraftConfirm
 			m.interview.optionIndex = 0
 		})
 	case stepDraftConfirm:
 		m.handleOptionStep(key, func() {
 			m.interview.step = stepVision
+			m.loadInterviewInput()
 		}, func() {
 			m.exitInterview()
 		})
 	case stepVision:
-		m.handleTextStep(key, func(input string) {
-			m.interview.vision = input
-			m.interview.step = stepUsers
-		})
+		m.handleTextStep(key, stepVision)
 	case stepUsers:
-		m.handleTextStep(key, func(input string) {
-			m.interview.users = input
-			m.interview.step = stepProblem
-		})
+		m.handleTextStep(key, stepUsers)
 	case stepProblem:
-		m.handleTextStep(key, func(input string) {
-			m.interview.problem = input
-			m.interview.step = stepRequirements
-		})
+		m.handleTextStep(key, stepProblem)
 	case stepRequirements:
-		m.handleTextStep(key, func(input string) {
-			m.interview.requirements = input
-			m.finalizeInterview()
-			m.interview.step = stepResearchPrompt
-			m.interview.optionIndex = 0
-		})
+		m.handleTextStep(key, stepRequirements)
 	case stepResearchPrompt:
 		m.handleOptionStep(key, func() {
-			m.runResearch()
-			m.exitInterview()
+			m.finishInterview(true)
 		}, func() {
-			m.exitInterview()
+			m.finishInterview(false)
 		})
 	}
 }
@@ -113,11 +133,11 @@ func (m *Model) toggleInterviewFocus() {
 	m.interviewFocus = "steps"
 }
 
-func (m *Model) handleTextStep(key string, onDone func(string)) {
+func (m *Model) handleTextStep(key string, step interviewStep) {
 	switch key {
 	case "enter":
-		onDone(strings.TrimSpace(m.input))
-		m.input = ""
+		m.storeInterviewAnswer(step)
+		m.iterateInterviewStep(step)
 	case "backspace":
 		if len(m.input) > 0 {
 			m.input = m.input[:len(m.input)-1]
@@ -125,6 +145,7 @@ func (m *Model) handleTextStep(key string, onDone func(string)) {
 	default:
 		m.input += key
 	}
+	m.storeInterviewAnswer(step)
 }
 
 func (m *Model) handleOptionStep(key string, onYes func(), onNo func()) {
@@ -146,35 +167,197 @@ func (m *Model) handleOptionStep(key string, onYes func(), onNo func()) {
 		onNo()
 		return
 	case "enter":
-		if m.interview.optionIndex == 0 {
-			onYes()
-			return
-		}
-		onNo()
-		return
+		m.applyOptionSelection(onYes, onNo)
 	}
 }
 
-func (m *Model) finalizeInterview() {
-	spec := buildSpecFromInterview(m.interview)
-	path, id, warnings := writeSpec(m.interview.root, spec)
-	m.interview.specPath = path
-	m.interview.specID = id
-	m.interview.warnings = warnings
+func (m *Model) applyOptionSelection(onYes func(), onNo func()) {
+	if m.interview.optionIndex == 0 {
+		onYes()
+		return
+	}
+	onNo()
+}
+
+func (m *Model) storeInterviewAnswer(step interviewStep) {
+	prompt, _, _ := interviewStepInfo(step)
+	if !prompt.expectsText {
+		return
+	}
+	if m.interview.answers == nil {
+		m.interview.answers = map[interviewStep]string{}
+	}
+	m.interview.answers[step] = m.input
+}
+
+func (m *Model) loadInterviewInput() {
+	prompt, _, _ := interviewStepInfo(m.interview.step)
+	if !prompt.expectsText {
+		m.input = ""
+		return
+	}
+	m.input = m.interview.answerForStep(m.interview.step)
+}
+
+func (m *Model) prevInterviewStep() {
+	m.storeInterviewAnswer(m.interview.step)
+	switch m.interview.step {
+	case stepScanPrompt:
+		return
+	case stepDraftConfirm:
+		m.interview.step = stepScanPrompt
+	case stepVision:
+		m.interview.step = stepDraftConfirm
+	case stepUsers:
+		m.interview.step = stepVision
+	case stepProblem:
+		m.interview.step = stepUsers
+	case stepRequirements:
+		m.interview.step = stepProblem
+	case stepResearchPrompt:
+		m.interview.step = stepRequirements
+	}
+	m.loadInterviewInput()
+}
+
+func (m *Model) nextInterviewStep() {
+	switch m.interview.step {
+	case stepScanPrompt:
+		m.applyOptionSelection(func() {
+			res, _ := scan.ScanRepo(m.interview.root, scan.Options{})
+			m.interview.scanSummary = renderScanSummary(res)
+			m.interview.step = stepDraftConfirm
+			m.interview.optionIndex = 0
+		}, func() {
+			m.interview.step = stepDraftConfirm
+			m.interview.optionIndex = 0
+		})
+	case stepDraftConfirm:
+		m.applyOptionSelection(func() {
+			m.interview.step = stepVision
+			m.loadInterviewInput()
+		}, func() {
+			m.exitInterview()
+		})
+	case stepVision:
+		m.advanceTextStep(stepUsers)
+	case stepUsers:
+		m.advanceTextStep(stepProblem)
+	case stepProblem:
+		m.advanceTextStep(stepRequirements)
+	case stepRequirements:
+		m.advanceTextStep(stepResearchPrompt)
+		m.interview.optionIndex = 0
+	case stepResearchPrompt:
+		m.applyOptionSelection(func() {
+			m.finishInterview(true)
+		}, func() {
+			m.finishInterview(false)
+		})
+	}
+}
+
+func (m *Model) advanceTextStep(next interviewStep) {
+	m.storeInterviewAnswer(m.interview.step)
+	m.interview.step = next
+	m.loadInterviewInput()
+}
+
+func (m *Model) iterateInterviewStep(step interviewStep) {
+	prompt, _, _ := interviewStepInfo(step)
+	if !prompt.expectsText {
+		return
+	}
+	answer := strings.TrimSpace(m.interview.answerForStep(step))
+	draft := strings.TrimSpace(m.interview.drafts[step])
+	briefPath, err := writeInterviewBrief(m.interview.root, m.interview.targetID, step, answer, draft, m.interview.baseSpec)
+	if err != nil {
+		m.status = "interview brief failed: " + err.Error()
+		return
+	}
+	cfg, err := config.LoadFromRoot(m.interview.root)
+	if err != nil {
+		m.status = "agent config missing"
+		return
+	}
+	agentName := defaultAgentName(cfg)
+	profile, err := agents.Resolve(agentProfiles(cfg), agentName)
+	if err != nil {
+		m.status = "agent not found"
+		return
+	}
+	runner := runAgent
+	if isClaudeProfile(agentName, profile) {
+		runner = runSubagent
+	}
+	output, err := runner(profile, briefPath)
+	if err != nil {
+		m.status = "agent not found; brief at " + briefPath
+		return
+	}
+	newDraft := parseAgentDraft(output)
+	if strings.TrimSpace(newDraft) == "" {
+		m.status = "agent returned empty draft"
+		return
+	}
+	if m.interview.drafts == nil {
+		m.interview.drafts = map[interviewStep]string{}
+	}
+	m.interview.drafts[step] = newDraft
+	m.status = "draft updated"
+}
+
+func (m *Model) finishInterview(runResearch bool) {
+	if err := m.finalizeInterview(); err != nil {
+		m.status = "Interview save failed: " + err.Error()
+		m.exitInterview()
+		return
+	}
+	if runResearch {
+		m.runResearch()
+	}
+	m.exitInterview()
+}
+
+func (m *Model) finalizeInterview() error {
+	if m.interview.finalized {
+		return nil
+	}
+	if strings.TrimSpace(m.interview.targetPath) == "" {
+		return fmt.Errorf("missing target path")
+	}
+	spec := mergeInterviewSpec(m.interview.baseSpec, m.interview.answers, m.interview.drafts)
+	raw, err := yaml.Marshal(spec)
+	if err != nil {
+		return err
+	}
+	if err := osWriteFile(m.interview.targetPath, raw, 0o644); err != nil {
+		return err
+	}
+	res, err := specs.Validate(raw, specs.ValidationOptions{Mode: specs.ValidationSoft, Root: m.interview.root})
+	if err != nil {
+		return err
+	}
+	if len(res.Warnings) > 0 {
+		_ = specs.StoreValidationWarnings(m.interview.targetPath, res.Warnings)
+		m.interview.warnings = res.Warnings
+	}
+	m.interview.finalized = true
 	m.reloadSummaries()
 	m.autoApplySuggestions()
+	return nil
 }
 
 func (m *Model) runResearch() {
-	if m.interview.specID == "" {
+	if m.interview.targetID == "" {
 		return
 	}
 	researchDir := project.ResearchDir(m.interview.root)
-	_, _ = research.Create(researchDir, m.interview.specID, time.Now())
+	_, _ = research.Create(researchDir, m.interview.targetID, time.Now())
 }
 
 func (m *Model) autoApplySuggestions() {
-	if m.interview.specID == "" {
+	if m.interview.targetID == "" {
 		return
 	}
 	now := time.Now()
@@ -183,12 +366,12 @@ func (m *Model) autoApplySuggestions() {
 		m.status = "Suggestions failed: " + err.Error()
 		return
 	}
-	suggPath, err := suggestions.Create(suggDir, m.interview.specID, now)
+	suggPath, err := suggestions.Create(suggDir, m.interview.targetID, now)
 	if err != nil {
 		m.status = "Suggestions failed: " + err.Error()
 		return
 	}
-	briefPath, err := writeSuggestionBrief(m.interview.root, m.interview.specID, suggPath, now)
+	briefPath, err := writeSuggestionBrief(m.interview.root, m.interview.targetID, suggPath, now)
 	if err != nil {
 		m.status = "Suggestions failed: " + err.Error()
 		return
@@ -212,7 +395,7 @@ func (m *Model) autoApplySuggestions() {
 		m.status = "agent not found; brief at " + briefPath
 		return
 	}
-	applied, err := applyReadySuggestions(m.interview.root, m.interview.specID, suggPath)
+	applied, err := applyReadySuggestions(m.interview.root, m.interview.targetID, suggPath)
 	if err != nil {
 		m.status = "Suggestions failed: " + err.Error()
 		return
@@ -254,7 +437,7 @@ func (m Model) interviewMarkdown() string {
 	b.WriteString("\n\n")
 	if m.interview.step == stepDraftConfirm {
 		b.WriteString("Draft:\n")
-		b.WriteString("Draft PRD ready.\n")
+		b.WriteString("Blank PRD ready.\n")
 		if strings.TrimSpace(m.interview.scanSummary) != "" {
 			b.WriteString("Context: ")
 			b.WriteString(m.interview.scanSummary)
@@ -279,14 +462,20 @@ func (m Model) interviewMarkdown() string {
 		b.WriteString("\n")
 	}
 	if prompt.expectsText {
+		if draft := strings.TrimSpace(m.interview.drafts[m.interview.step]); draft != "" {
+			b.WriteString("Draft:\n")
+			b.WriteString("```\n")
+			b.WriteString(draft)
+			b.WriteString("\n```\n\n")
+		}
 		b.WriteString("```\n")
 		b.WriteString("> ")
 		b.WriteString(m.input)
 		b.WriteString("\n```\n")
-		b.WriteString("Press Enter to submit.\n")
+		b.WriteString("Enter: iterate  [ / ]: prev/next\n")
 	} else {
 		b.WriteString("```\n")
-		b.WriteString("> [1/2] (arrows + Enter)\n")
+		b.WriteString("> [1/2] (arrows + Enter)  [ / ]: prev/next\n")
 		b.WriteString("```\n")
 	}
 	return b.String()
@@ -341,14 +530,14 @@ func buildDraftSpec(summary string) specs.Spec {
 	return specs.Spec{Title: "Draft PRD", Summary: text}
 }
 
-func buildSpecFromInterview(state interviewState) specs.Spec {
-	reqList := parseRequirements(state.requirements)
+func buildSpecFromInterview(vision, users, problem, requirements string) specs.Spec {
+	reqList := parseRequirements(requirements)
 	if len(reqList) == 0 {
 		reqList = []string{"REQ-001: TBD"}
 	}
 	firstReq := extractReqID(reqList[0])
-	title := firstNonEmpty(state.vision, state.problem, "New PRD")
-	summary := firstNonEmpty(state.problem, state.vision, "Summary pending")
+	title := firstNonEmpty(vision, problem, "New PRD")
+	summary := firstNonEmpty(problem, vision, "Summary pending")
 	return specs.Spec{
 		Title:        title,
 		Summary:      summary,
@@ -360,7 +549,7 @@ func buildSpecFromInterview(state interviewState) specs.Spec {
 			MVPIncluded: true,
 		},
 		UserStory: specs.UserStory{
-			Text: "As a user, " + firstNonEmpty(state.users, "I need", "I need") + ", " + summary,
+			Text: "As a user, " + firstNonEmpty(users, "I need", "I need") + ", " + summary,
 			Hash: "pending",
 		},
 		CriticalUserJourneys: []specs.CriticalUserJourney{
@@ -382,6 +571,86 @@ func buildSpecFromInterview(state interviewState) specs.Spec {
 			},
 		},
 	}
+}
+
+func mergeInterviewSpec(base specs.Spec, answers, drafts map[interviewStep]string) specs.Spec {
+	vision := strings.TrimSpace(interviewValue(stepVision, answers, drafts))
+	users := strings.TrimSpace(interviewValue(stepUsers, answers, drafts))
+	problem := strings.TrimSpace(interviewValue(stepProblem, answers, drafts))
+	requirements := strings.TrimSpace(interviewValue(stepRequirements, answers, drafts))
+
+	updated := base
+	if updated.Status == "" {
+		updated.Status = "draft"
+	}
+	if updated.CreatedAt == "" {
+		updated.CreatedAt = time.Now().UTC().Format(time.RFC3339)
+	}
+	if vision != "" {
+		updated.Title = vision
+	}
+	if problem != "" {
+		updated.Summary = problem
+	}
+	if requirements != "" {
+		reqList := parseRequirements(requirements)
+		if len(reqList) == 0 {
+			reqList = []string{"REQ-001: TBD"}
+		}
+		updated.Requirements = reqList
+	}
+	if users != "" || problem != "" {
+		summary := updated.Summary
+		if strings.TrimSpace(summary) == "" {
+			summary = firstNonEmpty(problem, vision, "Summary pending")
+		}
+		updated.UserStory = specs.UserStory{
+			Text: "As a user, " + firstNonEmpty(users, "I need", "I need") + ", " + summary,
+			Hash: "pending",
+		}
+	}
+	if updated.StrategicContext.CUJID == "" && updated.StrategicContext.CUJName == "" && updated.StrategicContext.FeatureID == "" {
+		updated.StrategicContext = specs.StrategicContext{
+			CUJID:       "CUJ-001",
+			CUJName:     "Primary Journey",
+			FeatureID:   "",
+			MVPIncluded: true,
+		}
+	}
+	if len(updated.CriticalUserJourneys) == 0 && len(updated.Requirements) > 0 {
+		firstReq := extractReqID(updated.Requirements[0])
+		updated.CriticalUserJourneys = []specs.CriticalUserJourney{
+			{
+				ID:                 "CUJ-001",
+				Title:              "Primary Journey",
+				Priority:           "high",
+				Steps:              []string{"Start", "Finish"},
+				SuccessCriteria:    []string{"Goal achieved"},
+				LinkedRequirements: []string{firstReq},
+			},
+			{
+				ID:                 "CUJ-002",
+				Title:              "Maintenance",
+				Priority:           "low",
+				Steps:              []string{"Routine upkeep"},
+				SuccessCriteria:    []string{"System remains stable"},
+				LinkedRequirements: []string{firstReq},
+			},
+		}
+	}
+	return updated
+}
+
+func interviewValue(step interviewStep, answers, drafts map[interviewStep]string) string {
+	if drafts != nil {
+		if val := strings.TrimSpace(drafts[step]); val != "" {
+			return val
+		}
+	}
+	if answers == nil {
+		return ""
+	}
+	return answers[step]
 }
 
 func writeSpec(root string, spec specs.Spec) (string, string, []string) {
