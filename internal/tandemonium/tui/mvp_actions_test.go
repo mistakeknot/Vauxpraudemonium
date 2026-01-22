@@ -8,7 +8,7 @@ import (
 func TestReviewViewShowsMVPWarning(t *testing.T) {
 	m := NewModel()
 	m.ViewMode = ViewReview
-	m.ReviewDetail = ReviewDetail{Alignment: "out"}
+	m.Review.Detail = ReviewDetail{Alignment: "out"}
 	out := m.View()
 	if !strings.Contains(out, "MVP SCOPE WARNING") {
 		t.Fatalf("expected mvp warning")
@@ -18,12 +18,12 @@ func TestReviewViewShowsMVPWarning(t *testing.T) {
 func TestMVPExplainClearsInput(t *testing.T) {
 	m := NewModel()
 	m.ViewMode = ViewReview
-	m.ReviewInputMode = ReviewInputFeedback
-	m.ReviewInput = "Reason"
-	m.ReviewDetail = ReviewDetail{TaskID: "T1", Alignment: "out"}
-	m.MVPExplainWriter = func(taskID, text string) error { return nil }
+	m.Review.InputMode = ReviewInputFeedback
+	m.Review.Input = "Reason"
+	m.Review.Detail = ReviewDetail{TaskID: "T1", Alignment: "out"}
+	m.Review.MVPExplainWriter = func(taskID, text string) error { return nil }
 	m.handleMVPExplainSubmit()
-	if m.ReviewInputMode != ReviewInputNone {
+	if m.Review.InputMode != ReviewInputNone {
 		t.Fatalf("expected input cleared")
 	}
 }
@@ -31,8 +31,8 @@ func TestMVPExplainClearsInput(t *testing.T) {
 func TestMVPAcceptUpdatesScope(t *testing.T) {
 	m := NewModel()
 	m.ViewMode = ViewReview
-	m.ReviewDetail = ReviewDetail{TaskID: "T1", Alignment: "out"}
-	m.MVPAcceptor = func(taskID string) error { return nil }
+	m.Review.Detail = ReviewDetail{TaskID: "T1", Alignment: "out"}
+	m.Review.MVPAcceptor = func(taskID string) error { return nil }
 	m.handleMVPAccept()
 	if m.Status == "" {
 		t.Fatalf("expected status")
@@ -43,11 +43,11 @@ func TestMVPExplainUsesWriterWhenPending(t *testing.T) {
 	called := false
 	m := NewModel()
 	m.ViewMode = ViewReview
-	m.ReviewDetail = ReviewDetail{TaskID: "T1", Alignment: "out"}
-	m.ReviewInputMode = ReviewInputFeedback
-	m.ReviewInput = "Reason"
-	m.MVPExplainPending = true
-	m.MVPExplainWriter = func(taskID, text string) error {
+	m.Review.Detail = ReviewDetail{TaskID: "T1", Alignment: "out"}
+	m.Review.InputMode = ReviewInputFeedback
+	m.Review.Input = "Reason"
+	m.Review.MVPExplainPending = true
+	m.Review.MVPExplainWriter = func(taskID, text string) error {
 		called = true
 		return nil
 	}
@@ -62,12 +62,12 @@ func TestMVPRevertCallsReverter(t *testing.T) {
 	var gotPath string
 	m := NewModel()
 	m.ViewMode = ViewReview
-	m.ReviewDetail = ReviewDetail{
+	m.Review.Detail = ReviewDetail{
 		TaskID:    "T1",
 		Alignment: "out",
 		Files:     []ReviewFile{{Path: "a.txt"}, {Path: "b.txt"}},
 	}
-	m.MVPReverter = func(taskID, path string) error {
+	m.Review.MVPReverter = func(taskID, path string) error {
 		called = true
 		gotPath = path
 		return nil

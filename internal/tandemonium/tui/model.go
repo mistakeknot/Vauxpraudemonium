@@ -28,35 +28,12 @@ type Model struct {
 	Width                int
 	Height               int
 	Sessions             []string
-	ReviewQueue          []string
 	DiffFiles            []string
-	Approver             Approver
-	BranchLookup         BranchLookup
 	Status               string
 	StatusLevel          StatusLevel
-	ReviewLoader         ReviewLoader
-	ReviewBranches       map[string]string
-	SelectedReview       int
 	ConfirmApprove       bool
-	PendingApproveTask   string
 	ViewMode             ViewMode
-	ReviewShowDiffs      bool
-	ReviewInputMode      ReviewInputMode
-	ReviewInput          string
-	ReviewPendingReject  bool
-	MVPExplainPending    bool
-	MVPRevertSelect      bool
-	MVPRevertIndex       int
-	ReviewDetail         ReviewDetail
-	ReviewDetailLoader   func(taskID string) (ReviewDetail, error)
-	ReviewDiff           ReviewDiffState
-	ReviewDiffLoader     func(taskID string) (ReviewDiffState, error)
-	ReviewActionWriter   func(taskID, text string) error
-	ReviewStoryUpdater   func(taskID, text string) error
-	ReviewRejecter       func(taskID string) error
-	MVPExplainWriter     func(taskID, text string) error
-	MVPAcceptor          func(taskID string) error
-	MVPReverter          func(taskID, path string) error
+	Review               ReviewState
 	TaskList             []TaskItem
 	SelectedTask         int
 	TaskLoader           func() ([]TaskItem, error)
@@ -90,6 +67,33 @@ type Model struct {
 
 type BranchLookup func(taskID string) (string, error)
 type ReviewLoader func() ([]string, error)
+
+type ReviewState struct {
+	Queue              []string
+	Branches           map[string]string
+	Selected           int
+	PendingApproveTask string
+	ShowDiffs          bool
+	InputMode          ReviewInputMode
+	Input              string
+	PendingReject      bool
+	MVPExplainPending  bool
+	MVPRevertSelect    bool
+	MVPRevertIndex     int
+	Detail             ReviewDetail
+	DetailLoader        func(taskID string) (ReviewDetail, error)
+	Diff               ReviewDiffState
+	DiffLoader          func(taskID string) (ReviewDiffState, error)
+	Loader             ReviewLoader
+	ActionWriter       func(taskID, text string) error
+	StoryUpdater       func(taskID, text string) error
+	Rejecter           func(taskID string) error
+	MVPExplainWriter   func(taskID, text string) error
+	MVPAcceptor        func(taskID string) error
+	MVPReverter        func(taskID string, path string) error
+	Approver           Approver
+	BranchLookup       BranchLookup
+}
 
 type ViewMode string
 
@@ -149,11 +153,9 @@ func NewModel() Model {
 		Title:                "Tandemonium",
 		StatusBadges:         []string{},
 		Sessions:             []string{},
-		ReviewQueue:          []string{},
 		DiffFiles:            []string{},
 		Status:               "ready",
 		StatusLevel:          StatusInfo,
-		ReviewBranches:       map[string]string{},
 		ConfirmApprove:       true,
 		ViewMode:             ViewFleet,
 		FocusPane:            FocusTasks,
@@ -164,6 +166,10 @@ func NewModel() Model {
 		CoordRecipientFilter: CoordRecipientFilterAll,
 		Now:                  time.Now,
 		FilterMode:           "all",
+		Review: ReviewState{
+			Queue:    []string{},
+			Branches: map[string]string{},
+		},
 	}
 }
 
@@ -173,17 +179,17 @@ func NewModelWithDB(db *sql.DB) Model {
 	if db == nil {
 		return m
 	}
-	m.ReviewLoader = func() ([]string, error) { return LoadReviewQueue(db) }
+	m.Review.Loader = func() ([]string, error) { return LoadReviewQueue(db) }
 	m.TaskLoader = func() ([]TaskItem, error) { return LoadTasks(db) }
 	m.TaskDetailLoader = func(id string) (TaskDetail, error) { return LoadTaskDetailWithDB(db, id) }
-	m.ReviewDetailLoader = func(taskID string) (ReviewDetail, error) { return LoadReviewDetailWithDB(db, taskID) }
+	m.Review.DetailLoader = func(taskID string) (ReviewDetail, error) { return LoadReviewDetailWithDB(db, taskID) }
 	m.CoordInboxLoader = func(recipient string, limit int, urgentOnly bool) ([]storage.MessageDelivery, error) {
 		return LoadCoordInbox(db, recipient, limit, urgentOnly)
 	}
 	m.CoordLocksLoader = func(limit int) ([]storage.Reservation, error) {
 		return LoadCoordLocks(db, limit)
 	}
-	m.Approver = &ApproveAdapter{DB: db, Runner: &git.ExecRunner{}}
+	m.Review.Approver = &ApproveAdapter{DB: db, Runner: &git.ExecRunner{}}
 	return m
 }
 
@@ -307,7 +313,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 			return m, nil
 		}
-		if msg.String() == "n" && m.ViewMode == ViewFleet && m.PendingApproveTask == "" {
+		if msg.String() == "n" && m.ViewMode == ViewFleet && m.Review.PendingApproveTask == "" {
 			m.QuickTaskMode = true
 			m.QuickTaskInput = ""
 			return m, nil
@@ -336,26 +342,26 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				return m, nil
 			}
 		}
-		if m.ViewMode == ViewReview && m.MVPRevertSelect {
+		if m.ViewMode == ViewReview && m.Review.MVPRevertSelect {
 			switch msg.String() {
 			case "j", "down":
-				if m.MVPRevertIndex < len(m.ReviewDetail.Files)-1 {
-					m.MVPRevertIndex++
+				if m.Review.MVPRevertIndex < len(m.Review.Detail.Files)-1 {
+					m.Review.MVPRevertIndex++
 				}
 			case "k", "up":
-				if m.MVPRevertIndex > 0 {
-					m.MVPRevertIndex--
+				if m.Review.MVPRevertIndex > 0 {
+					m.Review.MVPRevertIndex--
 				}
 			case "enter":
 				m.handleMVPRevertConfirm()
 			case "b", "esc":
-				m.MVPRevertSelect = false
+				m.Review.MVPRevertSelect = false
 			}
 			return m, nil
 		}
-		if m.ViewMode == ViewReview && m.ReviewShowDiffs {
+		if m.ViewMode == ViewReview && m.Review.ShowDiffs {
 			if msg.String() == "b" {
-				m.ReviewShowDiffs = false
+				m.Review.ShowDiffs = false
 				return m, nil
 			}
 			m.handleReviewDiffKey(msg.String())
@@ -363,7 +369,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 		switch msg.String() {
 		case "R":
-			if m.ViewMode == ViewReview && m.ReviewDetail.Alignment == "out" {
+			if m.ViewMode == ViewReview && m.Review.Detail.Alignment == "out" {
 				m.handleMVPRevertStart()
 				return m, nil
 			}
@@ -408,8 +414,8 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					m.SelectedTask++
 					m.ensureTaskDetail()
 				}
-			} else if len(m.ReviewQueue) > 0 && m.SelectedReview < len(m.ReviewQueue)-1 {
-				m.SelectedReview++
+			} else if len(m.Review.Queue) > 0 && m.Review.Selected < len(m.Review.Queue)-1 {
+				m.Review.Selected++
 			}
 		case "k", "up":
 			if m.ViewMode == ViewFleet {
@@ -421,26 +427,26 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					m.SelectedTask--
 					m.ensureTaskDetail()
 				}
-			} else if m.SelectedReview > 0 {
-				m.SelectedReview--
+			} else if m.Review.Selected > 0 {
+				m.Review.Selected--
 			}
 		case "enter":
 			if m.ViewMode == ViewReview {
-				if m.ReviewInputMode != ReviewInputNone {
+				if m.Review.InputMode != ReviewInputNone {
 					m.handleReviewSubmit()
 					return m, nil
 				}
 				m.handleReviewEnter()
 				return m, nil
 			}
-			if len(m.ReviewQueue) > 0 {
-				idx := m.SelectedReview
-				if idx < 0 || idx >= len(m.ReviewQueue) {
+			if len(m.Review.Queue) > 0 {
+				idx := m.Review.Selected
+				if idx < 0 || idx >= len(m.Review.Queue) {
 					idx = 0
 				}
-				taskID := m.ReviewQueue[idx]
+				taskID := m.Review.Queue[idx]
 				if m.ConfirmApprove {
-					m.PendingApproveTask = taskID
+					m.Review.PendingApproveTask = taskID
 					m.SetStatusInfo("confirm approve " + taskID + " (y/n)")
 					return m, nil
 				}
@@ -451,21 +457,21 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 		case "a":
 			if m.ViewMode == ViewReview {
-				if m.ReviewInputMode != ReviewInputNone {
+				if m.Review.InputMode != ReviewInputNone {
 					m.handleReviewSubmit()
 					return m, nil
 				}
 				m.handleReviewEnter()
 				return m, nil
 			}
-			if len(m.ReviewQueue) > 0 {
-				idx := m.SelectedReview
-				if idx < 0 || idx >= len(m.ReviewQueue) {
+			if len(m.Review.Queue) > 0 {
+				idx := m.Review.Selected
+				if idx < 0 || idx >= len(m.Review.Queue) {
 					idx = 0
 				}
-				taskID := m.ReviewQueue[idx]
+				taskID := m.Review.Queue[idx]
 				if m.ConfirmApprove {
-					m.PendingApproveTask = taskID
+					m.Review.PendingApproveTask = taskID
 					m.SetStatusInfo("confirm approve " + taskID + " (y/n)")
 					return m, nil
 				}
@@ -481,17 +487,17 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				return m, nil
 			}
 		case "y":
-			if m.PendingApproveTask != "" {
-				taskID := m.PendingApproveTask
-				m.PendingApproveTask = ""
+			if m.Review.PendingApproveTask != "" {
+				taskID := m.Review.PendingApproveTask
+				m.Review.PendingApproveTask = ""
 				if err := m.approveTaskByID(taskID); err != nil {
 					m.SetStatusError(err.Error())
 					return m, nil
 				}
 			}
 		case "n":
-			if m.PendingApproveTask != "" {
-				m.PendingApproveTask = ""
+			if m.Review.PendingApproveTask != "" {
+				m.Review.PendingApproveTask = ""
 				m.SetStatusInfo("approve cancelled")
 			}
 		case "o":
@@ -510,39 +516,39 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 		case "f":
 			if m.ViewMode == ViewReview {
-				m.ReviewInputMode = ReviewInputFeedback
-				m.ReviewInput = ""
-				m.MVPExplainPending = false
+				m.Review.InputMode = ReviewInputFeedback
+				m.Review.Input = ""
+				m.Review.MVPExplainPending = false
 			}
 		case "x":
-			if m.ViewMode == ViewReview && m.ReviewDetail.Alignment == "out" {
-				m.ReviewInputMode = ReviewInputFeedback
-				m.ReviewInput = ""
-				m.MVPExplainPending = true
+			if m.ViewMode == ViewReview && m.Review.Detail.Alignment == "out" {
+				m.Review.InputMode = ReviewInputFeedback
+				m.Review.Input = ""
+				m.Review.MVPExplainPending = true
 			}
 		case "r":
 			if m.ViewMode == ViewReview {
-				m.ReviewInputMode = ReviewInputFeedback
-				m.ReviewInput = ""
-				m.ReviewPendingReject = true
-				m.MVPExplainPending = false
+				m.Review.InputMode = ReviewInputFeedback
+				m.Review.Input = ""
+				m.Review.PendingReject = true
+				m.Review.MVPExplainPending = false
 			}
 		case "e":
 			if m.ViewMode == ViewReview {
-				m.ReviewInputMode = ReviewInputStory
-				m.ReviewInput = ""
-				m.MVPExplainPending = false
+				m.Review.InputMode = ReviewInputStory
+				m.Review.Input = ""
+				m.Review.MVPExplainPending = false
 			}
 		case "A":
-			if m.ViewMode == ViewReview && m.ReviewDetail.Alignment == "out" {
+			if m.ViewMode == ViewReview && m.Review.Detail.Alignment == "out" {
 				m.handleMVPAccept()
 			}
 		case "esc":
-			if m.ViewMode == ViewReview && m.ReviewInputMode != ReviewInputNone {
-				m.ReviewInputMode = ReviewInputNone
-				m.ReviewInput = ""
-				m.ReviewPendingReject = false
-				m.MVPExplainPending = false
+			if m.ViewMode == ViewReview && m.Review.InputMode != ReviewInputNone {
+				m.Review.InputMode = ReviewInputNone
+				m.Review.Input = ""
+				m.Review.PendingReject = false
+				m.Review.MVPExplainPending = false
 			}
 		}
 	}
@@ -570,40 +576,40 @@ func (m Model) View() string {
 			"[enter] create  [esc] cancel\n")
 	}
 	if m.ViewMode == ViewReview {
-		if m.ReviewShowDiffs {
+		if m.Review.ShowDiffs {
 			return render(m.viewReviewDiff())
 		}
-		out := "REVIEW - " + m.ReviewDetail.TaskID + ": " + m.ReviewDetail.Title + "\n\n"
-		if m.ReviewDetail.Alignment == "out" {
+		out := "REVIEW - " + m.Review.Detail.TaskID + ": " + m.Review.Detail.Title + "\n\n"
+		if m.Review.Detail.Alignment == "out" {
 			out += "MVP SCOPE WARNING\n[A]ccept  [R]evert file  [x]plain\n\n"
 		}
-		if m.MVPRevertSelect {
+		if m.Review.MVPRevertSelect {
 			out += "REVERT FILE\n"
-			for i, f := range m.ReviewDetail.Files {
+			for i, f := range m.Review.Detail.Files {
 				prefix := "- "
-				if i == m.MVPRevertIndex {
+				if i == m.Review.MVPRevertIndex {
 					prefix = "> "
 				}
 				out += prefix + f.Path + "\n"
 			}
 			out += "\n[j/k] select  [enter] confirm  [b]ack\n\n"
 		}
-		if m.ReviewInputMode == ReviewInputFeedback {
-			out += "FEEDBACK: " + m.ReviewInput + "\n\n"
+		if m.Review.InputMode == ReviewInputFeedback {
+			out += "FEEDBACK: " + m.Review.Input + "\n\n"
 		}
-		if m.ReviewInputMode == ReviewInputStory {
-			out += "EDIT STORY: " + m.ReviewInput + "\n\n"
+		if m.Review.InputMode == ReviewInputStory {
+			out += "EDIT STORY: " + m.Review.Input + "\n\n"
 		}
-		out += "SUMMARY\n" + m.ReviewDetail.Summary + "\n\n"
-		switch m.ReviewDetail.StoryDrift {
+		out += "SUMMARY\n" + m.Review.Detail.Summary + "\n\n"
+		switch m.Review.Detail.StoryDrift {
 		case "changed":
 			out += "STORY DRIFT DETECTED\nStored story hash differs from current text.\n\n"
 		case "unknown":
 			out += "Story drift: unknown\n\n"
 		}
-		if m.ReviewDetail.Alignment != "" {
+		if m.Review.Detail.Alignment != "" {
 			out += "ALIGNMENT\n"
-			switch m.ReviewDetail.Alignment {
+			switch m.Review.Detail.Alignment {
 			case "mvp":
 				out += "Alignment: MVP\n\n"
 			case "out":
@@ -613,12 +619,12 @@ func (m Model) View() string {
 			}
 		}
 		out += "FILES CHANGED\n"
-		for _, f := range m.ReviewDetail.Files {
+		for _, f := range m.Review.Detail.Files {
 			out += "- " + f.Path + " +" + fmt.Sprintf("%d", f.Added) + " -" + fmt.Sprintf("%d", f.Deleted) + "\n"
 		}
-		out += "\nTESTS: " + m.ReviewDetail.TestsSummary + "\n\n"
+		out += "\nTESTS: " + m.Review.Detail.TestsSummary + "\n\n"
 		out += "ACCEPTANCE CRITERIA\n"
-		for _, ac := range m.ReviewDetail.AcceptanceCriteria {
+		for _, ac := range m.Review.Detail.AcceptanceCriteria {
 			out += "- " + ac + "\n"
 		}
 		out += "\n[d]iff  [a]pprove  [f]eedback  [r]eject  [e]dit story  [b]ack\n"
@@ -1083,46 +1089,46 @@ func sliceWindow(lines []string, start int, maxLines int) []string {
 }
 
 func (m *Model) RefreshReviewBranches() {
-	if m.BranchLookup == nil || len(m.ReviewQueue) == 0 {
-		m.ReviewBranches = map[string]string{}
+	if m.Review.BranchLookup == nil || len(m.Review.Queue) == 0 {
+		m.Review.Branches = map[string]string{}
 		return
 	}
 	branches := map[string]string{}
-	for _, id := range m.ReviewQueue {
-		if branch, err := m.BranchLookup(id); err == nil {
+	for _, id := range m.Review.Queue {
+		if branch, err := m.Review.BranchLookup(id); err == nil {
 			branches[id] = branch
 		}
 	}
-	m.ReviewBranches = branches
+	m.Review.Branches = branches
 }
 
 func (m *Model) ClampReviewSelection() {
-	if len(m.ReviewQueue) == 0 {
-		m.SelectedReview = 0
+	if len(m.Review.Queue) == 0 {
+		m.Review.Selected = 0
 		return
 	}
-	if m.SelectedReview < 0 {
-		m.SelectedReview = 0
+	if m.Review.Selected < 0 {
+		m.Review.Selected = 0
 		return
 	}
-	if m.SelectedReview >= len(m.ReviewQueue) {
-		m.SelectedReview = len(m.ReviewQueue) - 1
+	if m.Review.Selected >= len(m.Review.Queue) {
+		m.Review.Selected = len(m.Review.Queue) - 1
 	}
 }
 
 func (m *Model) handleReviewEnter() {
-	if m.ReviewInputMode == ReviewInputNone {
+	if m.Review.InputMode == ReviewInputNone {
 		m.ensureReviewDetail()
-		if len(m.ReviewQueue) == 0 {
+		if len(m.Review.Queue) == 0 {
 			return
 		}
-		idx := m.SelectedReview
-		if idx < 0 || idx >= len(m.ReviewQueue) {
+		idx := m.Review.Selected
+		if idx < 0 || idx >= len(m.Review.Queue) {
 			idx = 0
 		}
-		taskID := m.ReviewQueue[idx]
+		taskID := m.Review.Queue[idx]
 		if m.ConfirmApprove {
-			m.PendingApproveTask = taskID
+			m.Review.PendingApproveTask = taskID
 			m.SetStatusInfo("confirm approve " + taskID + " (y/n)")
 			return
 		}
@@ -1131,33 +1137,33 @@ func (m *Model) handleReviewEnter() {
 		}
 		return
 	}
-	if m.ReviewInputMode == ReviewInputFeedback {
-		m.ReviewInputMode = ReviewInputNone
-		m.ReviewPendingReject = false
+	if m.Review.InputMode == ReviewInputFeedback {
+		m.Review.InputMode = ReviewInputNone
+		m.Review.PendingReject = false
 		m.SetStatusInfo("feedback captured")
 		return
 	}
-	if m.ReviewInputMode == ReviewInputStory {
-		m.ReviewInputMode = ReviewInputNone
+	if m.Review.InputMode == ReviewInputStory {
+		m.Review.InputMode = ReviewInputNone
 		m.SetStatusInfo("story updated")
 	}
 }
 
 func (m *Model) handleReviewSubmit() {
-	if m.ReviewInputMode == ReviewInputNone {
+	if m.Review.InputMode == ReviewInputNone {
 		return
 	}
-	taskID := m.ReviewDetail.TaskID
+	taskID := m.Review.Detail.TaskID
 	if taskID == "" {
 		m.SetStatusError("no review task selected")
 		return
 	}
-	if m.ReviewInputMode == ReviewInputFeedback {
-		if m.ReviewDetail.Alignment == "out" && !m.ReviewPendingReject && m.MVPExplainPending {
+	if m.Review.InputMode == ReviewInputFeedback {
+		if m.Review.Detail.Alignment == "out" && !m.Review.PendingReject && m.Review.MVPExplainPending {
 			m.handleMVPExplainSubmit()
 			return
 		}
-		writer := m.ReviewActionWriter
+		writer := m.Review.ActionWriter
 		if writer == nil {
 			writer = func(id, text string) error {
 				root, err := project.FindRoot(".")
@@ -1170,14 +1176,14 @@ func (m *Model) handleReviewSubmit() {
 				}
 				return specs.AppendReviewFeedback(path, text)
 			}
-			m.ReviewActionWriter = writer
+			m.Review.ActionWriter = writer
 		}
-		if err := writer(taskID, m.ReviewInput); err != nil {
+		if err := writer(taskID, m.Review.Input); err != nil {
 			m.SetStatusError(err.Error())
 			return
 		}
-		if m.ReviewPendingReject {
-			rejecter := m.ReviewRejecter
+		if m.Review.PendingReject {
+			rejecter := m.Review.Rejecter
 				if rejecter == nil {
 					rejecter = func(id string) error {
 						root, err := project.FindRoot(".")
@@ -1193,7 +1199,7 @@ func (m *Model) handleReviewSubmit() {
 						}
 						return storage.RejectTask(db, id)
 					}
-					m.ReviewRejecter = rejecter
+					m.Review.Rejecter = rejecter
 				}
 			if err := rejecter(taskID); err != nil {
 				m.SetStatusError(err.Error())
@@ -1203,15 +1209,15 @@ func (m *Model) handleReviewSubmit() {
 		} else {
 			m.SetStatusInfo("feedback saved")
 		}
-		m.ReviewInputMode = ReviewInputNone
-		m.ReviewInput = ""
-		m.ReviewPendingReject = false
+		m.Review.InputMode = ReviewInputNone
+		m.Review.Input = ""
+		m.Review.PendingReject = false
 		m.ensureReviewDetail()
 		m.RefreshReviewQueue()
 		return
 	}
-	if m.ReviewInputMode == ReviewInputStory {
-		updater := m.ReviewStoryUpdater
+	if m.Review.InputMode == ReviewInputStory {
+		updater := m.Review.StoryUpdater
 		if updater == nil {
 			updater = func(id, text string) error {
 				root, err := project.FindRoot(".")
@@ -1224,15 +1230,15 @@ func (m *Model) handleReviewSubmit() {
 				}
 				return specs.UpdateUserStory(path, text)
 			}
-			m.ReviewStoryUpdater = updater
+			m.Review.StoryUpdater = updater
 		}
-		if err := updater(taskID, m.ReviewInput); err != nil {
+		if err := updater(taskID, m.Review.Input); err != nil {
 			m.SetStatusError(err.Error())
 			return
 		}
-		m.ReviewInputMode = ReviewInputNone
-		m.ReviewInput = ""
-		m.ReviewPendingReject = false
+		m.Review.InputMode = ReviewInputNone
+		m.Review.Input = ""
+		m.Review.PendingReject = false
 		m.SetStatusInfo("story updated")
 		m.ensureReviewDetail()
 		return
@@ -1240,15 +1246,15 @@ func (m *Model) handleReviewSubmit() {
 }
 
 func (m *Model) handleMVPExplainSubmit() {
-	if m.ReviewInputMode == ReviewInputNone {
+	if m.Review.InputMode == ReviewInputNone {
 		return
 	}
-	taskID := m.ReviewDetail.TaskID
+	taskID := m.Review.Detail.TaskID
 	if taskID == "" {
 		m.SetStatusError("no review task selected")
 		return
 	}
-	writer := m.MVPExplainWriter
+	writer := m.Review.MVPExplainWriter
 	if writer == nil {
 		writer = func(id, text string) error {
 			root, err := project.FindRoot(".")
@@ -1261,22 +1267,22 @@ func (m *Model) handleMVPExplainSubmit() {
 			}
 			return specs.AppendMVPExplanation(path, text)
 		}
-		m.MVPExplainWriter = writer
+		m.Review.MVPExplainWriter = writer
 	}
-	if err := writer(taskID, m.ReviewInput); err != nil {
+	if err := writer(taskID, m.Review.Input); err != nil {
 		m.SetStatusError(err.Error())
 		return
 	}
-	m.ReviewInputMode = ReviewInputNone
-	m.ReviewInput = ""
-	m.ReviewPendingReject = false
-	m.MVPExplainPending = false
+	m.Review.InputMode = ReviewInputNone
+	m.Review.Input = ""
+	m.Review.PendingReject = false
+	m.Review.MVPExplainPending = false
 	m.SetStatusInfo("mvp explanation saved")
 	m.ensureReviewDetail()
 }
 
 func (m *Model) handleMVPAccept() {
-	acceptor := m.MVPAcceptor
+	acceptor := m.Review.MVPAcceptor
 	if acceptor == nil {
 		acceptor = func(id string) error {
 			root, err := project.FindRoot(".")
@@ -1289,9 +1295,9 @@ func (m *Model) handleMVPAccept() {
 			}
 			return specs.AcknowledgeMVPOverride(path)
 		}
-		m.MVPAcceptor = acceptor
+		m.Review.MVPAcceptor = acceptor
 	}
-	taskID := m.ReviewDetail.TaskID
+	taskID := m.Review.Detail.TaskID
 	if taskID == "" {
 		m.SetStatusError("no review task selected")
 		return
@@ -1305,29 +1311,29 @@ func (m *Model) handleMVPAccept() {
 }
 
 func (m *Model) handleMVPRevertStart() {
-	if len(m.ReviewDetail.Files) == 0 {
+	if len(m.Review.Detail.Files) == 0 {
 		m.SetStatusInfo("no files to revert")
 		return
 	}
-	m.MVPRevertSelect = true
-	m.MVPRevertIndex = 0
+	m.Review.MVPRevertSelect = true
+	m.Review.MVPRevertIndex = 0
 }
 
 func (m *Model) handleMVPRevertConfirm() {
-	if !m.MVPRevertSelect {
+	if !m.Review.MVPRevertSelect {
 		return
 	}
-	if m.MVPRevertIndex < 0 || m.MVPRevertIndex >= len(m.ReviewDetail.Files) {
+	if m.Review.MVPRevertIndex < 0 || m.Review.MVPRevertIndex >= len(m.Review.Detail.Files) {
 		m.SetStatusError("invalid file selection")
 		return
 	}
-	taskID := m.ReviewDetail.TaskID
+	taskID := m.Review.Detail.TaskID
 	if taskID == "" {
 		m.SetStatusError("no review task selected")
 		return
 	}
-	path := m.ReviewDetail.Files[m.MVPRevertIndex].Path
-	reverter := m.MVPReverter
+	path := m.Review.Detail.Files[m.Review.MVPRevertIndex].Path
+	reverter := m.Review.MVPReverter
 	if reverter == nil {
 		reverter = func(id, filePath string) error {
 			root, err := project.FindRoot(".")
@@ -1362,88 +1368,88 @@ func (m *Model) handleMVPRevertConfirm() {
 			}
 			return nil
 		}
-		m.MVPReverter = reverter
+		m.Review.MVPReverter = reverter
 	}
 	if err := reverter(taskID, path); err != nil {
 		m.SetStatusError(err.Error())
 		return
 	}
-	m.MVPRevertSelect = false
+	m.Review.MVPRevertSelect = false
 	m.SetStatusInfo("reverted " + path)
 	m.ensureReviewDetail()
 }
 
 func (m *Model) RefreshReviewQueue() {
-	loader := m.ReviewLoader
+	loader := m.Review.Loader
 	if loader == nil {
 		loader = LoadReviewQueueFromProject
-		m.ReviewLoader = loader
+		m.Review.Loader = loader
 	}
 	queue, err := loader()
 	if err != nil {
 		m.SetStatusError(err.Error())
 		return
 	}
-	m.ReviewQueue = queue
+	m.Review.Queue = queue
 	m.ClampReviewSelection()
 	m.RefreshReviewBranches()
 }
 
 func (m *Model) handleReviewDiff() {
-	if len(m.ReviewQueue) == 0 {
+	if len(m.Review.Queue) == 0 {
 		m.SetStatusInfo("no review tasks")
 		return
 	}
-	idx := m.SelectedReview
-	if idx < 0 || idx >= len(m.ReviewQueue) {
+	idx := m.Review.Selected
+	if idx < 0 || idx >= len(m.Review.Queue) {
 		idx = 0
 	}
-	taskID := m.ReviewQueue[idx]
-	loader := m.ReviewDiffLoader
+	taskID := m.Review.Queue[idx]
+	loader := m.Review.DiffLoader
 	if loader == nil {
 		loader = LoadReviewDiff
-		m.ReviewDiffLoader = loader
+		m.Review.DiffLoader = loader
 	}
 	state, err := loader(taskID)
 	if err != nil {
 		m.SetStatusError(err.Error())
 		return
 	}
-	m.ReviewDiff = state
-	m.ReviewShowDiffs = true
+	m.Review.Diff = state
+	m.Review.ShowDiffs = true
 }
 
 func (m *Model) ensureReviewDetail() {
-	if len(m.ReviewQueue) == 0 {
+	if len(m.Review.Queue) == 0 {
 		return
 	}
-	idx := m.SelectedReview
-	if idx < 0 || idx >= len(m.ReviewQueue) {
+	idx := m.Review.Selected
+	if idx < 0 || idx >= len(m.Review.Queue) {
 		idx = 0
 	}
-	taskID := m.ReviewQueue[idx]
-	loader := m.ReviewDetailLoader
+	taskID := m.Review.Queue[idx]
+	loader := m.Review.DetailLoader
 	if loader == nil {
 		loader = LoadReviewDetail
-		m.ReviewDetailLoader = loader
+		m.Review.DetailLoader = loader
 	}
 	if detail, err := loader(taskID); err == nil {
-		m.ReviewDetail = detail
+		m.Review.Detail = detail
 	}
 }
 
 func (m *Model) approveTaskByID(taskID string) error {
-	approver := m.Approver
+	approver := m.Review.Approver
 	if approver == nil {
 		approver = &ApproveAdapter{}
-		m.Approver = approver
+		m.Review.Approver = approver
 	}
-	lookup := m.BranchLookup
+	lookup := m.Review.BranchLookup
 	if lookup == nil {
 		lookup = func(taskID string) (string, error) {
 			return git.BranchForTask(&git.ExecRunner{}, taskID)
 		}
-		m.BranchLookup = lookup
+		m.Review.BranchLookup = lookup
 	}
 	branch, err := lookup(taskID)
 	if err != nil {
@@ -1452,16 +1458,16 @@ func (m *Model) approveTaskByID(taskID string) error {
 	if err := m.ApproveTask(approver, taskID, branch); err != nil {
 		return fmt.Errorf("approve failed: %w", err)
 	}
-	loader := m.ReviewLoader
+	loader := m.Review.Loader
 	if loader == nil {
 		loader = LoadReviewQueueFromProject
-		m.ReviewLoader = loader
+		m.Review.Loader = loader
 	}
 	queue, err := loader()
 	if err != nil {
 		return fmt.Errorf("review refresh failed: %w", err)
 	}
-	m.ReviewQueue = queue
+	m.Review.Queue = queue
 	m.ClampReviewSelection()
 	m.RefreshReviewBranches()
 	m.SetStatusInfo("approved " + taskID + " (merged " + branch + ")")

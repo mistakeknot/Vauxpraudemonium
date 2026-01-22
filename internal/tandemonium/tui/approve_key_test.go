@@ -24,15 +24,15 @@ func (f *fakeKeyApprover) Approve(taskID, branch string) error {
 func TestApproveKeyCallsApprover(t *testing.T) {
 	m := NewModel()
 	m.ConfirmApprove = false
-	m.ReviewQueue = []string{"TAND-001"}
-	m.BranchLookup = func(taskID string) (string, error) {
+	m.Review.Queue = []string{"TAND-001"}
+	m.Review.BranchLookup = func(taskID string) (string, error) {
 		if taskID != "TAND-001" {
 			t.Fatalf("unexpected task ID: %s", taskID)
 		}
 		return "feature/TAND-001", nil
 	}
 	fake := &fakeKeyApprover{}
-	m.Approver = fake
+	m.Review.Approver = fake
 
 	_, _ = m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'a'}})
 
@@ -50,21 +50,21 @@ func TestApproveKeyCallsApprover(t *testing.T) {
 func TestApproveKeyRefreshesReviewQueue(t *testing.T) {
 	m := NewModel()
 	m.ConfirmApprove = false
-	m.ReviewQueue = []string{"TAND-001"}
-	m.BranchLookup = func(taskID string) (string, error) {
+	m.Review.Queue = []string{"TAND-001"}
+	m.Review.BranchLookup = func(taskID string) (string, error) {
 		return "feature/TAND-001", nil
 	}
-	m.ReviewLoader = func() ([]string, error) {
+	m.Review.Loader = func() ([]string, error) {
 		return []string{}, nil
 	}
 	fake := &fakeKeyApprover{}
-	m.Approver = fake
+	m.Review.Approver = fake
 
 	next, _ := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'a'}})
 	updated := next.(Model)
 
-	if len(updated.ReviewQueue) != 0 {
-		t.Fatalf("expected review queue to refresh, got %v", updated.ReviewQueue)
+	if len(updated.Review.Queue) != 0 {
+		t.Fatalf("expected review queue to refresh, got %v", updated.Review.Queue)
 	}
 	if updated.StatusLevel != StatusInfo {
 		t.Fatalf("expected status info, got %v", updated.StatusLevel)
@@ -74,8 +74,8 @@ func TestApproveKeyRefreshesReviewQueue(t *testing.T) {
 func TestApproveKeySetsErrorStatus(t *testing.T) {
 	m := NewModel()
 	m.ConfirmApprove = false
-	m.ReviewQueue = []string{"TAND-001"}
-	m.BranchLookup = func(taskID string) (string, error) {
+	m.Review.Queue = []string{"TAND-001"}
+	m.Review.BranchLookup = func(taskID string) (string, error) {
 		return "", errors.New("boom")
 	}
 
@@ -93,16 +93,16 @@ func TestApproveKeySetsErrorStatus(t *testing.T) {
 func TestApproveKeyUsesSelectedItem(t *testing.T) {
 	m := NewModel()
 	m.ConfirmApprove = false
-	m.ReviewQueue = []string{"T1", "T2"}
-	m.SelectedReview = 1
-	m.BranchLookup = func(taskID string) (string, error) {
+	m.Review.Queue = []string{"T1", "T2"}
+	m.Review.Selected = 1
+	m.Review.BranchLookup = func(taskID string) (string, error) {
 		return "feature/" + taskID, nil
 	}
-	m.ReviewLoader = func() ([]string, error) {
+	m.Review.Loader = func() ([]string, error) {
 		return []string{}, nil
 	}
 	fake := &fakeKeyApprover{}
-	m.Approver = fake
+	m.Review.Approver = fake
 
 	_, _ = m.Update(tea.KeyMsg{Type: tea.KeyEnter})
 
@@ -120,15 +120,15 @@ func TestApproveKeyUsesSelectedItem(t *testing.T) {
 func TestApproveEnterRequiresConfirmation(t *testing.T) {
 	m := NewModel()
 	m.ConfirmApprove = true
-	m.ReviewQueue = []string{"T1"}
-	m.BranchLookup = func(taskID string) (string, error) {
+	m.Review.Queue = []string{"T1"}
+	m.Review.BranchLookup = func(taskID string) (string, error) {
 		return "feature/" + taskID, nil
 	}
-	m.ReviewLoader = func() ([]string, error) {
+	m.Review.Loader = func() ([]string, error) {
 		return []string{}, nil
 	}
 	fake := &fakeKeyApprover{}
-	m.Approver = fake
+	m.Review.Approver = fake
 
 	next, _ := m.Update(tea.KeyMsg{Type: tea.KeyEnter})
 	updated := next.(Model)
@@ -136,23 +136,23 @@ func TestApproveEnterRequiresConfirmation(t *testing.T) {
 	if fake.called {
 		t.Fatal("expected approve to be deferred")
 	}
-	if updated.PendingApproveTask != "T1" {
-		t.Fatalf("expected pending task, got %q", updated.PendingApproveTask)
+	if updated.Review.PendingApproveTask != "T1" {
+		t.Fatalf("expected pending task, got %q", updated.Review.PendingApproveTask)
 	}
 }
 
 func TestApproveConfirmationYRunsApprove(t *testing.T) {
 	m := NewModel()
 	m.ConfirmApprove = true
-	m.PendingApproveTask = "T1"
-	m.BranchLookup = func(taskID string) (string, error) {
+	m.Review.PendingApproveTask = "T1"
+	m.Review.BranchLookup = func(taskID string) (string, error) {
 		return "feature/" + taskID, nil
 	}
-	m.ReviewLoader = func() ([]string, error) {
+	m.Review.Loader = func() ([]string, error) {
 		return []string{}, nil
 	}
 	fake := &fakeKeyApprover{}
-	m.Approver = fake
+	m.Review.Approver = fake
 
 	next, _ := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'y'}})
 	updated := next.(Model)
@@ -160,23 +160,31 @@ func TestApproveConfirmationYRunsApprove(t *testing.T) {
 	if !fake.called {
 		t.Fatal("expected approve call on confirmation")
 	}
-	if updated.PendingApproveTask != "" {
-		t.Fatalf("expected pending cleared, got %q", updated.PendingApproveTask)
+	if updated.Review.PendingApproveTask != "" {
+		t.Fatalf("expected pending cleared, got %q", updated.Review.PendingApproveTask)
 	}
 }
 
 func TestApproveConfirmationNCancels(t *testing.T) {
 	m := NewModel()
 	m.ConfirmApprove = true
-	m.PendingApproveTask = "T1"
+	m.Review.PendingApproveTask = "T1"
 
 	next, _ := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'n'}})
 	updated := next.(Model)
 
-	if updated.PendingApproveTask != "" {
-		t.Fatalf("expected pending cleared, got %q", updated.PendingApproveTask)
+	if updated.Review.PendingApproveTask != "" {
+		t.Fatalf("expected pending cleared, got %q", updated.Review.PendingApproveTask)
 	}
 	if updated.StatusLevel != StatusInfo {
 		t.Fatalf("expected status info, got %v", updated.StatusLevel)
+	}
+}
+
+func TestReviewStatePlumbsPendingApprove(t *testing.T) {
+	m := NewModel()
+	m.Review.PendingApproveTask = "TAND-001"
+	if m.Review.PendingApproveTask != "TAND-001" {
+		t.Fatalf("expected pending approve task")
 	}
 }

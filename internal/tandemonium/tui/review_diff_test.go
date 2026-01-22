@@ -9,14 +9,14 @@ import (
 
 func TestReviewDiffLoadsFiles(t *testing.T) {
 	m := NewModel()
-	m.ReviewDiffLoader = func(taskID string) (ReviewDiffState, error) {
+	m.Review.DiffLoader = func(taskID string) (ReviewDiffState, error) {
 		return ReviewDiffState{Files: []string{"a.txt"}}, nil
 	}
 	m.ViewMode = ViewReview
-	m.ReviewQueue = []string{"T1"}
-	m.SelectedReview = 0
+	m.Review.Queue = []string{"T1"}
+	m.Review.Selected = 0
 	m.handleReviewDiff()
-	if len(m.ReviewDiff.Files) != 1 {
+	if len(m.Review.Diff.Files) != 1 {
 		t.Fatalf("expected diff files")
 	}
 }
@@ -24,8 +24,8 @@ func TestReviewDiffLoadsFiles(t *testing.T) {
 func TestReviewDiffViewRendersHeader(t *testing.T) {
 	m := NewModel()
 	m.ViewMode = ViewReview
-	m.ReviewShowDiffs = true
-	m.ReviewDiff = ReviewDiffState{Files: []string{"a.txt"}, Current: 0, Lines: []string{"@@ -1 +1 @@"}}
+	m.Review.ShowDiffs = true
+	m.Review.Diff = ReviewDiffState{Files: []string{"a.txt"}, Current: 0, Lines: []string{"@@ -1 +1 @@"}}
 	out := m.View()
 	if !strings.Contains(out, "REVIEW DIFF") {
 		t.Fatalf("expected diff header")
@@ -35,14 +35,14 @@ func TestReviewDiffViewRendersHeader(t *testing.T) {
 func TestReviewDiffNextPrev(t *testing.T) {
 	m := NewModel()
 	m.ViewMode = ViewReview
-	m.ReviewShowDiffs = true
-	m.ReviewDiff = ReviewDiffState{Files: []string{"a.txt", "b.txt"}, Current: 0}
+	m.Review.ShowDiffs = true
+	m.Review.Diff = ReviewDiffState{Files: []string{"a.txt", "b.txt"}, Current: 0}
 	m.handleReviewDiffKey("j")
-	if m.ReviewDiff.Current != 1 {
+	if m.Review.Diff.Current != 1 {
 		t.Fatalf("expected next file")
 	}
 	m.handleReviewDiffKey("k")
-	if m.ReviewDiff.Current != 0 {
+	if m.Review.Diff.Current != 0 {
 		t.Fatalf("expected prev file")
 	}
 }

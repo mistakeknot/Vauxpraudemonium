@@ -5,12 +5,12 @@ import "testing"
 func TestSubmitFeedbackClearsInput(t *testing.T) {
 	m := NewModel()
 	m.ViewMode = ViewReview
-	m.ReviewInputMode = ReviewInputFeedback
-	m.ReviewInput = "Looks good"
-	m.ReviewDetail = ReviewDetail{TaskID: "T1"}
-	m.ReviewActionWriter = func(taskID, text string) error { return nil }
+	m.Review.InputMode = ReviewInputFeedback
+	m.Review.Input = "Looks good"
+	m.Review.Detail = ReviewDetail{TaskID: "T1"}
+	m.Review.ActionWriter = func(taskID, text string) error { return nil }
 	m.handleReviewSubmit()
-	if m.ReviewInputMode != ReviewInputNone || m.ReviewInput != "" {
+	if m.Review.InputMode != ReviewInputNone || m.Review.Input != "" {
 		t.Fatalf("expected input cleared")
 	}
 }
@@ -18,14 +18,23 @@ func TestSubmitFeedbackClearsInput(t *testing.T) {
 func TestSubmitRejectRequeues(t *testing.T) {
 	m := NewModel()
 	m.ViewMode = ViewReview
-	m.ReviewInputMode = ReviewInputFeedback
-	m.ReviewPendingReject = true
-	m.ReviewInput = "Needs work"
-	m.ReviewDetail = ReviewDetail{TaskID: "T1"}
-	m.ReviewActionWriter = func(taskID, text string) error { return nil }
-	m.ReviewRejecter = func(taskID string) error { return nil }
+	m.Review.InputMode = ReviewInputFeedback
+	m.Review.PendingReject = true
+	m.Review.Input = "Needs work"
+	m.Review.Detail = ReviewDetail{TaskID: "T1"}
+	m.Review.ActionWriter = func(taskID, text string) error { return nil }
+	m.Review.Rejecter = func(taskID string) error { return nil }
 	m.handleReviewSubmit()
-	if m.ReviewPendingReject {
+	if m.Review.PendingReject {
 		t.Fatalf("expected reject cleared")
+	}
+}
+
+func TestReviewStateHoldsDetailAndDiff(t *testing.T) {
+	m := NewModel()
+	m.Review.Detail.TaskID = "TAND-002"
+	m.Review.Diff.Files = []string{"a.txt"}
+	if m.Review.Detail.TaskID != "TAND-002" || len(m.Review.Diff.Files) != 1 {
+		t.Fatalf("expected review detail/diff to be stored")
 	}
 }

@@ -30,7 +30,7 @@ func TestNewModelWithDBUsesDBLoaders(t *testing.T) {
 	}
 
 	m.RefreshReviewQueue()
-	if len(m.ReviewQueue) == 0 || m.ReviewQueue[0] != "TAND-DB-1" {
+	if len(m.Review.Queue) == 0 || m.Review.Queue[0] != "TAND-DB-1" {
 		t.Fatalf("expected ReviewQueue from DB")
 	}
 }

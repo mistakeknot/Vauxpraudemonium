@@ -4,7 +4,7 @@ import "testing"
 
 func TestModelHasReviewQueue(t *testing.T) {
 	m := NewModel()
-	if m.ReviewQueue == nil {
+	if m.Review.Queue == nil {
 		t.Fatal("expected review queue")
 	}
 }

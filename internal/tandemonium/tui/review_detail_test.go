@@ -8,7 +8,7 @@ import (
 func TestReviewDetailRenderIncludesSummary(t *testing.T) {
 	m := NewModel()
 	m.ViewMode = ViewReview
-	m.ReviewDetail = ReviewDetail{
+	m.Review.Detail = ReviewDetail{
 		TaskID:    "T1",
 		Title:     "Example",
 		Summary:   "Did the thing.",
@@ -28,7 +28,7 @@ func TestReviewDetailRenderIncludesSummary(t *testing.T) {
 func TestReviewDetailIncludesStoryDrift(t *testing.T) {
 	m := NewModel()
 	m.ViewMode = ViewReview
-	m.ReviewDetail = ReviewDetail{StoryDrift: "changed"}
+	m.Review.Detail = ReviewDetail{StoryDrift: "changed"}
 	out := m.View()
 	if !strings.Contains(out, "STORY DRIFT") {
 		t.Fatalf("expected drift warning")
@@ -38,7 +38,7 @@ func TestReviewDetailIncludesStoryDrift(t *testing.T) {
 func TestReviewViewShowsAlignment(t *testing.T) {
 	m := NewModel()
 	m.ViewMode = ViewReview
-	m.ReviewDetail = ReviewDetail{Alignment: "mvp"}
+	m.Review.Detail = ReviewDetail{Alignment: "mvp"}
 	out := m.View()
 	if !strings.Contains(out, "ALIGNMENT") {
 		t.Fatalf("expected alignment section")
@@ -48,12 +48,12 @@ func TestReviewViewShowsAlignment(t *testing.T) {
 func TestReviewDetailShowsAlignmentLabels(t *testing.T) {
 	m := NewModel()
 	m.ViewMode = ViewReview
-	m.ReviewDetail = ReviewDetail{Alignment: "mvp"}
+	m.Review.Detail = ReviewDetail{Alignment: "mvp"}
 	out := m.View()
 	if !strings.Contains(out, "Alignment: MVP") {
 		t.Fatalf("expected MVP alignment label")
 	}
-	m.ReviewDetail = ReviewDetail{Alignment: "out"}
+	m.Review.Detail = ReviewDetail{Alignment: "out"}
 	out = m.View()
 	if !strings.Contains(out, "Alignment: out of scope") {
 		t.Fatalf("expected out-of-scope alignment label")

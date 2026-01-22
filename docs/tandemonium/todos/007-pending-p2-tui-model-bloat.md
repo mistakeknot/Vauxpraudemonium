@@ -1,5 +1,5 @@
 ---
-status: pending
+status: done
 priority: p2
 issue_id: "007"
 tags: [architecture, maintainability, code-review]
@@ -99,7 +99,7 @@ Implement Option 1 when adding next major feature. Extract ReviewState first as 
 
 ## Acceptance Criteria
 
-- [ ] ReviewState extracted to separate struct
+- [x] ReviewState extracted to separate struct
 - [ ] FleetState extracted (when fleet view is built)
 - [ ] Services struct for injected dependencies
 - [ ] Each sub-model has focused tests
@@ -110,6 +110,7 @@ Implement Option 1 when adding next major feature. Extract ReviewState first as 
 | Date | Action | Learnings |
 |------|--------|-----------|
 | 2026-01-12 | Finding identified during architecture review | 23 modifications in 100 commits indicates hotspot |
+| 2026-01-22 | Extracted ReviewState into dedicated struct and updated TUI usage/tests | Reduced Model review field sprawl |
 
 ## Resources
 

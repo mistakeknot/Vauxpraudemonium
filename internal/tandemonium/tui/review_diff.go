@@ -92,24 +92,24 @@ func reviewBaseBranch(cfg config.Config, runner git.Runner) (string, error) {
 }
 
 func (m Model) viewReviewDiff() string {
-	total := len(m.ReviewDiff.Files)
+	total := len(m.Review.Diff.Files)
 	out := "REVIEW DIFF"
 	if total > 0 {
-		out += " " + fmt.Sprintf("(%d/%d)", m.ReviewDiff.Current+1, total)
+		out += " " + fmt.Sprintf("(%d/%d)", m.Review.Diff.Current+1, total)
 	}
 	out += "\n\n"
 	if total == 0 {
 		out += "No diff files.\n\n[b]ack\n"
 		return out
 	}
-	path := m.ReviewDiff.Files[m.ReviewDiff.Current]
+	path := m.Review.Diff.Files[m.Review.Diff.Current]
 	out += "FILE: " + path + "\n"
-	if m.ReviewDiff.BaseBranch != "" || m.ReviewDiff.TaskBranch != "" {
-		out += "BASE: " + m.ReviewDiff.BaseBranch + "  BRANCH: " + m.ReviewDiff.TaskBranch + "\n"
+	if m.Review.Diff.BaseBranch != "" || m.Review.Diff.TaskBranch != "" {
+		out += "BASE: " + m.Review.Diff.BaseBranch + "  BRANCH: " + m.Review.Diff.TaskBranch + "\n"
 	}
 	out += "\n"
-	lines := m.ReviewDiff.Lines
-	start := m.ReviewDiff.Offset
+	lines := m.Review.Diff.Lines
+	start := m.Review.Diff.Offset
 	if start < 0 {
 		start = 0
 	}
@@ -125,17 +125,17 @@ func (m Model) viewReviewDiff() string {
 }
 
 func (m *Model) handleReviewDiffKey(key string) {
-	if len(m.ReviewDiff.Files) == 0 {
+	if len(m.Review.Diff.Files) == 0 {
 		return
 	}
 	switch key {
 	case "j", "down":
-		if m.ReviewDiff.Current < len(m.ReviewDiff.Files)-1 {
-			m.setReviewDiffCurrent(m.ReviewDiff.Current + 1)
+		if m.Review.Diff.Current < len(m.Review.Diff.Files)-1 {
+			m.setReviewDiffCurrent(m.Review.Diff.Current + 1)
 		}
 	case "k", "up":
-		if m.ReviewDiff.Current > 0 {
-			m.setReviewDiffCurrent(m.ReviewDiff.Current - 1)
+		if m.Review.Diff.Current > 0 {
+			m.setReviewDiffCurrent(m.Review.Diff.Current - 1)
 		}
 	case "u":
 		m.adjustReviewDiffOffset(-diffPageSize)
@@ -144,59 +144,59 @@ func (m *Model) handleReviewDiffKey(key string) {
 	case "g":
 		m.setReviewDiffOffset(0)
 	case "G":
-		m.setReviewDiffOffset(len(m.ReviewDiff.Lines))
+		m.setReviewDiffOffset(len(m.Review.Diff.Lines))
 	}
 }
 
 func (m *Model) setReviewDiffCurrent(idx int) {
-	if idx < 0 || idx >= len(m.ReviewDiff.Files) {
+	if idx < 0 || idx >= len(m.Review.Diff.Files) {
 		return
 	}
-	currentPath := m.ReviewDiff.Files[m.ReviewDiff.Current]
-	if m.ReviewDiff.Offsets != nil {
-		m.ReviewDiff.Offsets[currentPath] = m.ReviewDiff.Offset
+	currentPath := m.Review.Diff.Files[m.Review.Diff.Current]
+	if m.Review.Diff.Offsets != nil {
+		m.Review.Diff.Offsets[currentPath] = m.Review.Diff.Offset
 	}
-	m.ReviewDiff.Current = idx
-	path := m.ReviewDiff.Files[idx]
-	lines, ok := m.ReviewDiff.Cache[path]
+	m.Review.Diff.Current = idx
+	path := m.Review.Diff.Files[idx]
+	lines, ok := m.Review.Diff.Cache[path]
 	if !ok {
-		if m.ReviewDiff.Loader != nil {
-			loaded, err := m.ReviewDiff.Loader(path)
+		if m.Review.Diff.Loader != nil {
+			loaded, err := m.Review.Diff.Loader(path)
 			if err != nil {
 				m.SetStatusError(err.Error())
-				m.ReviewDiff.Lines = nil
+				m.Review.Diff.Lines = nil
 			} else {
-				m.ReviewDiff.Cache[path] = loaded
+				m.Review.Diff.Cache[path] = loaded
 				lines = loaded
 			}
 		}
 	}
-	m.ReviewDiff.Lines = lines
-	if m.ReviewDiff.Offsets != nil {
-		m.ReviewDiff.Offset = m.ReviewDiff.Offsets[path]
+	m.Review.Diff.Lines = lines
+	if m.Review.Diff.Offsets != nil {
+		m.Review.Diff.Offset = m.Review.Diff.Offsets[path]
 	} else {
-		m.ReviewDiff.Offset = 0
+		m.Review.Diff.Offset = 0
 	}
 }
 
 func (m *Model) adjustReviewDiffOffset(delta int) {
-	m.setReviewDiffOffset(m.ReviewDiff.Offset + delta)
+	m.setReviewDiffOffset(m.Review.Diff.Offset + delta)
 }
 
 func (m *Model) setReviewDiffOffset(offset int) {
 	if offset < 0 {
 		offset = 0
 	}
-	maxStart := len(m.ReviewDiff.Lines) - diffPageSize
+	maxStart := len(m.Review.Diff.Lines) - diffPageSize
 	if maxStart < 0 {
 		maxStart = 0
 	}
 	if offset > maxStart {
 		offset = maxStart
 	}
-	m.ReviewDiff.Offset = offset
-	path := m.ReviewDiff.Files[m.ReviewDiff.Current]
-	if m.ReviewDiff.Offsets != nil {
-		m.ReviewDiff.Offsets[path] = offset
+	m.Review.Diff.Offset = offset
+	path := m.Review.Diff.Files[m.Review.Diff.Current]
+	if m.Review.Diff.Offsets != nil {
+		m.Review.Diff.Offsets[path] = offset
 	}
 }
