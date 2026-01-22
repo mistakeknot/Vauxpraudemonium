@@ -55,6 +55,13 @@ func (t Tab) String() string {
 	}
 }
 
+type Pane int
+
+const (
+	PaneProjects Pane = iota
+	PaneMain
+)
+
 type promptMode int
 
 const (
@@ -71,6 +78,7 @@ type Model struct {
 	width       int
 	height      int
 	activeTab   Tab
+	activePane  Pane
 	sessionList list.Model
 	projectsList list.Model
 	agentList   list.Model
@@ -157,6 +165,8 @@ type keyMap struct {
 	Tab       key.Binding
 	ShiftTab  key.Binding
 	Refresh   key.Binding
+	FocusLeft key.Binding
+	FocusRight key.Binding
 	New       key.Binding
 	Rename    key.Binding
 	Fork      key.Binding
@@ -182,6 +192,14 @@ var keys = keyMap{
 	Refresh: key.NewBinding(
 		key.WithKeys("ctrl+r", "R"),
 		key.WithHelp("ctrl+r", "refresh"),
+	),
+	FocusLeft: key.NewBinding(
+		key.WithKeys("["),
+		key.WithHelp("[", "focus projects"),
+	),
+	FocusRight: key.NewBinding(
+		key.WithKeys("]"),
+		key.WithHelp("]", "focus main"),
 	),
 	New: key.NewBinding(
 		key.WithKeys("n"),
@@ -282,6 +300,7 @@ func New(agg aggregatorAPI) Model {
 		agg:         agg,
 		tmuxClient:  tmux.NewClient(),
 		activeTab:   TabDashboard,
+		activePane:  PaneMain,
 		sessionList: sessionList,
 		projectsList: projectsList,
 		agentList:   agentList,
@@ -368,6 +387,14 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 		case key.Matches(msg, keys.Refresh):
 			return m, m.refresh()
+
+		case key.Matches(msg, keys.FocusLeft):
+			m.activePane = PaneProjects
+			return m, nil
+
+		case key.Matches(msg, keys.FocusRight):
+			m.activePane = PaneMain
+			return m, nil
 
 		case key.Matches(msg, keys.New):
 			if m.activeTab == TabSessions {
@@ -507,17 +534,21 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	// Update active list
 	var cmd tea.Cmd
-	switch m.activeTab {
-	case TabSessions:
-		m.sessionList, cmd = m.sessionList.Update(msg)
-	case TabProjects:
-		if m.showMCP {
-			m.mcpList, cmd = m.mcpList.Update(msg)
-		} else {
-			m.projectsList, cmd = m.projectsList.Update(msg)
+	if m.activePane == PaneProjects {
+		m.projectsList, cmd = m.projectsList.Update(msg)
+	} else {
+		switch m.activeTab {
+		case TabSessions:
+			m.sessionList, cmd = m.sessionList.Update(msg)
+		case TabProjects:
+			if m.showMCP {
+				m.mcpList, cmd = m.mcpList.Update(msg)
+			} else {
+				m.projectsList, cmd = m.projectsList.Update(msg)
+			}
+		case TabAgents:
+			m.agentList, cmd = m.agentList.Update(msg)
 		}
-	case TabAgents:
-		m.agentList, cmd = m.agentList.Update(msg)
 	}
 	cmds = append(cmds, cmd)
 

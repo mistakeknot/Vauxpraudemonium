@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/charmbracelet/bubbles/list"
+	tea "github.com/charmbracelet/bubbletea"
 
 	"github.com/mistakeknot/vauxpraudemonium/internal/vauxhall/aggregator"
 	"github.com/mistakeknot/vauxpraudemonium/internal/vauxhall/discovery"
@@ -46,5 +47,17 @@ func TestFilterSessionsByProject(t *testing.T) {
 
 	if len(m.sessionList.Items()) != 1 {
 		t.Fatalf("expected 1 session, got %d", len(m.sessionList.Items()))
+	}
+}
+
+func TestFocusSwitching(t *testing.T) {
+	agg := &fakeAggLayout{state: aggregator.State{}}
+	m := New(agg)
+	m.activePane = PaneMain
+
+	mm, _ := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'['}})
+	updated := mm.(Model)
+	if updated.activePane != PaneProjects {
+		t.Fatalf("expected projects pane")
 	}
 }
