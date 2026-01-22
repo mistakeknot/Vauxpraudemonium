@@ -13,7 +13,12 @@ func ApproveCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "approve",
 		Short: "Approve a task by merging its branch and marking done",
-		Args:  wrapArgs("approve", cobra.ExactArgs(2)),
+		Args: wrapArgs("approve", func(cmd *cobra.Command, args []string) error {
+			if err := cobra.ExactArgs(2)(cmd, args); err != nil {
+				return err
+			}
+			return project.ValidateTaskID(args[0])
+		}),
 		RunE: func(cmd *cobra.Command, args []string) (err error) {
 			defer func() {
 				if err != nil {

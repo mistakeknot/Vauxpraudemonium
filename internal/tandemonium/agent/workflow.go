@@ -1,5 +1,7 @@
 package agent
 
+import "github.com/mistakeknot/vauxpraudemonium/internal/tandemonium/project"
+
 type WorktreeCreator interface {
 	Create(repo, path, branch string) error
 }
@@ -9,6 +11,9 @@ type SessionStarter interface {
 }
 
 func StartTask(w WorktreeCreator, s SessionStarter, taskID, repo, worktree, logPath string) error {
+	if err := project.ValidateTaskID(taskID); err != nil {
+		return err
+	}
 	if err := w.Create(repo, worktree, "feature/"+taskID); err != nil {
 		return err
 	}

@@ -1,5 +1,5 @@
 ---
-status: pending
+status: done
 priority: p1
 issue_id: "001"
 tags: [security, code-review]
@@ -81,18 +81,23 @@ Implement Option 1 + Option 2 (defense in depth): shell-escape AND validate allo
 - **Components:** Tmux session management
 - **Database changes:** None
 
+## Resolution
+
+Added log path validation (allowlist) and kept shell-escaping to prevent command injection.
+
 ## Acceptance Criteria
 
-- [ ] LogPath is shell-escaped before use in pipe-pane command
-- [ ] LogPath is validated against allowlist pattern
-- [ ] Test verifies shell metacharacters are rejected
-- [ ] Test verifies valid paths still work
+- [x] LogPath is shell-escaped before use in pipe-pane command
+- [x] LogPath is validated against allowlist pattern
+- [x] Test verifies shell metacharacters are rejected
+- [x] Test verifies valid paths still work
 
 ## Work Log
 
 | Date | Action | Learnings |
 |------|--------|-----------|
 | 2026-01-12 | Finding identified during security review | Critical: shell injection in tmux commands |
+| 2026-01-21 | Fixed by allowlist validation + existing shell-escape | Regression tests added |
 
 ## Resources
 

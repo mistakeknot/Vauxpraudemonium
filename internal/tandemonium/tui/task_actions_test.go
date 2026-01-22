@@ -25,6 +25,25 @@ func TestStartTaskCallsStarter(t *testing.T) {
 	}
 }
 
+func TestStartTaskRejectsInvalidID(t *testing.T) {
+	m := NewModel()
+	m.ViewMode = ViewFleet
+	m.TaskList = []TaskItem{{ID: "bad/id", Title: "Bad", Status: "todo"}}
+	called := false
+	m.TaskStarter = func(id string) error {
+		called = true
+		return nil
+	}
+	updated, _ := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("s")})
+	m = updated.(Model)
+	if called {
+		t.Fatalf("expected starter not to be called")
+	}
+	if m.StatusLevel != StatusError {
+		t.Fatalf("expected error status, got %s", m.StatusLevel)
+	}
+}
+
 func TestStopTaskCallsStopper(t *testing.T) {
 	m := NewModel()
 	m.ViewMode = ViewFleet

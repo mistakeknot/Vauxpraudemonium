@@ -6,6 +6,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"strings"
 )
 
 var ErrNotInitialized = errors.New("not a Tandemonium project")
@@ -45,7 +46,7 @@ func WorktreesDir(root string) string {
 	return filepath.Join(root, ".tandemonium", "worktrees")
 }
 
-var taskIDPattern = regexp.MustCompile(`^[A-Za-z0-9_-]+$`)
+var taskIDPattern = regexp.MustCompile(`^[A-Za-z0-9_-]{1,64}$`)
 
 func ValidateTaskID(id string) error {
 	if !taskIDPattern.MatchString(id) {
@@ -58,5 +59,23 @@ func TaskSpecPath(root, id string) (string, error) {
 	if err := ValidateTaskID(id); err != nil {
 		return "", err
 	}
-	return filepath.Join(SpecsDir(root), id+".yaml"), nil
+	return SafePath(SpecsDir(root), id+".yaml")
+}
+
+func SafePath(base, name string) (string, error) {
+	if base == "" {
+		return "", errors.New("base path required")
+	}
+	if filepath.IsAbs(name) {
+		return "", fmt.Errorf("path traversal attempt: %q", name)
+	}
+	full := filepath.Join(base, name)
+	rel, err := filepath.Rel(base, full)
+	if err != nil {
+		return "", err
+	}
+	if rel == ".." || strings.HasPrefix(rel, ".."+string(os.PathSeparator)) {
+		return "", fmt.Errorf("path traversal attempt: %q", name)
+	}
+	return full, nil
 }

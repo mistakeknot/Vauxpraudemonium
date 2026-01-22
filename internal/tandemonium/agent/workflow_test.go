@@ -26,3 +26,14 @@ func TestStartTaskWorkflow(t *testing.T) {
 		t.Fatal("expected worktree + session start")
 	}
 }
+
+func TestStartTaskRejectsInvalidID(t *testing.T) {
+	w := &fakeWorktree{}
+	s := &fakeSession{}
+	if err := StartTask(w, s, "bad/id", "/repo", "/wt", "/log"); err == nil {
+		t.Fatal("expected error")
+	}
+	if w.called || s.called {
+		t.Fatal("expected no worktree or session start")
+	}
+}

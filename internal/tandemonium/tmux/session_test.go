@@ -38,3 +38,14 @@ func TestStartSessionEscapesLogPath(t *testing.T) {
 		t.Fatalf("unexpected pipe command: %q", got)
 	}
 }
+
+func TestStartSessionRejectsLogPathWithShellMeta(t *testing.T) {
+	r := &fakeRunner{}
+	s := Session{ID: "tand-TAND-003", Workdir: "/tmp/x", LogPath: "/tmp/log; rm -rf /"}
+	if err := StartSession(r, s); err == nil {
+		t.Fatal("expected error for unsafe log path")
+	}
+	if len(r.cmds) != 0 {
+		t.Fatalf("expected no commands, got %d", len(r.cmds))
+	}
+}

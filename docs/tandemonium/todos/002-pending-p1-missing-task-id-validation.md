@@ -1,5 +1,5 @@
 ---
-status: pending
+status: done
 priority: p1
 issue_id: "002"
 tags: [security, code-review]
@@ -77,29 +77,33 @@ Implement Option 1 (validation) at all entry points AND Option 2 (path sanitizat
 ## Technical Details
 
 - **Affected files:**
-  - `internal/cli/commands/approve.go`
-  - `internal/agent/launcher.go`
-  - `internal/agent/workflow.go`
-  - `internal/tui/review_detail.go`
-  - `internal/tui/model.go`
-  - New: `internal/validation/task_id.go`
+  - `internal/tandemonium/project/paths.go`
+  - `internal/tandemonium/cli/commands/approve.go`
+  - `internal/tandemonium/agent/workflow.go`
+  - `internal/tandemonium/tui/model.go`
+  - Tests in corresponding *_test.go files
 - **Components:** CLI, Agent, TUI
 - **Database changes:** None
 
+## Resolution
+
+Tightened task ID validation (1-64 chars, A-Za-z0-9_-), enforced at CLI entry points and before TUI start actions, and added safe path joins for task-derived paths.
+
 ## Acceptance Criteria
 
-- [ ] Task ID validation function created
-- [ ] Validation applied at CLI entry points
-- [ ] Validation applied in TUI before file operations
-- [ ] Path sanitization added for all file path construction
-- [ ] Tests verify malicious IDs are rejected
-- [ ] Tests verify path traversal is blocked
+- [x] Task ID validation function created
+- [x] Validation applied at CLI entry points
+- [x] Validation applied in TUI before file operations
+- [x] Path sanitization added for all file path construction
+- [x] Tests verify malicious IDs are rejected
+- [x] Tests verify path traversal is blocked
 
 ## Work Log
 
 | Date | Action | Learnings |
 |------|--------|-----------|
 | 2026-01-12 | Finding identified during security review | Multiple attack vectors via task ID |
+| 2026-01-21 | Implemented validation + safe paths with tests | Defense in depth with minimal surface change |
 
 ## Resources
 

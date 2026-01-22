@@ -1472,6 +1472,10 @@ func (m *Model) handleTaskStart() {
 		return
 	}
 	taskID := task.ID
+	if err := project.ValidateTaskID(taskID); err != nil {
+		m.SetStatusError(err.Error())
+		return
+	}
 	starter := m.TaskStarter
 	if starter == nil {
 		starter = func(id string) error {
@@ -1482,12 +1486,18 @@ func (m *Model) handleTaskStart() {
 			if err := os.MkdirAll(project.WorktreesDir(root), 0o755); err != nil {
 				return err
 			}
-			worktree := filepath.Join(project.WorktreesDir(root), id)
+			worktree, err := project.SafePath(project.WorktreesDir(root), id)
+			if err != nil {
+				return err
+			}
 			branch := "feature/" + id
 			if err := git.CreateWorktree(root, worktree, branch); err != nil {
 				return err
 			}
-			logPath := filepath.Join(project.SessionsDir(root), agent.SessionID(id)+".log")
+			logPath, err := project.SafePath(project.SessionsDir(root), agent.SessionID(id)+".log")
+			if err != nil {
+				return err
+			}
 			session := tmux.Session{ID: agent.SessionID(id), Workdir: worktree, LogPath: logPath}
 			if err := tmux.StartSession(&tmux.ExecRunner{}, session); err != nil {
 				return err
