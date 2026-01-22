@@ -10,6 +10,7 @@ import (
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/mistakeknot/vauxpraudemonium/internal/praude/agents"
+	"github.com/mistakeknot/vauxpraudemonium/internal/praude/archive"
 	"github.com/mistakeknot/vauxpraudemonium/internal/praude/config"
 	"github.com/mistakeknot/vauxpraudemonium/internal/praude/project"
 	"github.com/mistakeknot/vauxpraudemonium/internal/praude/research"
@@ -18,28 +19,34 @@ import (
 )
 
 type Model struct {
-	summaries      []specs.Summary
-	selected       int
-	viewOffset     int
-	groupExpanded  map[string]bool
-	groupTree      *GroupTree
-	flatItems      []Item
-	err            string
-	root           string
-	mode           string
-	status         string
-	router         Router
-	width          int
-	height         int
-	mdCache        *MarkdownCache
-	overlay        string
-	focus          string
-	search         SearchState
-	searchOverlay  *SearchOverlay
-	interview      interviewState
-	suggestions    suggestionsState
-	input          string
-	interviewFocus string
+	summaries         []specs.Summary
+	selected          int
+	viewOffset        int
+	groupExpanded     map[string]bool
+	groupTree         *GroupTree
+	flatItems         []Item
+	err               string
+	root              string
+	mode              string
+	status            string
+	router            Router
+	width             int
+	height            int
+	mdCache           *MarkdownCache
+	overlay           string
+	focus             string
+	search            SearchState
+	searchOverlay     *SearchOverlay
+	showArchived      bool
+	confirmAction     string
+	confirmMessage    string
+	confirmID         string
+	pendingPrevStatus string
+	lastAction        *LastAction
+	interview         interviewState
+	suggestions       suggestionsState
+	input             string
+	interviewFocus    string
 }
 
 func NewModel() Model {
@@ -55,6 +62,8 @@ func NewModel() Model {
 			if state.Expanded != nil {
 				model.groupExpanded = state.Expanded
 			}
+			model.showArchived = state.ShowArchived
+			model.lastAction = state.LastAction
 			model.rebuildGroups()
 			if state.SelectedID != "" {
 				model.selected = selectedIndexFromID(model.flatItems, state.SelectedID)
@@ -68,22 +77,26 @@ func NewModel() Model {
 		}
 		return model
 	}
-	list, _ := specs.LoadSummaries(project.SpecsDir(cwd))
-	model := Model{summaries: list, root: cwd, mode: "list", router: Router{active: "list"}, width: 120, height: 40, mdCache: NewMarkdownCache(), focus: "LIST"}
+	state, stateErr := LoadUIState(project.StatePath(cwd))
+	includeArchived := stateErr == nil && state.ShowArchived
+	list, _ := specs.LoadSummariesWithArchived(project.SpecsDir(cwd), project.ArchivedSpecsDir(cwd), includeArchived)
+	model := Model{summaries: list, root: cwd, mode: "list", router: Router{active: "list"}, width: 120, height: 40, mdCache: NewMarkdownCache(), focus: "LIST", showArchived: includeArchived}
 	model.searchOverlay = NewSearchOverlay()
 	model.searchOverlay.SetItems(list)
 	model.groupExpanded = defaultExpanded()
-	if state, err := LoadUIState(project.StatePath(cwd)); err == nil {
+	if stateErr == nil {
 		if state.Expanded != nil {
 			model.groupExpanded = state.Expanded
 		}
+		model.showArchived = state.ShowArchived
+		model.lastAction = state.LastAction
 		model.rebuildGroups()
 		if state.SelectedID != "" {
 			model.selected = selectedIndexFromID(model.flatItems, state.SelectedID)
 			model.viewOffset = clampViewOffset(model.selected, model.viewOffset, model.listContentHeight(), len(model.flatItems))
 		}
 	} else {
-		if !os.IsNotExist(err) {
+		if !os.IsNotExist(stateErr) {
 			model.status = "state load failed"
 		}
 		model.rebuildGroups()
@@ -102,6 +115,15 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 		if msg.Type == tea.KeyBackspace {
 			key = "backspace"
+		}
+		if m.confirmAction != "" {
+			switch key {
+			case "enter":
+				m.applyConfirmAction()
+			case "esc", "q":
+				m.clearConfirm()
+			}
+			return m, nil
 		}
 		if m.overlay != "" {
 			switch key {
@@ -183,6 +205,16 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, tea.Quit
 		case "enter":
 			m.toggleSelectedGroup()
+		case "a":
+			m.confirmArchive()
+		case "d":
+			m.confirmDelete()
+		case "u":
+			m.confirmUndo()
+		case "h":
+			m.showArchived = !m.showArchived
+			m.reloadSummaries()
+			m.persistUIState()
 		case "/":
 			if m.searchOverlay != nil {
 				m.searchOverlay.SetItems(m.summaries)
@@ -250,6 +282,15 @@ func (m Model) View() string {
 	title := "LIST"
 	focus := m.focus
 	var body string
+	if m.confirmAction != "" {
+		title = "CONFIRM"
+		focus = "CONFIRM"
+		body = renderConfirmOverlay(m.confirmMessage)
+		header := renderHeader(title, focus)
+		footer := renderFooter("enter confirm  esc cancel", m.status)
+		body = padBodyToHeight(body, m.height-2)
+		return renderFrame(header, body, footer)
+	}
 	if m.overlay != "" {
 		title = "HELP"
 		overlay := renderHelpOverlay()
@@ -356,7 +397,7 @@ func (m *Model) reloadSummaries() {
 	if m.root == "" {
 		return
 	}
-	list, _ := specs.LoadSummaries(project.SpecsDir(m.root))
+	list, _ := specs.LoadSummariesWithArchived(project.SpecsDir(m.root), project.ArchivedSpecsDir(m.root), m.showArchived)
 	selectedID := ""
 	if sel := m.selectedSummary(); sel != nil {
 		selectedID = sel.ID
@@ -597,10 +638,134 @@ func (m *Model) persistUIState() {
 	if sel := m.selectedSummary(); sel != nil {
 		selectedID = sel.ID
 	}
-	state := UIState{Expanded: m.groupExpanded, SelectedID: selectedID}
+	state := UIState{
+		Expanded:     m.groupExpanded,
+		SelectedID:   selectedID,
+		ShowArchived: m.showArchived,
+		LastAction:   m.lastAction,
+	}
 	if err := SaveUIState(project.StatePath(m.root), state); err != nil {
 		m.status = "state save failed: " + err.Error()
 	}
+}
+
+func (m *Model) confirmArchive() {
+	sel := m.selectedSummary()
+	if sel == nil {
+		m.status = "No PRD selected"
+		return
+	}
+	m.confirmAction = "archive"
+	m.confirmID = sel.ID
+	m.confirmMessage = fmt.Sprintf("Archive %s?", sel.ID)
+}
+
+func (m *Model) confirmDelete() {
+	sel := m.selectedSummary()
+	if sel == nil {
+		m.status = "No PRD selected"
+		return
+	}
+	m.confirmAction = "delete"
+	m.confirmID = sel.ID
+	m.confirmMessage = fmt.Sprintf("Delete %s? (reversible)", sel.ID)
+}
+
+func (m *Model) confirmUndo() {
+	if m.lastAction == nil {
+		m.status = "Nothing to undo"
+		return
+	}
+	m.confirmAction = "undo"
+	m.confirmID = m.lastAction.ID
+	m.confirmMessage = fmt.Sprintf("Undo %s for %s?", m.lastAction.Type, m.lastAction.ID)
+}
+
+func (m *Model) applyConfirmAction() {
+	action := m.confirmAction
+	id := m.confirmID
+	last := m.lastAction
+	m.clearConfirm()
+	switch action {
+	case "archive":
+		sel := summaryByID(m.summaries, id)
+		if sel == nil {
+			m.status = "No PRD selected"
+			return
+		}
+		prevStatus := ""
+		if spec, err := specs.LoadSpec(sel.Path); err == nil {
+			prevStatus = spec.Status
+		}
+		res, err := archive.Archive(m.root, id)
+		if err != nil {
+			m.status = "Archive failed: " + err.Error()
+			return
+		}
+		m.lastAction = &LastAction{Type: "archive", ID: id, PrevStatus: prevStatus, From: res.From, To: res.To}
+		m.status = "Archived " + id
+		m.reloadSummaries()
+		m.persistUIState()
+	case "delete":
+		sel := summaryByID(m.summaries, id)
+		if sel == nil {
+			m.status = "No PRD selected"
+			return
+		}
+		prevStatus := ""
+		if spec, err := specs.LoadSpec(sel.Path); err == nil {
+			prevStatus = spec.Status
+		}
+		res, err := archive.Delete(m.root, id)
+		if err != nil {
+			m.status = "Delete failed: " + err.Error()
+			return
+		}
+		m.lastAction = &LastAction{Type: "delete", ID: id, PrevStatus: prevStatus, From: res.From, To: res.To}
+		m.status = "Deleted " + id
+		m.reloadSummaries()
+		m.persistUIState()
+	case "undo":
+		if last == nil {
+			m.status = "Nothing to undo"
+			return
+		}
+		if err := archive.Undo(m.root, last.From, last.To); err != nil {
+			m.status = "Undo failed: " + err.Error()
+			return
+		}
+		if last.PrevStatus != "" {
+			specPath := ""
+			for _, path := range last.From {
+				if strings.HasSuffix(path, last.ID+".yaml") {
+					specPath = path
+					break
+				}
+			}
+			if specPath != "" {
+				_ = specs.UpdateStatus(specPath, last.PrevStatus)
+			}
+		}
+		m.lastAction = nil
+		m.status = "Undo " + last.Type + " " + last.ID
+		m.reloadSummaries()
+		m.persistUIState()
+	}
+}
+
+func (m *Model) clearConfirm() {
+	m.confirmAction = ""
+	m.confirmMessage = ""
+	m.confirmID = ""
+}
+
+func summaryByID(summaries []specs.Summary, id string) *specs.Summary {
+	for i := range summaries {
+		if summaries[i].ID == id {
+			return &summaries[i]
+		}
+	}
+	return nil
 }
 
 func selectedIndexFromID(items []Item, id string) int {
@@ -723,7 +888,7 @@ func visibleWidth(s string) int {
 }
 
 func defaultKeys() string {
-	return "j/k move  enter toggle  / search  tab focus  g interview  r research  p suggestions  s review  ? help  q quit"
+	return "j/k move  enter toggle  / search  tab focus  a archive  d delete  u undo  h archived  g interview  r research  p suggestions  s review  ? help  q quit"
 }
 
 func padBodyToHeight(body string, height int) string {

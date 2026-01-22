@@ -68,6 +68,17 @@ func LoadSummaries(dir string) ([]Summary, []string) {
 	return out, warnings
 }
 
+func LoadSummariesWithArchived(activeDir, archivedDir string, includeArchived bool) ([]Summary, []string) {
+	list, warnings := LoadSummaries(activeDir)
+	if !includeArchived {
+		return list, warnings
+	}
+	archived, archivedWarnings := LoadSummaries(archivedDir)
+	list = append(list, archived...)
+	warnings = append(warnings, archivedWarnings...)
+	return list, warnings
+}
+
 func UpdateStatus(path string, status string) error {
 	spec, err := LoadSpec(path)
 	if err != nil {

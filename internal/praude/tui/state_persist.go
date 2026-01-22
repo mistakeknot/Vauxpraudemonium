@@ -13,10 +13,11 @@ type UIState struct {
 }
 
 type LastAction struct {
-	Type string   `json:"type"`
-	ID   string   `json:"id"`
-	From []string `json:"from"`
-	To   []string `json:"to"`
+	Type       string   `json:"type"`
+	ID         string   `json:"id"`
+	PrevStatus string   `json:"prev_status"`
+	From       []string `json:"from"`
+	To         []string `json:"to"`
 }
 
 func LoadUIState(path string) (UIState, error) {
