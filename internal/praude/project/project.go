@@ -33,6 +33,10 @@ func ConfigPath(root string) string {
 	return filepath.Join(RootDir(root), "config.toml")
 }
 
+func StatePath(root string) string {
+	return filepath.Join(RootDir(root), "state.json")
+}
+
 func Init(root string) error {
 	dirs := []string{
 		RootDir(root),
