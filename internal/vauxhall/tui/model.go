@@ -1,6 +1,7 @@
 package tui
 
 import (
+	"context"
 	"fmt"
 	"path/filepath"
 	"strings"
@@ -8,12 +9,26 @@ import (
 
 	"github.com/charmbracelet/bubbles/key"
 	"github.com/charmbracelet/bubbles/list"
+	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 
 	"github.com/mistakeknot/vauxpraudemonium/internal/vauxhall/aggregator"
+	"github.com/mistakeknot/vauxpraudemonium/internal/vauxhall/mcp"
 	"github.com/mistakeknot/vauxpraudemonium/internal/vauxhall/tmux"
 )
+
+type aggregatorAPI interface {
+	GetState() aggregator.State
+	Refresh(ctx context.Context) error
+	NewSession(name, projectPath, agentType string) error
+	RestartSession(name, projectPath, agentType string) error
+	RenameSession(oldName, newName string) error
+	ForkSession(name, projectPath, agentType string) error
+	AttachSession(name string) error
+	StartMCP(ctx context.Context, projectPath, component string) error
+	StopMCP(projectPath, component string) error
+}
 
 // Tab represents a view tab
 type Tab int
@@ -40,9 +55,18 @@ func (t Tab) String() string {
 	}
 }
 
+type promptMode int
+
+const (
+	promptNone promptMode = iota
+	promptNewSession
+	promptRenameSession
+	promptForkSession
+)
+
 // Model is the main TUI model
 type Model struct {
-	agg         *aggregator.Aggregator
+	agg         aggregatorAPI
 	tmuxClient  *tmux.Client
 	width       int
 	height      int
@@ -50,6 +74,12 @@ type Model struct {
 	sessionList list.Model
 	projectList list.Model
 	agentList   list.Model
+	mcpList     list.Model
+	mcpProject  string
+	showMCP     bool
+	promptMode  promptMode
+	promptInput textinput.Model
+	promptSess  *aggregator.TmuxSession
 	err         error
 	lastRefresh time.Time
 	quitting    bool
@@ -127,6 +157,13 @@ type keyMap struct {
 	Tab       key.Binding
 	ShiftTab  key.Binding
 	Refresh   key.Binding
+	New       key.Binding
+	Rename    key.Binding
+	Fork      key.Binding
+	Restart   key.Binding
+	Attach    key.Binding
+	ToggleMCP key.Binding
+	Toggle    key.Binding
 	Enter     key.Binding
 	Quit      key.Binding
 	Help      key.Binding
@@ -143,8 +180,36 @@ var keys = keyMap{
 		key.WithHelp("shift+tab", "prev tab"),
 	),
 	Refresh: key.NewBinding(
+		key.WithKeys("ctrl+r", "R"),
+		key.WithHelp("ctrl+r", "refresh"),
+	),
+	New: key.NewBinding(
+		key.WithKeys("n"),
+		key.WithHelp("n", "new"),
+	),
+	Rename: key.NewBinding(
 		key.WithKeys("r"),
-		key.WithHelp("r", "refresh"),
+		key.WithHelp("r", "rename"),
+	),
+	Fork: key.NewBinding(
+		key.WithKeys("f"),
+		key.WithHelp("f", "fork"),
+	),
+	Restart: key.NewBinding(
+		key.WithKeys("k"),
+		key.WithHelp("k", "restart"),
+	),
+	Attach: key.NewBinding(
+		key.WithKeys("a"),
+		key.WithHelp("a", "attach"),
+	),
+	ToggleMCP: key.NewBinding(
+		key.WithKeys("m"),
+		key.WithHelp("m", "mcp"),
+	),
+	Toggle: key.NewBinding(
+		key.WithKeys(" "),
+		key.WithHelp("space", "toggle"),
 	),
 	Enter: key.NewBinding(
 		key.WithKeys("enter"),
@@ -172,7 +237,7 @@ type errMsg error
 type tickMsg time.Time
 
 // New creates a new TUI model
-func New(agg *aggregator.Aggregator) Model {
+func New(agg aggregatorAPI) Model {
 	// Create session list
 	sessionDelegate := list.NewDefaultDelegate()
 	sessionDelegate.Styles.SelectedTitle = SelectedStyle
@@ -200,6 +265,19 @@ func New(agg *aggregator.Aggregator) Model {
 	agentList.SetShowStatusBar(false)
 	agentList.SetFilteringEnabled(true)
 
+	mcpDelegate := list.NewDefaultDelegate()
+	mcpDelegate.Styles.SelectedTitle = SelectedStyle
+	mcpDelegate.Styles.NormalTitle = UnselectedStyle
+	mcpList := list.New([]list.Item{}, mcpDelegate, 0, 0)
+	mcpList.Title = "MCP"
+	mcpList.SetShowStatusBar(false)
+	mcpList.SetFilteringEnabled(false)
+
+	promptInput := textinput.New()
+	promptInput.Placeholder = ""
+	promptInput.CharLimit = 80
+	promptInput.Width = 40
+
 	return Model{
 		agg:         agg,
 		tmuxClient:  tmux.NewClient(),
@@ -207,6 +285,8 @@ func New(agg *aggregator.Aggregator) Model {
 		sessionList: sessionList,
 		projectList: projectList,
 		agentList:   agentList,
+		mcpList:     mcpList,
+		promptInput: promptInput,
 	}
 }
 
@@ -220,7 +300,7 @@ func (m Model) Init() tea.Cmd {
 
 func (m Model) refresh() tea.Cmd {
 	return func() tea.Msg {
-		if err := m.agg.Refresh(nil); err != nil {
+		if err := m.agg.Refresh(context.Background()); err != nil {
 			return errMsg(err)
 		}
 		return refreshMsg{}
@@ -239,6 +319,39 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
+		if m.promptMode != promptNone {
+			switch msg.Type {
+			case tea.KeyEsc:
+				m.promptMode = promptNone
+				m.promptSess = nil
+				m.promptInput.SetValue("")
+				return m, nil
+			case tea.KeyEnter:
+				value := strings.TrimSpace(m.promptInput.Value())
+				if value == "" || m.promptSess == nil {
+					m.err = fmt.Errorf("missing input")
+					m.promptMode = promptNone
+					m.promptSess = nil
+					m.promptInput.SetValue("")
+					return m, nil
+				}
+				switch m.promptMode {
+				case promptNewSession:
+					m.err = m.agg.NewSession(value, m.promptSess.ProjectPath, m.promptSess.AgentType)
+				case promptRenameSession:
+					m.err = m.agg.RenameSession(m.promptSess.Name, value)
+				case promptForkSession:
+					m.err = m.agg.ForkSession(value, m.promptSess.ProjectPath, m.promptSess.AgentType)
+				}
+				m.promptMode = promptNone
+				m.promptSess = nil
+				m.promptInput.SetValue("")
+				return m, m.refresh()
+			}
+			var cmd tea.Cmd
+			m.promptInput, cmd = m.promptInput.Update(msg)
+			return m, cmd
+		}
 		// Global key handling
 		switch {
 		case key.Matches(msg, keys.Quit):
@@ -255,6 +368,93 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 		case key.Matches(msg, keys.Refresh):
 			return m, m.refresh()
+
+		case key.Matches(msg, keys.New):
+			if m.activeTab == TabSessions {
+				if session, ok := m.selectedSession(); ok {
+					m.promptMode = promptNewSession
+					m.promptSess = &session
+					m.promptInput.Placeholder = "new session name"
+					m.promptInput.SetValue(session.Name + "-new")
+					m.promptInput.Focus()
+					return m, nil
+				}
+			}
+			return m, nil
+
+		case key.Matches(msg, keys.Rename):
+			if m.activeTab == TabSessions {
+				if session, ok := m.selectedSession(); ok {
+					m.promptMode = promptRenameSession
+					m.promptSess = &session
+					m.promptInput.Placeholder = "rename session"
+					m.promptInput.SetValue("")
+					m.promptInput.Focus()
+					return m, nil
+				}
+			}
+			return m, nil
+
+		case key.Matches(msg, keys.Fork):
+			if m.activeTab == TabSessions {
+				if session, ok := m.selectedSession(); ok {
+					m.promptMode = promptForkSession
+					m.promptSess = &session
+					m.promptInput.Placeholder = "fork name"
+					m.promptInput.SetValue(session.Name + "-fork")
+					m.promptInput.Focus()
+					return m, nil
+				}
+			}
+			return m, nil
+
+		case key.Matches(msg, keys.Restart):
+			if m.activeTab == TabSessions {
+				if session, ok := m.selectedSession(); ok {
+					if err := m.agg.RestartSession(session.Name, session.ProjectPath, session.AgentType); err != nil {
+						m.err = err
+					}
+					return m, m.refresh()
+				}
+			}
+			return m, nil
+
+		case key.Matches(msg, keys.Attach):
+			if m.activeTab == TabSessions {
+				if session, ok := m.selectedSession(); ok {
+					if err := m.agg.AttachSession(session.Name); err != nil {
+						m.err = err
+					}
+					return m, nil
+				}
+			}
+			return m, nil
+
+		case key.Matches(msg, keys.ToggleMCP):
+			if m.activeTab == TabProjects {
+				m.showMCP = !m.showMCP
+				if m.showMCP {
+					if project, ok := m.selectedProject(); ok {
+						m.mcpProject = project.Path
+						m.updateMCPList()
+					}
+				}
+				return m, nil
+			}
+			return m, nil
+
+		case key.Matches(msg, keys.Toggle):
+			if m.activeTab == TabProjects && m.showMCP {
+				if item, ok := m.mcpList.SelectedItem().(MCPItem); ok {
+					if item.Status.Status == mcp.StatusRunning {
+						m.err = m.agg.StopMCP(m.mcpProject, item.Status.Component)
+					} else {
+						m.err = m.agg.StartMCP(context.Background(), m.mcpProject, item.Status.Component)
+					}
+					return m, m.refresh()
+				}
+			}
+			return m, nil
 
 		case key.Matches(msg, keys.Number[0]):
 			m.activeTab = TabDashboard
@@ -276,7 +476,17 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		h := m.height - 6 // Account for header and footer
 		w := m.width - 4
 		m.sessionList.SetSize(w, h)
-		m.projectList.SetSize(w, h)
+		if m.showMCP {
+			half := h / 2
+			if half < 4 {
+				half = h
+			}
+			m.projectList.SetSize(w, half)
+			m.mcpList.SetSize(w, h-half)
+		} else {
+			m.projectList.SetSize(w, h)
+			m.mcpList.SetSize(w, h/2)
+		}
 		m.agentList.SetSize(w, h)
 		return m, nil
 
@@ -301,13 +511,33 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case TabSessions:
 		m.sessionList, cmd = m.sessionList.Update(msg)
 	case TabProjects:
-		m.projectList, cmd = m.projectList.Update(msg)
+		if m.showMCP {
+			m.mcpList, cmd = m.mcpList.Update(msg)
+		} else {
+			m.projectList, cmd = m.projectList.Update(msg)
+		}
 	case TabAgents:
 		m.agentList, cmd = m.agentList.Update(msg)
 	}
 	cmds = append(cmds, cmd)
 
 	return m, tea.Batch(cmds...)
+}
+
+func (m Model) selectedSession() (aggregator.TmuxSession, bool) {
+	item, ok := m.sessionList.SelectedItem().(SessionItem)
+	if !ok {
+		return aggregator.TmuxSession{}, false
+	}
+	return item.Session, true
+}
+
+func (m Model) selectedProject() (ProjectItem, bool) {
+	item, ok := m.projectList.SelectedItem().(ProjectItem)
+	if !ok {
+		return ProjectItem{}, false
+	}
+	return item, true
 }
 
 func (m *Model) updateLists() {
@@ -347,6 +577,9 @@ func (m *Model) updateLists() {
 		projectItems[i] = item
 	}
 	m.projectList.SetItems(projectItems)
+	if m.showMCP {
+		m.updateMCPList()
+	}
 
 	// Update agent list
 	agentItems := make([]list.Item, len(state.Agents))
@@ -354,6 +587,16 @@ func (m *Model) updateLists() {
 		agentItems[i] = AgentItem{Agent: a}
 	}
 	m.agentList.SetItems(agentItems)
+}
+
+func (m *Model) updateMCPList() {
+	state := m.agg.GetState()
+	statuses := state.MCP[m.mcpProject]
+	items := make([]list.Item, len(statuses))
+	for i, s := range statuses {
+		items[i] = MCPItem{Status: s}
+	}
+	m.mcpList.SetItems(items)
 }
 
 // View renders the model
@@ -377,7 +620,19 @@ func (m Model) View() string {
 	case TabSessions:
 		content = m.sessionList.View()
 	case TabProjects:
-		content = m.projectList.View()
+		if m.showMCP {
+			projectTitle := SubtitleStyle.Render("Projects")
+			mcpTitle := SubtitleStyle.Render("MCP")
+			content = lipgloss.JoinVertical(lipgloss.Left,
+				projectTitle,
+				m.projectList.View(),
+				"",
+				mcpTitle,
+				m.mcpList.View(),
+			)
+		} else {
+			content = m.projectList.View()
+		}
 	case TabAgents:
 		content = m.agentList.View()
 	}
@@ -388,6 +643,7 @@ func (m Model) View() string {
 	return lipgloss.JoinVertical(lipgloss.Left,
 		header,
 		content,
+		m.renderPrompt(),
 		footer,
 	)
 }
@@ -416,7 +672,14 @@ func (m Model) renderHeader() string {
 
 func (m Model) renderFooter() string {
 	help := HelpKeyStyle.Render("tab") + HelpDescStyle.Render(" switch • ") +
-		HelpKeyStyle.Render("r") + HelpDescStyle.Render(" refresh • ") +
+		HelpKeyStyle.Render("ctrl+r") + HelpDescStyle.Render(" refresh • ") +
+		HelpKeyStyle.Render("n") + HelpDescStyle.Render(" new • ") +
+		HelpKeyStyle.Render("r") + HelpDescStyle.Render(" rename • ") +
+		HelpKeyStyle.Render("k") + HelpDescStyle.Render(" restart • ") +
+		HelpKeyStyle.Render("f") + HelpDescStyle.Render(" fork • ") +
+		HelpKeyStyle.Render("a") + HelpDescStyle.Render(" attach • ") +
+		HelpKeyStyle.Render("m") + HelpDescStyle.Render(" mcp • ") +
+		HelpKeyStyle.Render("space") + HelpDescStyle.Render(" toggle • ") +
 		HelpKeyStyle.Render("q") + HelpDescStyle.Render(" quit")
 
 	lastUpdate := ""
@@ -430,6 +693,34 @@ func (m Model) renderFooter() string {
 		lastUpdate,
 	)
 }
+
+func (m Model) renderPrompt() string {
+	if m.promptMode == promptNone {
+		return ""
+	}
+	label := ""
+	switch m.promptMode {
+	case promptNewSession:
+		label = "New session"
+	case promptRenameSession:
+		label = "Rename session"
+	case promptForkSession:
+		label = "Fork session"
+	}
+	return lipgloss.JoinHorizontal(lipgloss.Left,
+		LabelStyle.Render(label+": "),
+		m.promptInput.View(),
+	)
+}
+
+// MCPItem represents a MCP component in the list.
+type MCPItem struct {
+	Status mcp.ComponentStatus
+}
+
+func (i MCPItem) Title() string       { return i.Status.Component }
+func (i MCPItem) Description() string { return string(i.Status.Status) }
+func (i MCPItem) FilterValue() string { return i.Status.Component }
 
 func (m Model) renderDashboard() string {
 	state := m.agg.GetState()
