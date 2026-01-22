@@ -64,6 +64,7 @@ type Spec struct {
 	ID                   string                     `yaml:"id"`
 	Title                string                     `yaml:"title"`
 	CreatedAt            string                     `yaml:"created_at"`
+	Status               string                     `yaml:"status"`
 	StrategicContext     StrategicContext           `yaml:"strategic_context"`
 	UserStory            UserStory                  `yaml:"user_story"`
 	Summary              string                     `yaml:"summary"`

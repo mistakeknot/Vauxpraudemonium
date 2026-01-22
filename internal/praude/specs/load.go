@@ -12,6 +12,7 @@ type Summary struct {
 	ID      string
 	Title   string
 	Summary string
+	Status  string
 	Path    string
 }
 
@@ -52,12 +53,17 @@ func LoadSummaries(dir string) ([]Summary, []string) {
 			ID      string `yaml:"id"`
 			Title   string `yaml:"title"`
 			Summary string `yaml:"summary"`
+			Status  string `yaml:"status"`
 		}
 		if err := yaml.Unmarshal(raw, &doc); err != nil {
 			warnings = append(warnings, "parse failed: "+path)
 			continue
 		}
-		out = append(out, Summary{ID: doc.ID, Title: doc.Title, Summary: doc.Summary, Path: path})
+		status := strings.TrimSpace(doc.Status)
+		if status == "" {
+			status = "draft"
+		}
+		out = append(out, Summary{ID: doc.ID, Title: doc.Title, Summary: doc.Summary, Status: status, Path: path})
 	}
 	return out, warnings
 }

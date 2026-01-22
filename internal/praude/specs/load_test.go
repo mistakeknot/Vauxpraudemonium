@@ -17,6 +17,21 @@ func TestLoadSummaries(t *testing.T) {
 	}
 }
 
+func TestLoadSummariesStatus(t *testing.T) {
+	dir := t.TempDir()
+	raw := "id: \"PRD-002\"\ntitle: \"B\"\nsummary: \"S\"\nstatus: \"research\"\n"
+	if err := os.WriteFile(filepath.Join(dir, "PRD-002.yaml"), []byte(raw), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	list, _ := LoadSummaries(dir)
+	if len(list) != 1 {
+		t.Fatalf("expected 1 summary")
+	}
+	if list[0].Status != "research" {
+		t.Fatalf("expected status research, got %q", list[0].Status)
+	}
+}
+
 func TestLoadSpec(t *testing.T) {
 	dir := t.TempDir()
 	path := filepath.Join(dir, "PRD-001.yaml")
