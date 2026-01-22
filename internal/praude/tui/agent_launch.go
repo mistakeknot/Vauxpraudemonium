@@ -9,6 +9,8 @@ import (
 
 var launchAgent = agents.Launch
 var launchSubagent = agents.LaunchSubagent
+var runAgent = agents.Run
+var runSubagent = agents.RunSubagent
 
 func agentProfiles(cfg config.Config) map[string]agents.Profile {
 	out := make(map[string]agents.Profile)

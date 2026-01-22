@@ -29,12 +29,28 @@ func LaunchSubagent(p Profile, briefPath string) error {
 	return launchWithEnv(p, briefPath, []string{"PRAUDE_SUBAGENT=1"})
 }
 
+func Run(p Profile, briefPath string) ([]byte, error) {
+	return runWithEnv(p, briefPath, nil)
+}
+
+func RunSubagent(p Profile, briefPath string) ([]byte, error) {
+	return runWithEnv(p, briefPath, []string{"PRAUDE_SUBAGENT=1"})
+}
+
 func launchWithEnv(p Profile, briefPath string, extraEnv []string) error {
 	if _, err := lookPath(p.Command); err != nil {
 		return err
 	}
 	cmd := buildCommand(p, briefPath, extraEnv)
 	return cmd.Start()
+}
+
+func runWithEnv(p Profile, briefPath string, extraEnv []string) ([]byte, error) {
+	if _, err := lookPath(p.Command); err != nil {
+		return nil, err
+	}
+	cmd := buildCommand(p, briefPath, extraEnv)
+	return cmd.CombinedOutput()
 }
 
 func buildCommand(p Profile, briefPath string, extraEnv []string) *exec.Cmd {
