@@ -63,8 +63,8 @@ func TestFocusSwitching(t *testing.T) {
 }
 
 func TestRightPaneTabs(t *testing.T) {
-	if TabAgents != 2 {
-		t.Fatalf("expected tabs: Dashboard, Sessions, Agents (TabAgents=2)")
+	if TabProjects != 1 || TabSessions != 2 || TabAgents != 3 {
+		t.Fatalf("expected tabs: Dashboard, Projects, Sessions, Agents (Projects=1 Sessions=2 Agents=3)")
 	}
 }
 
