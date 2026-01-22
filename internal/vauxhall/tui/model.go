@@ -186,6 +186,9 @@ type Model struct {
 	mcpList     list.Model
 	mcpProject  string
 	showMCP     bool
+	filterActive bool
+	filterInput  textinput.Model
+	filterState  FilterState
 	promptMode  promptMode
 	promptInput textinput.Model
 	promptSess  *aggregator.TmuxSession
@@ -268,6 +271,7 @@ type keyMap struct {
 	Refresh   key.Binding
 	FocusLeft key.Binding
 	FocusRight key.Binding
+	Filter    key.Binding
 	New       key.Binding
 	Rename    key.Binding
 	Fork      key.Binding
@@ -301,6 +305,10 @@ var keys = keyMap{
 	FocusRight: key.NewBinding(
 		key.WithKeys("]"),
 		key.WithHelp("]", "focus main"),
+	),
+	Filter: key.NewBinding(
+		key.WithKeys("/"),
+		key.WithHelp("/", "filter"),
 	),
 	New: key.NewBinding(
 		key.WithKeys("n"),
@@ -391,6 +399,11 @@ func New(agg aggregatorAPI, buildInfo string) Model {
 	mcpList.SetShowStatusBar(false)
 	mcpList.SetFilteringEnabled(false)
 
+	filterInput := textinput.New()
+	filterInput.Placeholder = "filter"
+	filterInput.Prompt = "/ "
+	filterInput.CharLimit = 256
+
 	promptInput := textinput.New()
 	promptInput.Placeholder = ""
 	promptInput.CharLimit = 80
@@ -406,8 +419,17 @@ func New(agg aggregatorAPI, buildInfo string) Model {
 		projectsList: projectsList,
 		agentList:   agentList,
 		mcpList:     mcpList,
+		filterInput: filterInput,
 		promptInput: promptInput,
 	}
+}
+
+func (m Model) withFilterActive(value string) Model {
+	m.filterActive = true
+	m.filterInput.SetValue(value)
+	m.filterInput.Focus()
+	m.filterState = parseFilter(value)
+	return m
 }
 
 // Init initializes the model
@@ -477,6 +499,25 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case key.Matches(msg, keys.Quit):
 			m.quitting = true
 			return m, tea.Quit
+		}
+
+		if m.filterActive {
+			if msg.Type == tea.KeyEsc {
+				m.filterInput.SetValue("")
+				m.filterInput.Blur()
+				m.filterActive = false
+				m.filterState = FilterState{Raw: ""}
+				m.updateLists()
+				return m, nil
+			}
+			var cmd tea.Cmd
+			m.filterInput, cmd = m.filterInput.Update(msg)
+			m.filterState = parseFilter(m.filterInput.Value())
+			m.updateLists()
+			return m, cmd
+		}
+
+		switch {
 
 		case key.Matches(msg, keys.Tab):
 			m.activeTab = Tab((int(m.activeTab) + 1) % 3)
@@ -497,6 +538,14 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 		case key.Matches(msg, keys.FocusRight):
 			m.activePane = PaneMain
+			return m, nil
+
+		case key.Matches(msg, keys.Filter):
+			if m.activeTab == TabSessions || m.activeTab == TabAgents {
+				m.filterActive = true
+				m.filterInput.Focus()
+				return m, nil
+			}
 			return m, nil
 
 		case key.Matches(msg, keys.New):
@@ -730,18 +779,24 @@ func (m *Model) updateLists() {
 
 	// Update session list
 	sessionItems := make([]list.Item, 0, len(state.Sessions))
+	statusByAgent := map[string]tmux.Status{}
 	for _, s := range state.Sessions {
 		if selectedProject != "" && s.ProjectPath != selectedProject {
 			continue
 		}
 		status := m.tmuxClient.DetectStatus(s.Name)
+		if s.AgentName != "" {
+			if _, ok := statusByAgent[s.AgentName]; !ok {
+				statusByAgent[s.AgentName] = status
+			}
+		}
 		sessionItems = append(sessionItems, SessionItem{
 			Session:   s,
 			Status:    status,
 			AgentType: s.AgentType,
 		})
 	}
-	m.sessionList.SetItems(sessionItems)
+	m.sessionList.SetItems(filterSessionItems(sessionItems, m.filterState))
 
 	// Update agent list
 	agentItems := make([]list.Item, 0, len(state.Agents))
@@ -751,7 +806,7 @@ func (m *Model) updateLists() {
 		}
 		agentItems = append(agentItems, AgentItem{Agent: a})
 	}
-	m.agentList.SetItems(agentItems)
+	m.agentList.SetItems(filterAgentItems(agentItems, m.filterState, statusByAgent))
 }
 
 func (m *Model) updateMCPList() {
