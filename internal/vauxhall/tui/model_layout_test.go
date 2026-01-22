@@ -1,0 +1,50 @@
+package tui
+
+import (
+	"context"
+	"testing"
+
+	"github.com/charmbracelet/bubbles/list"
+
+	"github.com/mistakeknot/vauxpraudemonium/internal/vauxhall/aggregator"
+	"github.com/mistakeknot/vauxpraudemonium/internal/vauxhall/discovery"
+)
+
+type fakeAggLayout struct {
+	state aggregator.State
+}
+
+func (f *fakeAggLayout) GetState() aggregator.State { return f.state }
+func (f *fakeAggLayout) Refresh(ctx context.Context) error { return nil }
+func (f *fakeAggLayout) NewSession(string, string, string) error { return nil }
+func (f *fakeAggLayout) RestartSession(string, string, string) error { return nil }
+func (f *fakeAggLayout) RenameSession(string, string) error { return nil }
+func (f *fakeAggLayout) ForkSession(string, string, string) error { return nil }
+func (f *fakeAggLayout) AttachSession(string) error { return nil }
+func (f *fakeAggLayout) StartMCP(context.Context, string, string) error { return nil }
+func (f *fakeAggLayout) StopMCP(string, string) error { return nil }
+
+func TestFilterSessionsByProject(t *testing.T) {
+	agg := &fakeAggLayout{state: aggregator.State{
+		Projects: []discovery.Project{
+			{Path: "/p/one", Name: "one"},
+			{Path: "/p/two", Name: "two"},
+		},
+		Sessions: []aggregator.TmuxSession{
+			{Name: "a", ProjectPath: "/p/one"},
+			{Name: "b", ProjectPath: "/p/two"},
+		},
+	}}
+
+	m := New(agg)
+	m.projectsList.SetItems([]list.Item{
+		ProjectItem{Path: "", Name: "All"},
+		ProjectItem{Path: "/p/one", Name: "one"},
+	})
+	m.projectsList.Select(1)
+	m.updateLists()
+
+	if len(m.sessionList.Items()) != 1 {
+		t.Fatalf("expected 1 session, got %d", len(m.sessionList.Items()))
+	}
+}

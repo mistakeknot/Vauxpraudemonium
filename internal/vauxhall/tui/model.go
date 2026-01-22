@@ -72,7 +72,7 @@ type Model struct {
 	height      int
 	activeTab   Tab
 	sessionList list.Model
-	projectList list.Model
+	projectsList list.Model
 	agentList   list.Model
 	mcpList     list.Model
 	mcpProject  string
@@ -251,10 +251,10 @@ func New(agg aggregatorAPI) Model {
 	projectDelegate := list.NewDefaultDelegate()
 	projectDelegate.Styles.SelectedTitle = SelectedStyle
 	projectDelegate.Styles.NormalTitle = UnselectedStyle
-	projectList := list.New([]list.Item{}, projectDelegate, 0, 0)
-	projectList.Title = "Projects"
-	projectList.SetShowStatusBar(false)
-	projectList.SetFilteringEnabled(true)
+	projectsList := list.New([]list.Item{}, projectDelegate, 0, 0)
+	projectsList.Title = "Projects"
+	projectsList.SetShowStatusBar(false)
+	projectsList.SetFilteringEnabled(true)
 
 	// Create agent list
 	agentDelegate := list.NewDefaultDelegate()
@@ -283,7 +283,7 @@ func New(agg aggregatorAPI) Model {
 		tmuxClient:  tmux.NewClient(),
 		activeTab:   TabDashboard,
 		sessionList: sessionList,
-		projectList: projectList,
+		projectsList: projectsList,
 		agentList:   agentList,
 		mcpList:     mcpList,
 		promptInput: promptInput,
@@ -481,10 +481,10 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			if half < 4 {
 				half = h
 			}
-			m.projectList.SetSize(w, half)
+			m.projectsList.SetSize(w, half)
 			m.mcpList.SetSize(w, h-half)
 		} else {
-			m.projectList.SetSize(w, h)
+			m.projectsList.SetSize(w, h)
 			m.mcpList.SetSize(w, h/2)
 		}
 		m.agentList.SetSize(w, h)
@@ -514,7 +514,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if m.showMCP {
 			m.mcpList, cmd = m.mcpList.Update(msg)
 		} else {
-			m.projectList, cmd = m.projectList.Update(msg)
+			m.projectsList, cmd = m.projectsList.Update(msg)
 		}
 	case TabAgents:
 		m.agentList, cmd = m.agentList.Update(msg)
@@ -533,31 +533,46 @@ func (m Model) selectedSession() (aggregator.TmuxSession, bool) {
 }
 
 func (m Model) selectedProject() (ProjectItem, bool) {
-	item, ok := m.projectList.SelectedItem().(ProjectItem)
+	item, ok := m.projectsList.SelectedItem().(ProjectItem)
 	if !ok {
 		return ProjectItem{}, false
 	}
 	return item, true
 }
 
-func (m *Model) updateLists() {
-	state := m.agg.GetState()
+func (m Model) selectedProjectPath() string {
+	item, ok := m.projectsList.SelectedItem().(ProjectItem)
+	if !ok {
+		return ""
+	}
+	return item.Path
+}
 
-	// Update session list
-	sessionItems := make([]list.Item, len(state.Sessions))
-	for i, s := range state.Sessions {
-		status := m.tmuxClient.DetectStatus(s.Name)
-		sessionItems[i] = SessionItem{
-			Session:   s,
-			Status:    status,
-			AgentType: s.AgentType,
+func (m *Model) selectProjectPath(path string) {
+	items := m.projectsList.Items()
+	for i, item := range items {
+		project, ok := item.(ProjectItem)
+		if !ok {
+			continue
+		}
+		if project.Path == path {
+			m.projectsList.Select(i)
+			return
 		}
 	}
-	m.sessionList.SetItems(sessionItems)
+	if len(items) > 0 {
+		m.projectsList.Select(0)
+	}
+}
+
+func (m *Model) updateLists() {
+	state := m.agg.GetState()
+	prevProject := m.selectedProjectPath()
 
 	// Update project list
-	projectItems := make([]list.Item, len(state.Projects))
-	for i, p := range state.Projects {
+	projectItems := make([]list.Item, 0, len(state.Projects)+1)
+	projectItems = append(projectItems, ProjectItem{Path: "", Name: "All Projects"})
+	for _, p := range state.Projects {
 		item := ProjectItem{
 			Path:           p.Path,
 			Name:           filepath.Base(p.Path),
@@ -574,17 +589,38 @@ func (m *Model) updateLists() {
 				Done:       p.TaskStats.Done,
 			}
 		}
-		projectItems[i] = item
+		projectItems = append(projectItems, item)
 	}
-	m.projectList.SetItems(projectItems)
+	m.projectsList.SetItems(projectItems)
+	m.selectProjectPath(prevProject)
 	if m.showMCP {
 		m.updateMCPList()
 	}
 
+	selectedProject := m.selectedProjectPath()
+
+	// Update session list
+	sessionItems := make([]list.Item, 0, len(state.Sessions))
+	for _, s := range state.Sessions {
+		if selectedProject != "" && s.ProjectPath != selectedProject {
+			continue
+		}
+		status := m.tmuxClient.DetectStatus(s.Name)
+		sessionItems = append(sessionItems, SessionItem{
+			Session:   s,
+			Status:    status,
+			AgentType: s.AgentType,
+		})
+	}
+	m.sessionList.SetItems(sessionItems)
+
 	// Update agent list
-	agentItems := make([]list.Item, len(state.Agents))
-	for i, a := range state.Agents {
-		agentItems[i] = AgentItem{Agent: a}
+	agentItems := make([]list.Item, 0, len(state.Agents))
+	for _, a := range state.Agents {
+		if selectedProject != "" && a.ProjectPath != selectedProject {
+			continue
+		}
+		agentItems = append(agentItems, AgentItem{Agent: a})
 	}
 	m.agentList.SetItems(agentItems)
 }
@@ -625,13 +661,13 @@ func (m Model) View() string {
 			mcpTitle := SubtitleStyle.Render("MCP")
 			content = lipgloss.JoinVertical(lipgloss.Left,
 				projectTitle,
-				m.projectList.View(),
+				m.projectsList.View(),
 				"",
 				mcpTitle,
 				m.mcpList.View(),
 			)
 		} else {
-			content = m.projectList.View()
+			content = m.projectsList.View()
 		}
 	case TabAgents:
 		content = m.agentList.View()
