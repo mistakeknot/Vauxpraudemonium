@@ -110,6 +110,35 @@ func parseFilter(input string) FilterState {
 	return FilterState{Raw: raw, Terms: terms, Statuses: statuses}
 }
 
+func filterSessionItems(items []list.Item, state FilterState) []list.Item {
+	if state.Raw == "" {
+		return items
+	}
+	filtered := make([]list.Item, 0, len(items))
+	for _, item := range items {
+		sessionItem, ok := item.(SessionItem)
+		if !ok {
+			filtered = append(filtered, item)
+			continue
+		}
+		if len(state.Statuses) > 0 && !state.Statuses[sessionItem.Status] {
+			continue
+		}
+		haystack := strings.ToLower(sessionItem.Title() + " " + sessionItem.Description())
+		matches := true
+		for _, term := range state.Terms {
+			if !strings.Contains(haystack, term) {
+				matches = false
+				break
+			}
+		}
+		if matches {
+			filtered = append(filtered, item)
+		}
+	}
+	return filtered
+}
+
 // Model is the main TUI model
 type Model struct {
 	agg         aggregatorAPI
