@@ -36,6 +36,7 @@ func TestFilterUIHiddenWhenEmpty(t *testing.T) {
 
 func TestFilterUIShownWhenActive(t *testing.T) {
 	m := New(&fakeAggLayout{}, "")
+	m.activeTab = TabSessions
 	m.width = 80
 	m.height = 20
 	m = m.withFilterActive("codex")
@@ -72,5 +73,44 @@ func TestFilterAllowsArrowKeys(t *testing.T) {
 	mm := updated.(Model)
 	if mm.sessionList.Index() != 1 {
 		t.Fatalf("expected selection to move with arrow key")
+	}
+}
+
+func TestFilterPersistsAcrossTabs(t *testing.T) {
+	m := New(&fakeAggLayout{}, "")
+	m.activeTab = TabSessions
+	m = m.withFilterActive("codex")
+	updated, _ := m.Update(tea.KeyMsg{Type: tea.KeyTab})
+	mm := updated.(Model)
+	if mm.activeTab != TabAgents {
+		t.Fatalf("expected tab to advance to agents")
+	}
+	if mm.filterInput.Value() != "codex" || mm.filterState.Raw != "codex" {
+		t.Fatalf("expected filter to persist across tabs")
+	}
+	if mm.filterActive {
+		t.Fatalf("expected filter editing to stop on tab switch")
+	}
+}
+
+func TestFilterHiddenOnDashboard(t *testing.T) {
+	m := New(&fakeAggLayout{}, "")
+	m.width = 80
+	m.height = 20
+	m.filterState = parseFilter("codex")
+	m.activeTab = TabDashboard
+	view := m.View()
+	if strings.Contains(view, "Filter:") {
+		t.Fatalf("did not expect filter line on dashboard")
+	}
+}
+
+func TestFooterShowsFilterHintWhenActive(t *testing.T) {
+	m := New(&fakeAggLayout{}, "")
+	m.width = 120
+	m = m.withFilterActive("codex")
+	footer := m.renderFooter()
+	if !strings.Contains(footer, "esc/enter") {
+		t.Fatalf("expected filter hint in footer")
 	}
 }

@@ -456,6 +456,14 @@ func (m Model) withFilterActive(value string) Model {
 	return m
 }
 
+func (m *Model) stopFilterEditing() {
+	if !m.filterActive {
+		return
+	}
+	m.filterInput.Blur()
+	m.filterActive = false
+}
+
 func (m *Model) statusForSession(name string) tmux.Status {
 	if m.tmuxClient == nil {
 		return tmux.StatusUnknown
@@ -572,11 +580,13 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		switch {
 
 		case key.Matches(msg, keys.Tab):
+			m.stopFilterEditing()
 			m.activeTab = Tab((int(m.activeTab) + 1) % 3)
 			m.activePane = PaneMain
 			return m, nil
 
 		case key.Matches(msg, keys.ShiftTab):
+			m.stopFilterEditing()
 			m.activeTab = Tab((int(m.activeTab) + 2) % 3)
 			m.activePane = PaneMain
 			return m, nil
@@ -688,14 +698,17 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, nil
 
 		case key.Matches(msg, keys.Number[0]):
+			m.stopFilterEditing()
 			m.activeTab = TabDashboard
 			m.activePane = PaneMain
 			return m, nil
 		case key.Matches(msg, keys.Number[1]):
+			m.stopFilterEditing()
 			m.activeTab = TabSessions
 			m.activePane = PaneMain
 			return m, nil
 		case key.Matches(msg, keys.Number[2]):
+			m.stopFilterEditing()
 			m.activeTab = TabAgents
 			m.activePane = PaneMain
 			return m, nil
@@ -940,6 +953,9 @@ func (m Model) renderHeader() string {
 }
 
 func (m Model) renderFilterLine() string {
+	if m.activeTab != TabSessions && m.activeTab != TabAgents {
+		return ""
+	}
 	if m.filterState.Raw == "" && m.filterInput.Value() == "" {
 		return ""
 	}
@@ -960,6 +976,9 @@ func (m Model) renderFooter() string {
 		HelpKeyStyle.Render("m") + HelpDescStyle.Render(" mcp • ") +
 		HelpKeyStyle.Render("space") + HelpDescStyle.Render(" toggle • ") +
 		HelpKeyStyle.Render("q") + HelpDescStyle.Render(" quit")
+	if m.filterActive {
+		help += HelpDescStyle.Render(" • ") + HelpKeyStyle.Render("esc/enter") + HelpDescStyle.Render(" exit filter")
+	}
 
 	lastUpdate := ""
 	if !m.lastRefresh.IsZero() {
