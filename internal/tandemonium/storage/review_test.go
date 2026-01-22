@@ -86,3 +86,33 @@ func TestRejectTaskTransactionRollsBack(t *testing.T) {
 		t.Fatalf("expected review, got %q", task.Status)
 	}
 }
+
+func TestRejectTaskDoesNotSetRejected(t *testing.T) {
+	db, err := OpenTemp()
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer db.Close()
+	if err := Migrate(db); err != nil {
+		t.Fatal(err)
+	}
+	if err := InsertTask(db, Task{ID: "TAND-004", Title: "Test", Status: "review"}); err != nil {
+		t.Fatal(err)
+	}
+	if err := AddToReviewQueue(db, "TAND-004"); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := db.Exec(`
+CREATE TRIGGER reject_status_block
+BEFORE UPDATE ON tasks
+WHEN NEW.status = 'rejected'
+BEGIN
+	SELECT RAISE(FAIL, 'rejected status not allowed');
+END;
+`); err != nil {
+		t.Fatal(err)
+	}
+	if err := RejectTask(db, "TAND-004"); err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+}

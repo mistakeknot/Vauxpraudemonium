@@ -50,10 +50,6 @@ func RejectTask(db *sql.DB, id string) error {
 	if err != nil {
 		return err
 	}
-	if _, err := tx.Exec(`UPDATE tasks SET status = ? WHERE id = ?`, "rejected", id); err != nil {
-		_ = tx.Rollback()
-		return err
-	}
 	if _, err := tx.Exec(`UPDATE tasks SET status = ? WHERE id = ?`, "ready", id); err != nil {
 		_ = tx.Rollback()
 		return err

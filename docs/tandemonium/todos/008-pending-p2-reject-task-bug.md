@@ -1,5 +1,5 @@
 ---
-status: pending
+status: done
 priority: p2
 issue_id: "008"
 tags: [bug, data-integrity, code-review]
@@ -77,16 +77,17 @@ Clarify intended behavior, then fix accordingly. Most likely Option 1 is correct
 
 ## Acceptance Criteria
 
-- [ ] Determine intended rejection flow
-- [ ] Remove redundant status update
-- [ ] Add test for rejection behavior
-- [ ] Document expected state transitions
+- [x] Determine intended rejection flow
+- [x] Remove redundant status update
+- [x] Add test for rejection behavior
+- [x] Document expected state transitions
 
 ## Work Log
 
 | Date | Action | Learnings |
 |------|--------|-----------|
 | 2026-01-12 | Finding identified during pattern/data-integrity review | Likely copy-paste error |
+| 2026-01-22 | Removed redundant rejected status update and added regression test | Reject returns tasks to ready |
 
 ## Resources
 
