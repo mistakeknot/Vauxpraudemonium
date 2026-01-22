@@ -67,3 +67,16 @@ func LoadSummaries(dir string) ([]Summary, []string) {
 	}
 	return out, warnings
 }
+
+func UpdateStatus(path string, status string) error {
+	spec, err := LoadSpec(path)
+	if err != nil {
+		return err
+	}
+	spec.Status = status
+	out, err := yaml.Marshal(&spec)
+	if err != nil {
+		return err
+	}
+	return os.WriteFile(path, out, 0o644)
+}
