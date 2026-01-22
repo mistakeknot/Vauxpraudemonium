@@ -30,6 +30,10 @@ type aggregatorAPI interface {
 	StopMCP(projectPath, component string) error
 }
 
+type statusClient interface {
+	DetectStatus(name string) tmux.Status
+}
+
 // Tab represents a view tab
 type Tab int
 
@@ -74,6 +78,11 @@ type FilterState struct {
 	Statuses map[tmux.Status]bool
 }
 
+type cachedStatus struct {
+	status tmux.Status
+	at     time.Time
+}
+
 func parseFilter(input string) FilterState {
 	raw := strings.TrimSpace(input)
 	if raw == "" {
@@ -108,6 +117,15 @@ func parseFilter(input string) FilterState {
 		statuses = nil
 	}
 	return FilterState{Raw: raw, Terms: terms, Statuses: statuses}
+}
+
+func isFilterEditKey(msg tea.KeyMsg) bool {
+	switch msg.Type {
+	case tea.KeyRunes, tea.KeySpace, tea.KeyBackspace, tea.KeyDelete, tea.KeyCtrlW, tea.KeyCtrlU:
+		return true
+	default:
+		return false
+	}
 }
 
 func filterSessionItems(items []list.Item, state FilterState) []list.Item {
@@ -174,7 +192,10 @@ func filterAgentItems(items []list.Item, state FilterState, statusByAgent map[st
 // Model is the main TUI model
 type Model struct {
 	agg         aggregatorAPI
-	tmuxClient  *tmux.Client
+	tmuxClient  statusClient
+	statusCache map[string]cachedStatus
+	statusTTL   time.Duration
+	now         func() time.Time
 	width       int
 	height      int
 	activeTab   Tab
@@ -412,6 +433,9 @@ func New(agg aggregatorAPI, buildInfo string) Model {
 	return Model{
 		agg:         agg,
 		tmuxClient:  tmux.NewClient(),
+		statusCache: make(map[string]cachedStatus),
+		statusTTL:   2 * time.Second,
+		now:         time.Now,
 		activeTab:   TabDashboard,
 		activePane:  PaneMain,
 		buildInfo:   buildInfo,
@@ -430,6 +454,27 @@ func (m Model) withFilterActive(value string) Model {
 	m.filterInput.Focus()
 	m.filterState = parseFilter(value)
 	return m
+}
+
+func (m *Model) statusForSession(name string) tmux.Status {
+	if m.tmuxClient == nil {
+		return tmux.StatusUnknown
+	}
+	if m.statusTTL <= 0 {
+		return m.tmuxClient.DetectStatus(name)
+	}
+	now := time.Now()
+	if m.now != nil {
+		now = m.now()
+	}
+	if cached, ok := m.statusCache[name]; ok {
+		if now.Sub(cached.at) < m.statusTTL {
+			return cached.status
+		}
+	}
+	status := m.tmuxClient.DetectStatus(name)
+	m.statusCache[name] = cachedStatus{status: status, at: now}
+	return status
 }
 
 // Init initializes the model
@@ -510,11 +555,18 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.updateLists()
 				return m, nil
 			}
-			var cmd tea.Cmd
-			m.filterInput, cmd = m.filterInput.Update(msg)
-			m.filterState = parseFilter(m.filterInput.Value())
-			m.updateLists()
-			return m, cmd
+			if msg.Type == tea.KeyEnter {
+				m.filterInput.Blur()
+				m.filterActive = false
+				return m, nil
+			}
+			if isFilterEditKey(msg) {
+				var cmd tea.Cmd
+				m.filterInput, cmd = m.filterInput.Update(msg)
+				m.filterState = parseFilter(m.filterInput.Value())
+				m.updateLists()
+				return m, cmd
+			}
 		}
 
 		switch {
@@ -784,7 +836,7 @@ func (m *Model) updateLists() {
 		if selectedProject != "" && s.ProjectPath != selectedProject {
 			continue
 		}
-		status := m.tmuxClient.DetectStatus(s.Name)
+		status := m.statusForSession(s.Name)
 		if s.AgentName != "" {
 			if _, ok := statusByAgent[s.AgentName]; !ok {
 				statusByAgent[s.AgentName] = status
@@ -1009,7 +1061,7 @@ func (m Model) renderDashboard() string {
 	// Count active sessions
 	activeCount := 0
 	for _, s := range state.Sessions {
-		status := m.tmuxClient.DetectStatus(s.Name)
+		status := m.statusForSession(s.Name)
 		if status == tmux.StatusRunning || status == tmux.StatusWaiting {
 			activeCount++
 		}
@@ -1030,7 +1082,7 @@ func (m Model) renderDashboard() string {
 		if i >= 5 {
 			break
 		}
-		status := m.tmuxClient.DetectStatus(s.Name)
+		status := m.statusForSession(s.Name)
 		name := s.Name
 		if s.AgentName != "" {
 			name = s.AgentName
