@@ -112,8 +112,6 @@ func renderDualColumnLayout(leftTitle, leftContent, rightTitle, rightContent str
 
 	leftPanel = ensureExactHeight(leftPanel, height)
 	rightPanel = ensureExactHeight(rightPanel, height)
-	leftPanel = ensureExactWidth(leftPanel, leftWidth)
-	rightPanel = ensureExactWidth(rightPanel, rightWidth)
 
 	separatorLines := make([]string, height)
 	for i := range separatorLines {

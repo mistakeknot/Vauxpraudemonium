@@ -38,3 +38,10 @@ func TestPanelStyleAddsBorders(t *testing.T) {
 		t.Fatalf("expected bordered panels")
 	}
 }
+
+func TestRenderDualColumnLayoutNoEllipses(t *testing.T) {
+	out := renderDualColumnLayout("PRDs", "left", "DETAILS", "right", 120, 6)
+	if strings.Contains(out, "...") {
+		t.Fatalf("did not expect ellipses in layout")
+	}
+}
