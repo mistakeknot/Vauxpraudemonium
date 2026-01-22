@@ -79,6 +79,7 @@ type Model struct {
 	height      int
 	activeTab   Tab
 	activePane  Pane
+	buildInfo   string
 	sessionList list.Model
 	projectsList list.Model
 	agentList   list.Model
@@ -255,7 +256,7 @@ type errMsg error
 type tickMsg time.Time
 
 // New creates a new TUI model
-func New(agg aggregatorAPI) Model {
+func New(agg aggregatorAPI, buildInfo string) Model {
 	// Create session list
 	sessionDelegate := list.NewDefaultDelegate()
 	sessionDelegate.Styles.SelectedTitle = SelectedStyle
@@ -301,6 +302,7 @@ func New(agg aggregatorAPI) Model {
 		tmuxClient:  tmux.NewClient(),
 		activeTab:   TabDashboard,
 		activePane:  PaneMain,
+		buildInfo:   buildInfo,
 		sessionList: sessionList,
 		projectsList: projectsList,
 		agentList:   agentList,
@@ -717,6 +719,9 @@ func (m Model) View() string {
 
 func (m Model) renderHeader() string {
 	title := TitleStyle.Render("⚡ Vauxhall")
+	if m.buildInfo != "" {
+		title = title + " " + LabelStyle.Render(m.buildInfo)
+	}
 
 	// Render tabs
 	tabs := make([]string, 4)

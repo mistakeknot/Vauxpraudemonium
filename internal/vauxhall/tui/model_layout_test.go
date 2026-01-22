@@ -2,6 +2,7 @@ package tui
 
 import (
 	"context"
+	"strings"
 	"testing"
 
 	"github.com/charmbracelet/bubbles/list"
@@ -37,7 +38,7 @@ func TestFilterSessionsByProject(t *testing.T) {
 		},
 	}}
 
-	m := New(agg)
+	m := New(agg, "")
 	m.projectsList.SetItems([]list.Item{
 		ProjectItem{Path: "", Name: "All"},
 		ProjectItem{Path: "/p/one", Name: "one"},
@@ -52,7 +53,7 @@ func TestFilterSessionsByProject(t *testing.T) {
 
 func TestFocusSwitching(t *testing.T) {
 	agg := &fakeAggLayout{state: aggregator.State{}}
-	m := New(agg)
+	m := New(agg, "")
 	m.activePane = PaneMain
 
 	mm, _ := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'['}})
@@ -69,7 +70,7 @@ func TestRightPaneTabs(t *testing.T) {
 }
 
 func TestTwoPaneLayoutClamp(t *testing.T) {
-	m := New(&fakeAggLayout{})
+	m := New(&fakeAggLayout{}, "")
 	m.width = 40
 	m.height = 10
 	defer func() {
@@ -78,4 +79,12 @@ func TestTwoPaneLayoutClamp(t *testing.T) {
 		}
 	}()
 	_ = m.renderTwoPane("left", "right")
+}
+
+func TestHeaderIncludesBuildInfo(t *testing.T) {
+	m := New(&fakeAggLayout{}, "rev abc123")
+	header := m.renderHeader()
+	if !strings.Contains(header, "rev abc123") {
+		t.Fatalf("expected build info in header")
+	}
 }

@@ -8,6 +8,8 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"runtime/debug"
+	"strings"
 	"syscall"
 	"time"
 
@@ -81,13 +83,46 @@ func main() {
 }
 
 func runTUI(agg *aggregator.Aggregator) {
-	m := tui.New(agg)
+	m := tui.New(agg, buildInfoString())
 	p := tea.NewProgram(m, tea.WithAltScreen())
 
 	if _, err := p.Run(); err != nil {
 		fmt.Printf("Error running TUI: %v\n", err)
 		os.Exit(1)
 	}
+}
+
+func buildInfoString() string {
+	if info, ok := debug.ReadBuildInfo(); ok {
+		var rev, ts, modified string
+		for _, setting := range info.Settings {
+			switch setting.Key {
+			case "vcs.revision":
+				rev = setting.Value
+			case "vcs.time":
+				ts = setting.Value
+			case "vcs.modified":
+				modified = setting.Value
+			}
+		}
+		if rev != "" {
+			short := rev
+			if len(short) > 7 {
+				short = short[:7]
+			}
+			stamp := short
+			if ts != "" {
+				if parsed, err := time.Parse(time.RFC3339, ts); err == nil {
+					stamp = stamp + " " + parsed.Format("2006-01-02 15:04")
+				}
+			}
+			if modified == "true" {
+				stamp = stamp + "*"
+			}
+			return "build " + strings.TrimSpace(stamp)
+		}
+	}
+	return ""
 }
 
 func runWeb(cfg *config.Config, agg *aggregator.Aggregator) {

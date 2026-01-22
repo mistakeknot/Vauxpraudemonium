@@ -35,7 +35,7 @@ func TestRestartKeyTriggersAction(t *testing.T) {
 		ProjectPath: "/root/projects/demo",
 		AgentType:   "claude",
 	}}}}
-	m := New(agg)
+	m := New(agg, "")
 	m.activeTab = TabSessions
 	m.updateLists()
 
@@ -51,7 +51,7 @@ func TestForkKeyShowsPrompt(t *testing.T) {
 		ProjectPath: "/root/projects/demo",
 		AgentType:   "claude",
 	}}}}
-	m := New(agg)
+	m := New(agg, "")
 	m.activeTab = TabSessions
 	m.updateLists()
 
@@ -74,7 +74,7 @@ func TestMCPPanelToggle(t *testing.T) {
 			},
 		},
 	}}
-	m := New(agg)
+	m := New(agg, "")
 	m.activeTab = TabDashboard
 	m.projectsList.SetItems([]list.Item{ProjectItem{Path: "/root/projects/demo", Name: "demo"}})
 
