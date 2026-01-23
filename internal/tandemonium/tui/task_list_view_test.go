@@ -13,3 +13,12 @@ func TestFleetViewShowsTaskList(t *testing.T) {
 		t.Fatalf("expected task list in view")
 	}
 }
+
+func TestRenderTaskRowUsesSelectedStyle(t *testing.T) {
+	task := TaskItem{ID: "T1", Title: "One", Status: "todo"}
+	got := renderTaskRow(task, true)
+	want := SelectedStyle.Render(formatTaskRow(task))
+	if got != want {
+		t.Fatalf("expected selected style row")
+	}
+}

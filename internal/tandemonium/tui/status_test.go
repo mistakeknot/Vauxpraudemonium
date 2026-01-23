@@ -14,3 +14,11 @@ func TestViewIncludesStatusLine(t *testing.T) {
 		t.Fatalf("expected status line, got %q", view)
 	}
 }
+
+func TestStatusBadgeUsesStyledLabel(t *testing.T) {
+	got := statusBadge("in_progress")
+	want := StatusRunningStyle.Render("[RUN]")
+	if got != want {
+		t.Fatalf("expected styled badge")
+	}
+}

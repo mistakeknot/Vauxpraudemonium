@@ -722,10 +722,7 @@ func (m Model) View() string {
 		if i == m.SelectedTask {
 			prefix = "> "
 		}
-		row := formatTaskRow(t)
-		if i != m.SelectedTask {
-			row = colorize(row, "90")
-		}
+		row := renderTaskRow(t, i == m.SelectedTask)
 		left = append(left, prefix+row)
 	}
 	if len(m.TaskList) == 0 {
@@ -915,36 +912,36 @@ func (m *Model) currentTaskDetail() TaskDetail {
 func statusBadge(status string) string {
 	switch status {
 	case "in_progress":
-		return colorize("[RUN]", "32")
+		return StatusRunningStyle.Render("[RUN]")
 	case "review":
-		return colorize("[REV]", "33")
+		return StatusWaitingStyle.Render("[REV]")
 	case "blocked":
-		return colorize("[BLK]", "31")
+		return StatusErrorStyle.Render("[BLK]")
 	case "done":
-		return colorize("[DONE]", "32")
+		return StatusRunningStyle.Render("[DONE]")
 	case "assigned":
-		return colorize("[ASGN]", "34")
+		return StatusWaitingStyle.Render("[ASGN]")
 	case "todo":
-		return colorize("[TODO]", "90")
+		return StatusIdleStyle.Render("[TODO]")
 	default:
-		return colorize("[UNKN]", "90")
+		return StatusIdleStyle.Render("[UNKN]")
 	}
 }
 
 func sessionBadge(state string) string {
 	switch state {
 	case "working":
-		return colorize("[RUN]", "32")
+		return StatusRunningStyle.Render("[RUN]")
 	case "paused":
-		return colorize("[PAUS]", "33")
+		return StatusWaitingStyle.Render("[PAUS]")
 	case "done":
-		return colorize("[DONE]", "32")
+		return StatusRunningStyle.Render("[DONE]")
 	case "stopped":
-		return colorize("[STOP]", "31")
+		return StatusErrorStyle.Render("[STOP]")
 	case "":
-		return colorize("[----]", "90")
+		return StatusIdleStyle.Render("[----]")
 	default:
-		return colorize("[....]", "90")
+		return StatusIdleStyle.Render("[....]")
 	}
 }
 
@@ -972,6 +969,14 @@ func formatTaskRow(task TaskItem) string {
 		age,
 		asg,
 	)
+}
+
+func renderTaskRow(task TaskItem, selected bool) string {
+	row := formatTaskRow(task)
+	if selected {
+		return SelectedStyle.Render(row)
+	}
+	return UnselectedStyle.Render(row)
 }
 
 func padRight(value string, width int) string {
@@ -1071,24 +1076,6 @@ func matchesFilter(task TaskItem, mode string) bool {
 	default:
 		return true
 	}
-}
-
-func colorize(text, code string) string {
-	if !useColor() {
-		return text
-	}
-	return "\x1b[" + code + "m" + text + "\x1b[0m"
-}
-
-func useColor() bool {
-	if os.Getenv("NO_COLOR") != "" {
-		return false
-	}
-	term := strings.ToLower(os.Getenv("TERM"))
-	if term == "" || term == "dumb" {
-		return false
-	}
-	return true
 }
 
 func maxLineLen(lines []string) int {
