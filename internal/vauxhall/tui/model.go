@@ -105,6 +105,9 @@ func parseFilter(input string) FilterState {
 			case "error":
 				statuses[tmux.StatusError] = true
 				continue
+			case "unknown":
+				statuses[tmux.StatusUnknown] = true
+				continue
 			default:
 				token = strings.TrimPrefix(token, "!")
 			}
@@ -117,6 +120,35 @@ func parseFilter(input string) FilterState {
 		statuses = nil
 	}
 	return FilterState{Raw: raw, Terms: terms, Statuses: statuses}
+}
+
+func (m *Model) filterStateFor(tab Tab) FilterState {
+	if m.filterStates == nil {
+		return FilterState{Raw: ""}
+	}
+	if state, ok := m.filterStates[tab]; ok {
+		return state
+	}
+	return FilterState{Raw: ""}
+}
+
+func (m *Model) setFilterState(tab Tab, state FilterState) {
+	if m.filterStates == nil {
+		m.filterStates = map[Tab]FilterState{}
+	}
+	if state.Raw == "" && len(state.Terms) == 0 && len(state.Statuses) == 0 {
+		state = FilterState{Raw: ""}
+	}
+	m.filterStates[tab] = state
+}
+
+func (m *Model) syncFilterInputForTab(tab Tab) {
+	if tab != TabSessions && tab != TabAgents {
+		m.filterInput.SetValue("")
+		return
+	}
+	state := m.filterStateFor(tab)
+	m.filterInput.SetValue(state.Raw)
 }
 
 func isFilterEditKey(msg tea.KeyMsg) bool {
@@ -170,7 +202,10 @@ func filterAgentItems(items []list.Item, state FilterState, statusByAgent map[st
 		}
 		if len(state.Statuses) > 0 {
 			status, ok := statusByAgent[agentItem.Agent.Name]
-			if !ok || !state.Statuses[status] {
+			if !ok {
+				status = tmux.StatusUnknown
+			}
+			if !state.Statuses[status] {
 				continue
 			}
 		}
@@ -209,7 +244,7 @@ type Model struct {
 	showMCP     bool
 	filterActive bool
 	filterInput  textinput.Model
-	filterState  FilterState
+	filterStates map[Tab]FilterState
 	promptMode  promptMode
 	promptInput textinput.Model
 	promptSess  *aggregator.TmuxSession
@@ -444,6 +479,10 @@ func New(agg aggregatorAPI, buildInfo string) Model {
 		agentList:   agentList,
 		mcpList:     mcpList,
 		filterInput: filterInput,
+		filterStates: map[Tab]FilterState{
+			TabSessions: {Raw: ""},
+			TabAgents:   {Raw: ""},
+		},
 		promptInput: promptInput,
 	}
 }
@@ -452,13 +491,16 @@ func (m Model) withFilterActive(value string) Model {
 	m.filterActive = true
 	m.filterInput.SetValue(value)
 	m.filterInput.Focus()
-	m.filterState = parseFilter(value)
+	m.setFilterState(m.activeTab, parseFilter(value))
 	return m
 }
 
 func (m *Model) stopFilterEditing() {
 	if !m.filterActive {
 		return
+	}
+	if m.activeTab == TabSessions || m.activeTab == TabAgents {
+		m.setFilterState(m.activeTab, parseFilter(m.filterInput.Value()))
 	}
 	m.filterInput.Blur()
 	m.filterActive = false
@@ -559,19 +601,20 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.filterInput.SetValue("")
 				m.filterInput.Blur()
 				m.filterActive = false
-				m.filterState = FilterState{Raw: ""}
+				if m.activeTab == TabSessions || m.activeTab == TabAgents {
+					m.setFilterState(m.activeTab, FilterState{Raw: ""})
+				}
 				m.updateLists()
 				return m, nil
 			}
 			if msg.Type == tea.KeyEnter {
-				m.filterInput.Blur()
-				m.filterActive = false
+				m.stopFilterEditing()
 				return m, nil
 			}
 			if isFilterEditKey(msg) {
 				var cmd tea.Cmd
 				m.filterInput, cmd = m.filterInput.Update(msg)
-				m.filterState = parseFilter(m.filterInput.Value())
+				m.setFilterState(m.activeTab, parseFilter(m.filterInput.Value()))
 				m.updateLists()
 				return m, cmd
 			}
@@ -583,12 +626,14 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.stopFilterEditing()
 			m.activeTab = Tab((int(m.activeTab) + 1) % 3)
 			m.activePane = PaneMain
+			m.syncFilterInputForTab(m.activeTab)
 			return m, nil
 
 		case key.Matches(msg, keys.ShiftTab):
 			m.stopFilterEditing()
 			m.activeTab = Tab((int(m.activeTab) + 2) % 3)
 			m.activePane = PaneMain
+			m.syncFilterInputForTab(m.activeTab)
 			return m, nil
 
 		case key.Matches(msg, keys.Refresh):
@@ -605,6 +650,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case key.Matches(msg, keys.Filter):
 			if m.activeTab == TabSessions || m.activeTab == TabAgents {
 				m.filterActive = true
+				m.syncFilterInputForTab(m.activeTab)
 				m.filterInput.Focus()
 				return m, nil
 			}
@@ -701,16 +747,19 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.stopFilterEditing()
 			m.activeTab = TabDashboard
 			m.activePane = PaneMain
+			m.syncFilterInputForTab(m.activeTab)
 			return m, nil
 		case key.Matches(msg, keys.Number[1]):
 			m.stopFilterEditing()
 			m.activeTab = TabSessions
 			m.activePane = PaneMain
+			m.syncFilterInputForTab(m.activeTab)
 			return m, nil
 		case key.Matches(msg, keys.Number[2]):
 			m.stopFilterEditing()
 			m.activeTab = TabAgents
 			m.activePane = PaneMain
+			m.syncFilterInputForTab(m.activeTab)
 			return m, nil
 		}
 
@@ -861,7 +910,7 @@ func (m *Model) updateLists() {
 			AgentType: s.AgentType,
 		})
 	}
-	m.sessionList.SetItems(filterSessionItems(sessionItems, m.filterState))
+	m.sessionList.SetItems(filterSessionItems(sessionItems, m.filterStateFor(TabSessions)))
 
 	// Update agent list
 	agentItems := make([]list.Item, 0, len(state.Agents))
@@ -871,7 +920,7 @@ func (m *Model) updateLists() {
 		}
 		agentItems = append(agentItems, AgentItem{Agent: a})
 	}
-	m.agentList.SetItems(filterAgentItems(agentItems, m.filterState, statusByAgent))
+	m.agentList.SetItems(filterAgentItems(agentItems, m.filterStateFor(TabAgents), statusByAgent))
 }
 
 func (m *Model) updateMCPList() {
@@ -956,13 +1005,14 @@ func (m Model) renderFilterLine() string {
 	if m.activeTab != TabSessions && m.activeTab != TabAgents {
 		return ""
 	}
-	if m.filterState.Raw == "" && m.filterInput.Value() == "" {
+	state := m.filterStateFor(m.activeTab)
+	if state.Raw == "" && m.filterInput.Value() == "" {
 		return ""
 	}
 	if m.filterActive {
 		return LabelStyle.Render("Filter: ") + m.filterInput.View()
 	}
-	return LabelStyle.Render("Filter: " + m.filterState.Raw)
+	return LabelStyle.Render("Filter: " + state.Raw)
 }
 
 func (m Model) renderFooter() string {
