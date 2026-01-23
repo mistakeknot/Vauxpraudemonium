@@ -1,5 +1,5 @@
 ---
-status: pending
+status: done
 priority: p2
 issue_id: "009"
 tags: [data-integrity, database, code-review]
@@ -81,16 +81,17 @@ Implement Option 1. Enable foreign_keys PRAGMA and add constraints.
 
 ## Acceptance Criteria
 
-- [ ] PRAGMA foreign_keys = ON set on connection
-- [ ] Foreign keys added to review_queue and sessions
-- [ ] ON DELETE CASCADE behavior verified
-- [ ] Tests verify orphan prevention
+- [x] PRAGMA foreign_keys = ON set on connection
+- [x] Foreign keys added to review_queue and sessions
+- [x] ON DELETE CASCADE behavior verified
+- [x] Tests verify orphan prevention
 
 ## Work Log
 
 | Date | Action | Learnings |
 |------|--------|-----------|
 | 2026-01-12 | Finding identified during data integrity review | SQLite FKs off by default |
+| 2026-01-22 | Added FK constraints + PRAGMA enablement with tests | New DBs enforce integrity |
 
 ## Resources
 
