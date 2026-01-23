@@ -19,6 +19,16 @@ func TestFilterParsesStatusTokens(t *testing.T) {
 	}
 }
 
+func TestFilterParsesUnknownStatusToken(t *testing.T) {
+	state := parseFilter("!unknown codex")
+	if !state.Statuses[tmux.StatusUnknown] {
+		t.Fatalf("expected unknown status")
+	}
+	if len(state.Terms) != 1 || state.Terms[0] != "codex" {
+		t.Fatalf("expected codex term")
+	}
+}
+
 func TestSessionFilterAppliesStatusAndText(t *testing.T) {
 	items := []list.Item{
 		SessionItem{Session: aggregator.TmuxSession{Name: "codex-a"}, Status: tmux.StatusWaiting},
@@ -46,6 +56,25 @@ func TestAgentFilterUsesLinkedSessionStatus(t *testing.T) {
 		"Rose":   tmux.StatusRunning,
 	}
 	state := parseFilter("!waiting")
+	filtered := filterAgentItems(items, state, statusByAgent)
+	if len(filtered) != 1 {
+		t.Fatalf("expected 1 item, got %d", len(filtered))
+	}
+	got := filtered[0].(AgentItem)
+	if got.Agent.Name != "Copper" {
+		t.Fatalf("unexpected agent: %s", got.Agent.Name)
+	}
+}
+
+func TestAgentFilterMatchesUnknownStatus(t *testing.T) {
+	items := []list.Item{
+		AgentItem{Agent: aggregator.Agent{Name: "Copper"}},
+		AgentItem{Agent: aggregator.Agent{Name: "Rose"}},
+	}
+	statusByAgent := map[string]tmux.Status{
+		"Rose": tmux.StatusRunning,
+	}
+	state := parseFilter("!unknown")
 	filtered := filterAgentItems(items, state, statusByAgent)
 	if len(filtered) != 1 {
 		t.Fatalf("expected 1 item, got %d", len(filtered))
