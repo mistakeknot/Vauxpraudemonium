@@ -7,6 +7,7 @@ import (
 
 	"github.com/charmbracelet/bubbles/list"
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/charmbracelet/lipgloss"
 
 	"github.com/mistakeknot/vauxpraudemonium/internal/vauxhall/aggregator"
 	"github.com/mistakeknot/vauxpraudemonium/internal/vauxhall/discovery"
@@ -86,6 +87,31 @@ func TestTwoPaneLayoutClamp(t *testing.T) {
 		}
 	}()
 	_ = m.renderTwoPane("left", "right")
+}
+
+func TestFocusedPaneBorderRendered(t *testing.T) {
+	m := New(&fakeAggLayout{}, "")
+	m.width = 80
+	m.height = 20
+	m.activePane = PaneProjects
+	view := m.renderTwoPane("left", "right")
+	border := lipgloss.RoundedBorder()
+	if !strings.Contains(view, border.TopLeft) {
+		t.Fatalf("expected border to render")
+	}
+}
+
+func TestFocusedPaneChangesRendering(t *testing.T) {
+	m := New(&fakeAggLayout{}, "")
+	m.width = 80
+	m.height = 20
+	m.activePane = PaneProjects
+	leftFocus := m.renderTwoPane("left", "right")
+	m.activePane = PaneMain
+	rightFocus := m.renderTwoPane("left", "right")
+	if leftFocus == rightFocus {
+		t.Fatalf("expected different rendering when focus changes")
+	}
 }
 
 func TestHeaderIncludesBuildInfo(t *testing.T) {
