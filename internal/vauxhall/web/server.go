@@ -11,11 +11,12 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/mistakeknot/vauxpraudemonium/internal/vauxhall/aggregator"
 	"github.com/mistakeknot/vauxpraudemonium/internal/vauxhall/agentmail"
+	"github.com/mistakeknot/vauxpraudemonium/internal/vauxhall/aggregator"
 	"github.com/mistakeknot/vauxpraudemonium/internal/vauxhall/config"
 	"github.com/mistakeknot/vauxpraudemonium/internal/vauxhall/discovery"
 	"github.com/mistakeknot/vauxpraudemonium/internal/vauxhall/tandemonium"
+	"github.com/mistakeknot/vauxpraudemonium/internal/vauxhall/tmux"
 )
 
 //go:embed templates/*.html
@@ -23,10 +24,11 @@ var templateFS embed.FS
 
 // Server is the HTTP server for Vauxhall
 type Server struct {
-	cfg       config.ServerConfig
-	agg       aggregatorAPI
-	templates map[string]*template.Template
-	srv       *http.Server
+	cfg          config.ServerConfig
+	agg          aggregatorAPI
+	statusClient statusClient
+	templates    map[string]*template.Template
+	srv          *http.Server
 }
 
 type aggregatorAPI interface {
@@ -48,12 +50,17 @@ type aggregatorAPI interface {
 	StopMCP(projectPath, component string) error
 }
 
+type statusClient interface {
+	DetectStatus(name string) tmux.Status
+}
+
 // NewServer creates a new web server
 func NewServer(cfg config.ServerConfig, agg aggregatorAPI) *Server {
 	s := &Server{
-		cfg:       cfg,
-		agg:       agg,
-		templates: make(map[string]*template.Template),
+		cfg:          cfg,
+		agg:          agg,
+		statusClient: tmux.NewClient(),
+		templates:    make(map[string]*template.Template),
 	}
 
 	// Template functions
@@ -138,8 +145,22 @@ func (s *Server) handleProjects(w http.ResponseWriter, r *http.Request) {
 
 func (s *Server) handleAgents(w http.ResponseWriter, r *http.Request) {
 	state := s.agg.GetState()
+	query := strings.TrimSpace(r.URL.Query().Get("q"))
+	filterState := parseFilter(query)
+	agents := state.Agents
+	var statusBySession map[string]tmux.Status
+	if filterState.Raw != "" {
+		if len(filterState.Statuses) > 0 && s.statusClient != nil {
+			statusBySession = make(map[string]tmux.Status, len(state.Sessions))
+			for _, session := range state.Sessions {
+				statusBySession[session.Name] = s.statusClient.DetectStatus(session.Name)
+			}
+		}
+		agents = filterAgents(agents, filterState, statusBySession)
+	}
 	s.render(w, "agents.html", map[string]any{
-		"Agents": state.Agents,
+		"Agents": agents,
+		"Query":  filterState.Raw,
 	})
 }
 
@@ -197,8 +218,22 @@ func (s *Server) handleAgentDetail(w http.ResponseWriter, r *http.Request) {
 
 func (s *Server) handleSessions(w http.ResponseWriter, r *http.Request) {
 	state := s.agg.GetState()
+	query := strings.TrimSpace(r.URL.Query().Get("q"))
+	filterState := parseFilter(query)
+	sessions := state.Sessions
+	var statusBySession map[string]tmux.Status
+	if filterState.Raw != "" {
+		if len(filterState.Statuses) > 0 && s.statusClient != nil {
+			statusBySession = make(map[string]tmux.Status, len(state.Sessions))
+			for _, session := range state.Sessions {
+				statusBySession[session.Name] = s.statusClient.DetectStatus(session.Name)
+			}
+		}
+		sessions = filterSessions(sessions, filterState, statusBySession)
+	}
 	s.render(w, "sessions.html", map[string]any{
-		"Sessions": state.Sessions,
+		"Sessions": sessions,
+		"Query":    filterState.Raw,
 	})
 }
 
@@ -435,7 +470,7 @@ func (s *Server) handleProjectRoutes(w http.ResponseWriter, r *http.Request) {
 	if strings.HasSuffix(path, "/tasks") {
 		projectPath := strings.TrimSuffix(path, "/tasks")
 		projectPath = strings.TrimLeft(projectPath, "/") // Remove all leading /
-		projectPath = "/" + projectPath                   // Add back single leading /
+		projectPath = "/" + projectPath                  // Add back single leading /
 		s.handleProjectTasks(w, r, projectPath)
 		return
 	}
