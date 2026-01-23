@@ -1,6 +1,7 @@
 package tui
 
 import (
+	"strings"
 	"testing"
 	"time"
 )
@@ -34,5 +35,12 @@ func TestBackgroundScanTick(t *testing.T) {
 	_, cmd := m.Update(scanTickMsg{})
 	if cmd == nil {
 		t.Fatalf("expected scan cmd")
+	}
+}
+
+func TestSharedTitleStyleRenders(t *testing.T) {
+	out := TitleStyle.Render("Tandemonium")
+	if !strings.Contains(stripANSI(out), "Tandemonium") {
+		t.Fatalf("expected styled title")
 	}
 }
