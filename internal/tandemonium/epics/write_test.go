@@ -3,6 +3,7 @@ package epics
 import (
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 )
 
@@ -21,15 +22,15 @@ func TestWriteEpicsCreatesFiles(t *testing.T) {
 			Risks: []string{
 				"OAuth latency",
 			},
-			Estimate: "M",
+			Estimates: "M",
 			Stories: []Story{
 				{
-					ID:       "EPIC-001-S01",
-					Title:    "Login form",
-					Summary:  "Email/password flow",
-					Status:   StatusTodo,
-					Priority: PriorityP1,
-					Estimate: "S",
+					ID:        "EPIC-001-S01",
+					Title:     "Login form",
+					Summary:   "Email/password flow",
+					Status:    StatusTodo,
+					Priority:  PriorityP1,
+					Estimates: "S",
 				},
 			},
 		},
@@ -41,5 +42,27 @@ func TestWriteEpicsCreatesFiles(t *testing.T) {
 
 	if _, err := os.Stat(filepath.Join(dir, "EPIC-001.yaml")); err != nil {
 		t.Fatalf("expected epic file: %v", err)
+	}
+}
+
+func TestWriteEpicsUsesEstimatesKey(t *testing.T) {
+	dir := t.TempDir()
+	epic := Epic{
+		ID:        "EPIC-002",
+		Title:     "Scope",
+		Summary:   "Define scope",
+		Status:    StatusTodo,
+		Priority:  PriorityP2,
+		Estimates: "M",
+	}
+	if err := WriteEpics(dir, []Epic{epic}, WriteOptions{Existing: ExistingOverwrite}); err != nil {
+		t.Fatal(err)
+	}
+	raw, err := os.ReadFile(filepath.Join(dir, "EPIC-002.yaml"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(string(raw), "estimates:") {
+		t.Fatalf("expected estimates key in yaml")
 	}
 }

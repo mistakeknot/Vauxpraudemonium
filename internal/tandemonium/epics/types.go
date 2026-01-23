@@ -27,7 +27,7 @@ type Story struct {
 	Priority           Priority `yaml:"priority"`
 	AcceptanceCriteria []string `yaml:"acceptance_criteria,omitempty"`
 	Risks              []string `yaml:"risks,omitempty"`
-	Estimate           string   `yaml:"estimate,omitempty"`
+	Estimates          string   `yaml:"estimates,omitempty"`
 }
 
 type Epic struct {
@@ -38,7 +38,7 @@ type Epic struct {
 	Priority           Priority `yaml:"priority"`
 	AcceptanceCriteria []string `yaml:"acceptance_criteria,omitempty"`
 	Risks              []string `yaml:"risks,omitempty"`
-	Estimate           string   `yaml:"estimate,omitempty"`
+	Estimates          string   `yaml:"estimates,omitempty"`
 	Stories            []Story  `yaml:"stories,omitempty"`
 }
 
