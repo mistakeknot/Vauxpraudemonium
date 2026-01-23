@@ -16,7 +16,6 @@ import (
 	"github.com/mistakeknot/vauxpraudemonium/internal/praude/scan"
 	"github.com/mistakeknot/vauxpraudemonium/internal/praude/specs"
 	"github.com/mistakeknot/vauxpraudemonium/internal/praude/suggestions"
-	sharedtui "github.com/mistakeknot/vauxpraudemonium/pkg/tui"
 	"gopkg.in/yaml.v3"
 )
 
@@ -521,10 +520,13 @@ func (m Model) interviewMarkdown() string {
 			b.WriteString("\n```\n\n")
 		}
 		b.WriteString("Input:\n")
-		inputLines := m.input.Render(4)
-		inputBlock := strings.Join(inputLines, "\n")
-		b.WriteString(sharedtui.PanelStyle.Render(inputBlock))
-		b.WriteString("\n")
+		inputLines := renderInputBoxLines(m.input.Render(4))
+		b.WriteString("```\n")
+		for _, line := range inputLines {
+			b.WriteString(line)
+			b.WriteString("\n")
+		}
+		b.WriteString("```\n")
 		b.WriteString("Enter: iterate  [ / ]: prev/next\n")
 	} else {
 		b.WriteString("```\n")
@@ -821,6 +823,27 @@ func firstNonEmpty(values ...string) string {
 
 func itoa(n int) string {
 	return strconv.Itoa(n)
+}
+
+func renderInputBoxLines(lines []string) []string {
+	width := 0
+	for _, line := range lines {
+		if l := runeCount(line); l > width {
+			width = l
+		}
+	}
+	if width < 20 {
+		width = 20
+	}
+	top := "+" + strings.Repeat("-", width+2) + "+"
+	bottom := top
+	box := []string{top}
+	for _, line := range lines {
+		padding := width - runeCount(line)
+		box = append(box, "| "+line+strings.Repeat(" ", padding)+" |")
+	}
+	box = append(box, bottom)
+	return box
 }
 
 var osWriteFile = os.WriteFile

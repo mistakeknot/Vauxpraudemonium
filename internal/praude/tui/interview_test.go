@@ -110,6 +110,21 @@ func TestInterviewInputSpaceInserts(t *testing.T) {
 	}
 }
 
+func TestInterviewMarkdownInputBoxIsPlain(t *testing.T) {
+	m := NewModel()
+	m.mode = "interview"
+	m.interview = startInterview(m.root, specs.Spec{}, "")
+	m.interview.step = stepVision
+	m.input.SetText("Hello")
+	out := m.interviewMarkdown()
+	if strings.Contains(out, "\x1b[") {
+		t.Fatalf("expected no ANSI in markdown")
+	}
+	if !strings.Contains(out, "+") || !strings.Contains(out, "|") {
+		t.Fatalf("expected ascii input box")
+	}
+}
+
 func TestInterviewShowsStepAndInputField(t *testing.T) {
 	root := t.TempDir()
 	if err := os.MkdirAll(filepath.Join(root, ".praude", "specs"), 0o755); err != nil {
