@@ -35,4 +35,5 @@ func init() {
 	rootCmd.AddCommand(researchCmd)
 	rootCmd.AddCommand(suggestCmd)
 	rootCmd.AddCommand(hunterCmd)
+	rootCmd.AddCommand(proposeCmd)
 }

@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
 
 	"github.com/spf13/cobra"
@@ -13,6 +14,7 @@ import (
 	"github.com/mistakeknot/vauxpraudemonium/internal/pollard/config"
 	"github.com/mistakeknot/vauxpraudemonium/internal/pollard/hunters"
 	pollardPlan "github.com/mistakeknot/vauxpraudemonium/internal/pollard/plan"
+	"github.com/mistakeknot/vauxpraudemonium/internal/pollard/proposal"
 	"github.com/mistakeknot/vauxpraudemonium/internal/pollard/reports"
 	"github.com/mistakeknot/vauxpraudemonium/internal/pollard/sources"
 	"github.com/mistakeknot/vauxpraudemonium/internal/pollard/state"
@@ -86,6 +88,8 @@ Examples:
 			return applyScanPlan(cwd, p)
 		case "report":
 			return applyReportPlan(cwd, p)
+		case "propose":
+			return applyProposePlan(cwd, p)
 		default:
 			return fmt.Errorf("unknown plan action: %s", p.Action)
 		}
@@ -238,6 +242,86 @@ func applyReportPlan(cwd string, p *plan.Plan) error {
 	if err := plan.ClearPending(cwd, "pollard", "report"); err != nil {
 		fmt.Printf("Warning: failed to clear pending plan: %v\n", err)
 	}
+
+	return nil
+}
+
+func applyProposePlan(cwd string, p *plan.Plan) error {
+	var items pollardPlan.ProposePlanItems
+	if err := p.GetItems(&items); err != nil {
+		return fmt.Errorf("failed to parse plan items: %w", err)
+	}
+
+	// Create scanner and scan for context
+	scanner := proposal.NewContextScanner(cwd)
+	var ctx *proposal.ProjectContext
+	var err error
+
+	if items.IncludeSrc {
+		ctx, err = scanner.ScanWithSrc()
+	} else {
+		ctx, err = scanner.Scan()
+	}
+	if err != nil {
+		return fmt.Errorf("failed to scan project: %w", err)
+	}
+
+	fmt.Printf("Scanning project: %s\n", ctx.ProjectName)
+	if len(ctx.Files) == 0 {
+		return fmt.Errorf("no documentation files found")
+	}
+	fmt.Printf("Found %d documentation file(s): %s\n", len(ctx.Files), strings.Join(items.FilesFound, ", "))
+
+	// Create interruptible context
+	runCtx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	sigCh := make(chan os.Signal, 1)
+	signal.Notify(sigCh, syscall.SIGINT, syscall.SIGTERM)
+	go func() {
+		<-sigCh
+		fmt.Println("\nInterrupted...")
+		cancel()
+	}()
+
+	// Create generator with config from plan
+	cfg := proposal.DefaultConfig()
+	cfg.MaxAgendas = items.MaxAgendas
+	cfg.IncludeSrc = items.IncludeSrc
+	generator := proposal.NewAgendaGeneratorWithConfig(cfg)
+
+	fmt.Println("Invoking AI agent to propose research agendas...")
+	result, err := generator.Generate(runCtx, ctx)
+	if err != nil {
+		return fmt.Errorf("failed to generate proposals: %w", err)
+	}
+
+	// Save results
+	if err := proposal.SaveResult(cwd, result); err != nil {
+		return fmt.Errorf("failed to save proposals: %w", err)
+	}
+
+	// Display results
+	fmt.Printf("\nGenerated %d research agenda(s):\n\n", len(result.Agendas))
+	for i, agenda := range result.Agendas {
+		fmt.Printf("%d. %s [%s] (%s priority)\n", i+1, agenda.Title, agenda.ID, agenda.Priority)
+		fmt.Printf("   %s\n", agenda.Description)
+		if len(agenda.Questions) > 0 {
+			fmt.Printf("   Questions: %d\n", len(agenda.Questions))
+		}
+		if len(agenda.SuggestedHunters) > 0 {
+			fmt.Printf("   Hunters: %s\n", strings.Join(agenda.SuggestedHunters, ", "))
+		}
+		fmt.Println()
+	}
+
+	// Clear the pending plan
+	if err := plan.ClearPending(cwd, "pollard", "propose"); err != nil {
+		fmt.Printf("Warning: failed to clear pending plan: %v\n", err)
+	}
+
+	fmt.Println("Proposals saved to .pollard/proposals/current.yaml")
+	fmt.Println("Run 'pollard propose --select' to choose which agendas to pursue")
 
 	return nil
 }

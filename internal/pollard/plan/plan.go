@@ -207,3 +207,114 @@ func itoa(n int) string {
 	}
 	return itoa(n/10) + string(rune('0'+n%10))
 }
+
+// =============================================================================
+// Propose Plan Types
+// =============================================================================
+
+// ProposePlanItems contains the items for a propose plan.
+type ProposePlanItems struct {
+	ProjectName  string   `json:"project_name"`
+	Technologies []string `json:"technologies,omitempty"`
+	DetectedType string   `json:"detected_type,omitempty"`
+	Domain       string   `json:"domain,omitempty"`
+	FilesFound   []string `json:"files_found"`
+	MaxAgendas   int      `json:"max_agendas"`
+	IncludeSrc   bool     `json:"include_src"`
+}
+
+// ProposePlanOptions contains inputs for generating a propose plan.
+type ProposePlanOptions struct {
+	Root         string
+	ProjectName  string
+	Technologies []string
+	DetectedType string
+	Domain       string
+	FilesFound   []string
+	MaxAgendas   int
+	IncludeSrc   bool
+}
+
+// GenerateProposePlan creates a plan for the propose command.
+func GenerateProposePlan(opts ProposePlanOptions) (*plan.Plan, error) {
+	p := plan.NewPlan("pollard", "propose")
+
+	items := ProposePlanItems{
+		ProjectName:  opts.ProjectName,
+		Technologies: opts.Technologies,
+		DetectedType: opts.DetectedType,
+		Domain:       opts.Domain,
+		FilesFound:   opts.FilesFound,
+		MaxAgendas:   opts.MaxAgendas,
+		IncludeSrc:   opts.IncludeSrc,
+	}
+
+	if err := p.SetItems(items); err != nil {
+		return nil, err
+	}
+
+	// Generate summary
+	p.Summary = "Propose " + itoa(opts.MaxAgendas) + " research agenda(s) for " + opts.ProjectName
+
+	// Check for documentation
+	if len(opts.FilesFound) == 0 {
+		p.AddRecommendation(plan.Recommendation{
+			Type:       plan.TypePrereq,
+			Severity:   plan.SeverityWarning,
+			Message:    "No documentation files found (CLAUDE.md, AGENTS.md, README.md)",
+			Suggestion: "Create at least a README.md to provide project context",
+		})
+	}
+
+	// Check for agent configuration
+	if os.Getenv("POLLARD_AGENT_COMMAND") == "" {
+		p.AddRecommendation(plan.Recommendation{
+			Type:     plan.TypePrereq,
+			Severity: plan.SeverityInfo,
+			Message:  "Using default agent 'claude' (set POLLARD_AGENT_COMMAND to override)",
+		})
+	}
+
+	// Add technology-based recommendations
+	addTechnologyRecommendations(p, opts.Technologies, opts.DetectedType)
+
+	return p, nil
+}
+
+// addTechnologyRecommendations suggests hunters based on detected tech.
+func addTechnologyRecommendations(p *plan.Plan, techs []string, projectType string) {
+	techSet := make(map[string]bool)
+	for _, t := range techs {
+		techSet[t] = true
+	}
+
+	// AI/ML technologies suggest arxiv
+	if techSet["PyTorch"] || techSet["TensorFlow"] || techSet["OpenAI"] {
+		p.AddRecommendation(plan.Recommendation{
+			Type:       plan.TypeEnhancement,
+			Severity:   plan.SeverityInfo,
+			Message:    "AI/ML project detected - arxiv hunter recommended",
+			Suggestion: "Research agendas may include academic paper review",
+		})
+	}
+
+	// Web frameworks suggest competitor tracking
+	if techSet["Next.js"] || techSet["React"] || techSet["Rails"] {
+		p.AddRecommendation(plan.Recommendation{
+			Type:       plan.TypeEnhancement,
+			Severity:   plan.SeverityInfo,
+			Message:    "Web framework detected - competitor-tracker recommended",
+			Suggestion: "Research agendas may include competitor analysis",
+		})
+	}
+
+	// CLI tools suggest github-scout
+	if projectType == "cli" || techSet["Cobra CLI"] {
+		p.AddRecommendation(plan.Recommendation{
+			Type:       plan.TypeEnhancement,
+			Severity:   plan.SeverityInfo,
+			Message:    "CLI tool detected - github-scout recommended",
+			Suggestion: "Research agendas may include open source implementations",
+		})
+	}
+}
