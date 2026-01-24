@@ -13,6 +13,7 @@ import (
 	"github.com/mistakeknot/vauxpraudemonium/internal/pollard/config"
 	"github.com/mistakeknot/vauxpraudemonium/internal/pollard/hunters"
 	pollardPlan "github.com/mistakeknot/vauxpraudemonium/internal/pollard/plan"
+	"github.com/mistakeknot/vauxpraudemonium/internal/pollard/proposal"
 	"github.com/mistakeknot/vauxpraudemonium/internal/pollard/sources"
 	"github.com/mistakeknot/vauxpraudemonium/internal/pollard/state"
 )
@@ -52,6 +53,14 @@ var scanCmd = &cobra.Command{
 		if len(cfg.Hunters) == 0 {
 			fmt.Println("No hunters configured. Run 'pollard init' to create a default config.")
 			return nil
+		}
+
+		// Check for proposals and suggest if none exist
+		proposals, propErr := proposal.LoadResult(cwd)
+		if propErr != nil || len(proposals.Agendas) == 0 {
+			fmt.Println("Tip: No research agendas found. Consider running 'pollard propose' first")
+			fmt.Println("     to generate project-specific research questions from your docs.")
+			fmt.Println()
 		}
 
 		// Open state database
