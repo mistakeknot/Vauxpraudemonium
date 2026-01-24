@@ -85,10 +85,10 @@ var keys = keyMap{
 		key.WithHelp("?", "help"),
 	),
 	Number: []key.Binding{
-		key.NewBinding(key.WithKeys("1"), key.WithHelp("1", "vauxhall")),
+		key.NewBinding(key.WithKeys("1"), key.WithHelp("1", "bigend")),
 		key.NewBinding(key.WithKeys("2"), key.WithHelp("2", "pollard")),
-		key.NewBinding(key.WithKeys("3"), key.WithHelp("3", "praude")),
-		key.NewBinding(key.WithKeys("4"), key.WithHelp("4", "tandemonium")),
+		key.NewBinding(key.WithKeys("3"), key.WithHelp("3", "gurgeh")),
+		key.NewBinding(key.WithKeys("4"), key.WithHelp("4", "coldwine")),
 	},
 }
 
@@ -102,7 +102,7 @@ func New(panes []toolpane.Pane, buildInfo string) Model {
 		ctx:       NewContext(),
 		projects:  NewProjectsPane(),
 		panes:     panes,
-		activeTab: TabVauxhall,
+		activeTab: TabBigend,
 		focus:     FocusContent,
 		buildInfo: buildInfo,
 	}
@@ -273,7 +273,7 @@ func (m Model) View() string {
 }
 
 func (m Model) renderHeader() string {
-	title := tui.TitleStyle.Render("⚡ Vauxpraudemonium")
+	title := tui.TitleStyle.Render("⚡ Bigend")
 	if m.buildInfo != "" {
 		title = title + " " + tui.LabelStyle.Render(m.buildInfo)
 	}

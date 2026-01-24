@@ -114,8 +114,8 @@ func addPraudeRecommendations(p *plan.Plan, root string) {
 		return
 	}
 
-	specCount := discovery.CountPraudeSpecs(root)
-	prdCount := discovery.CountPraudePRDs(root)
+	specCount := discovery.CountGurgSpecs(root)
+	prdCount := discovery.CountGurgPRDs(root)
 
 	if specCount > 0 || prdCount > 0 {
 		p.AddRecommendation(plan.Recommendation{

@@ -1,20 +1,20 @@
-# Vauxpraudemonium - Development Guide
+# Vauxgurgehmonium - Development Guide
 
-Unified monorepo for AI agent development tools: Vauxhall, Praude, Tandemonium, and Pollard.
+Unified monorepo for AI agent development tools: Bigend, Gurgeh, Coldwine, and Pollard.
 
 ## Quick Reference
 
 | Tool | Purpose | Entry Point |
 |------|---------|-------------|
-| **Vauxhall** | Multi-project agent mission control (web + TUI) | `./dev vauxhall` |
-| **Praude** | TUI-first PRD generation and validation | `./dev praude` |
-| **Tandemonium** | Task orchestration for human-AI collaboration | `./dev tandemonium` |
+| **Bigend** | Multi-project agent mission control (web + TUI) | `./dev bigend` |
+| **Gurgeh** | TUI-first PRD generation and validation | `./dev gurgeh` |
+| **Coldwine** | Task orchestration for human-AI collaboration | `./dev coldwine` |
 | **Pollard** | Continuous research intelligence (hunters + reports) | `go run ./cmd/pollard` |
 
 | Item | Value |
 |------|-------|
 | Language | Go 1.24+ |
-| Module | `github.com/mistakeknot/vauxpraudemonium` |
+| Module | `github.com/mistakeknot/vauxgurgehmonium` |
 | TUI Framework | Bubble Tea + lipgloss |
 | Web Framework | net/http + htmx + Tailwind |
 | Database | SQLite (WAL mode) |
@@ -28,32 +28,32 @@ Unified monorepo for AI agent development tools: Vauxhall, Praude, Tandemonium, 
 - Pollard hunters implemented (GitHub, HackerNews, arXiv, Competitor)
 - Pollard general-purpose hunters (OpenAlex, PubMed, USDA, Legal, Economics, Wiki)
 - Pollard report generation (landscape, competitive, trends, research)
-- Pollard API for Praude/Tandemonium integration
+- Pollard API for Gurgeh/Coldwine integration
 - Pollard GetInsightsForFeature/GenerateResearchBrief for agent context
 
 ### In Progress
-- Vauxhall TUI mode
+- Bigend TUI mode
 - Intermute messaging (file-based, transitioning to HTTP)
 
 ### TODO
 - Migrate TUI components to use shared `pkg/tui`
-- Remote host support for Vauxhall
+- Remote host support for Bigend
 - Cross-tool coordination features
-- Pollard integration into Vauxhall daemon
+- Pollard integration into Bigend daemon
 
 ---
 
 ## Project Structure
 
 ```
-Vauxpraudemonium/
+Vauxgurgehmonium/
 ├── cmd/
-│   ├── vauxhall/           # Vauxhall entry point
-│   ├── praude/             # Praude entry point
-│   ├── tandemonium/        # Tandemonium entry point
+│   ├── bigend/           # Bigend entry point
+│   ├── gurgeh/             # Gurgeh entry point
+│   ├── coldwine/        # Coldwine entry point
 │   └── pollard/            # Pollard entry point
 ├── internal/
-│   ├── vauxhall/           # Vauxhall-specific code
+│   ├── bigend/           # Bigend-specific code
 │   │   ├── aggregator/     # Data aggregation
 │   │   ├── agentmail/      # MCP Agent Mail integration
 │   │   ├── claude/         # Claude session detection
@@ -62,7 +62,7 @@ Vauxpraudemonium/
 │   │   ├── tmux/           # tmux client with caching
 │   │   ├── tui/            # Bubble Tea TUI
 │   │   └── web/            # HTTP server + templates
-│   ├── praude/             # Praude-specific code
+│   ├── gurgeh/             # Gurgeh-specific code
 │   │   ├── agents/         # Agent profile management
 │   │   ├── brief/          # Brief composer
 │   │   ├── cli/            # CLI commands
@@ -74,7 +74,7 @@ Vauxpraudemonium/
 │   │   ├── specs/          # PRD schema, validation
 │   │   ├── suggestions/    # Staged updates
 │   │   └── tui/            # Bubble Tea TUI
-│   ├── tandemonium/        # Tandemonium-specific code
+│   ├── coldwine/        # Coldwine-specific code
 │   │   ├── agent/          # Agent adapters
 │   │   ├── cli/            # CLI commands
 │   │   ├── config/         # Configuration
@@ -104,9 +104,9 @@ Vauxpraudemonium/
 ├── mcp-server/             # TypeScript MCP server
 ├── prototypes/             # Experimental code
 ├── docs/
-│   ├── vauxhall/           # Vauxhall docs
-│   ├── praude/             # Praude docs
-│   └── tandemonium/        # Tandemonium docs
+│   ├── bigend/           # Bigend docs
+│   ├── gurgeh/             # Gurgeh docs
+│   └── coldwine/        # Coldwine docs
 ├── dev                     # Unified dev script
 ├── go.mod
 └── go.sum
@@ -128,27 +128,27 @@ Vauxpraudemonium/
 go build ./cmd/...
 
 # Build and run individual tools
-./dev vauxhall           # Web mode (default)
-./dev vauxhall --tui     # TUI mode
-./dev praude             # TUI mode
-./dev praude list        # CLI mode
-./dev tandemonium        # TUI mode
-./dev tandemonium list   # CLI mode
+./dev bigend           # Web mode (default)
+./dev bigend --tui     # TUI mode
+./dev gurgeh             # TUI mode
+./dev gurgeh list        # CLI mode
+./dev coldwine        # TUI mode
+./dev coldwine list   # CLI mode
 
 # Test all
 go test ./...
 
 # Test specific package
-go test ./internal/vauxhall/tmux -v
+go test ./internal/bigend/tmux -v
 ```
 
 ### Configuration
 
 **Shared agent targets** (global + per-project overrides):
 
-- Global: `~/.config/vauxpraudemonium/agents.toml`
-- Project: `.praude/agents.toml`
-- Compat: `.praude/config.toml` `[agents]` (used if `.praude/agents.toml` missing)
+- Global: `~/.config/vauxgurgehmonium/agents.toml`
+- Project: `.gurgeh/agents.toml`
+- Compat: `.gurgeh/config.toml` `[agents]` (used if `.gurgeh/agents.toml` missing)
 
 Example:
 ```toml
@@ -161,7 +161,7 @@ command = "claude"
 args = []
 ```
 
-**Vauxhall** (`~/.config/vauxhall/config.toml`):
+**Bigend** (`~/.config/bigend/config.toml`):
 ```toml
 [server]
 port = 8099
@@ -172,7 +172,7 @@ scan_roots = ["~/projects"]
 scan_interval = "30s"
 ```
 
-**Praude** (`.praude/config.toml`):
+**Gurgeh** (`.gurgeh/config.toml`):
 ```toml
 [agents.claude]
 command = "claude"
@@ -183,7 +183,7 @@ command = "codex"
 args = ["--approval-mode", "full-auto"]
 ```
 
-**Tandemonium** (`.tandemonium/config.toml`):
+**Coldwine** (`.coldwine/config.toml`):
 ```toml
 [tui]
 confirm_approve = true
@@ -196,15 +196,15 @@ target_branch = ""
 
 ## Tool-Specific Details
 
-### Vauxhall
+### Bigend
 
 Mission control dashboard for monitoring AI agents across projects.
 
 **Data Sources:**
 | Source | Location | Data |
 |--------|----------|------|
-| Praude | `.praude/specs/*.yaml` | PRDs, requirements |
-| Tandemonium | `.tandemonium/specs/*.yaml` | Tasks, states |
+| Gurgeh | `.gurgeh/specs/*.yaml` | PRDs, requirements |
+| Coldwine | `.coldwine/specs/*.yaml` | Tasks, states |
 | MCP Agent Mail | `~/.agent_mail/` | Cross-project messages |
 | tmux | `tmux list-sessions` | Active sessions |
 
@@ -215,46 +215,46 @@ Mission control dashboard for monitoring AI agents across projects.
 - Claude session ID detection
 - Cached tmux data (2-second TTL)
 
-### Praude
+### Gurgeh
 
 TUI-first PRD generation and validation CLI.
 
 **Key Paths:**
-- `.praude/specs/` - PRD YAML files (source of truth)
-- `.praude/research/` - Market/competitive research
-- `.praude/suggestions/` - Staged updates for review
-- `.praude/briefs/` - Agent briefs (timestamped)
+- `.gurgeh/specs/` - PRD YAML files (source of truth)
+- `.gurgeh/research/` - Market/competitive research
+- `.gurgeh/suggestions/` - Staged updates for review
+- `.gurgeh/briefs/` - Agent briefs (timestamped)
 
 **Commands:**
 ```bash
-praude              # Launch TUI
-praude init         # Initialize .praude/
-praude list         # List PRDs
-praude show <id>    # Show PRD details
-praude run <brief>  # Spawn agent with brief
+gurgeh              # Launch TUI
+gurgeh init         # Initialize .gurgeh/
+gurgeh list         # List PRDs
+gurgeh show <id>    # Show PRD details
+gurgeh run <brief>  # Spawn agent with brief
 ```
 
-### Tandemonium
+### Coldwine
 
 Task orchestration with git worktree isolation.
 
 **Key Paths:**
-- `.tandemonium/specs/` - Epic/story YAML specs
-- `.tandemonium/plan/` - Exploration summary + init prompts
-- `.tandemonium/config.toml` - Configuration
-- `.tandemonium/activity.log` - Audit log (JSONL)
-- `.tandemonium/worktrees/` - Isolated git worktrees
+- `.coldwine/specs/` - Epic/story YAML specs
+- `.coldwine/plan/` - Exploration summary + init prompts
+- `.coldwine/config.toml` - Configuration
+- `.coldwine/activity.log` - Audit log (JSONL)
+- `.coldwine/worktrees/` - Isolated git worktrees
 
 **Task States:** `todo` → `in_progress` → `review` → `done` (or `blocked`)
 
 **Commands:**
 ```bash
-tandemonium              # Launch TUI
-tandemonium init         # Initialize + generate epics/stories from scan
-tandemonium scan         # Re-scan repo and update exploration summary
-tandemonium status       # Show current task status
-tandemonium start <id>   # Start task (creates worktree)
-tandemonium stop <id>    # Stop task
+coldwine              # Launch TUI
+coldwine init         # Initialize + generate epics/stories from scan
+coldwine scan         # Re-scan repo and update exploration summary
+coldwine status       # Show current task status
+coldwine start <id>   # Start task (creates worktree)
+coldwine stop <id>    # Stop task
 ```
 
 ### Pollard
@@ -314,16 +314,16 @@ pollard report --stdout             # Output to terminal
 ```
 
 **API Integration:**
-Praude and Tandemonium can trigger Pollard research via the API:
+Gurgeh and Coldwine can trigger Pollard research via the API:
 ```go
-import "github.com/mistakeknot/vauxpraudemonium/internal/pollard/api"
+import "github.com/mistakeknot/vauxgurgehmonium/internal/pollard/api"
 
 scanner := api.NewScanner(projectPath)
 result, _ := scanner.ResearchForPRD(ctx, vision, problem, requirements)
 result, _ := scanner.ResearchForEpic(ctx, epicTitle, description)
 result, _ := scanner.ResearchUserPersonas(ctx, personas, painpoints)
 
-// Get insights linked to a feature (for Tandemonium)
+// Get insights linked to a feature (for Coldwine)
 insights, _ := scanner.GetInsightsForFeature(ctx, "FEAT-001")
 brief, _ := scanner.GenerateResearchBrief(ctx, "FEAT-001")
 ```
@@ -405,10 +405,10 @@ tui.PriorityBadge(1)  // "P1" (yellow)
 
 | Variable | Tool | Default |
 |----------|------|---------|
-| `VAUXHALL_PORT` | Vauxhall | 8099 |
-| `VAUXHALL_SCAN_ROOTS` | Vauxhall | ~/projects |
-| `PRAUDE_CONFIG` | Praude | .praude/config.toml |
-| `TANDEMONIUM_CONFIG` | Tandemonium | .tandemonium/config.toml |
+| `VAUXHALL_PORT` | Bigend | 8099 |
+| `VAUXHALL_SCAN_ROOTS` | Bigend | ~/projects |
+| `PRAUDE_CONFIG` | Gurgeh | .gurgeh/config.toml |
+| `TANDEMONIUM_CONFIG` | Coldwine | .coldwine/config.toml |
 | `GITHUB_TOKEN` | Pollard | (optional, faster rate limit) |
 | `POLLARD_GITHUB_TOKEN` | Pollard | (alternative to GITHUB_TOKEN) |
 | `OPENALEX_EMAIL` | Pollard | (optional, polite pool access) |
@@ -425,7 +425,7 @@ tui.PriorityBadge(1)  // "P1" (yellow)
 type(scope): description
 
 Types: feat, fix, chore, docs, test, refactor
-Scopes: vauxhall, praude, tandemonium, tui, build
+Scopes: bigend, gurgeh, coldwine, tui, build
 ```
 
 ### Landing a Session
@@ -438,28 +438,28 @@ Scopes: vauxhall, praude, tandemonium, tui, build
 
 ## Integration Points
 
-### Praude → Tandemonium
-- Tandemonium reads `.praude/specs/` for PRD context
+### Gurgeh → Coldwine
+- Coldwine reads `.gurgeh/specs/` for PRD context
 - Tasks can reference PRD IDs
 
-### Praude → Pollard
-- Praude can trigger Pollard research during PRD creation
+### Gurgeh → Pollard
+- Gurgeh can trigger Pollard research during PRD creation
 - `scanner.ResearchForPRD()` runs relevant hunters
 - `scanner.ResearchUserPersonas()` for persona research
 - Research results feed into PRD context
 
-### Tandemonium → Pollard
-- Tandemonium can trigger Pollard research for epics
+### Coldwine → Pollard
+- Coldwine can trigger Pollard research for epics
 - `scanner.ResearchForEpic()` runs hunters with epic context
 - Patterns from Pollard inform implementation decisions
 
-### Pollard → Praude/Tandemonium
-- Insights link to Praude Features
-- Patterns link to Tandemonium Epics
+### Pollard → Gurgeh/Coldwine
+- Insights link to Gurgeh Features
+- Patterns link to Coldwine Epics
 - Recommendations suggest feature priorities
 
-### Vauxhall → All
-- Reads Praude specs, Tandemonium tasks, Pollard insights
+### Bigend → All
+- Reads Gurgeh specs, Coldwine tasks, Pollard insights
 - Monitors tmux sessions across all projects
 - Read-only aggregation (observes, doesn't control)
 - Future: Runs Pollard hunters via daemon

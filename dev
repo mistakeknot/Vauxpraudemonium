@@ -7,18 +7,23 @@ usage() {
     echo "Usage: ./dev <tool> [args...]"
     echo ""
     echo "Tools:"
-    echo "  vauxhall     - Build and run Vauxhall (mission control)"
-    echo "  pollard      - Build and run Pollard (research intelligence)"
-    echo "  praude       - Build and run Praude (PRD generation)"
-    echo "  tandemonium  - Build and run Tandemonium (task tracker)"
+    echo "  bigend     - Build and run Bigend (mission control)"
+    echo "  pollard    - Build and run Pollard (research intelligence)"
+    echo "  gurgeh     - Build and run Gurgeh (PRD generation)"
+    echo "  coldwine   - Build and run Coldwine (task tracker)"
+    echo ""
+    echo "Legacy aliases (backward compatibility):"
+    echo "  vauxhall   -> bigend"
+    echo "  praude     -> gurgeh"
+    echo "  tandemonium -> coldwine"
     echo ""
     echo "Examples:"
-    echo "  ./dev vauxhall --tui       # TUI mode"
-    echo "  ./dev vauxhall --daemon    # Daemon mode (schmux-style)"
-    echo "  ./dev pollard init         # Initialize Pollard in project"
-    echo "  ./dev pollard scan         # Run research agents"
-    echo "  ./dev praude list          # List PRDs/specs"
-    echo "  ./dev tandemonium status   # Show task status"
+    echo "  ./dev bigend --tui       # TUI mode"
+    echo "  ./dev bigend --daemon    # Daemon mode (schmux-style)"
+    echo "  ./dev pollard init       # Initialize Pollard in project"
+    echo "  ./dev pollard scan       # Run research agents"
+    echo "  ./dev gurgeh list        # List PRDs/specs"
+    echo "  ./dev coldwine status    # Show task status"
     exit 1
 }
 
@@ -30,21 +35,21 @@ TOOL="$1"
 shift
 
 case "$TOOL" in
-    vauxhall)
-        go build -o vauxhall ./cmd/vauxhall
-        exec ./vauxhall "$@"
+    bigend|vauxhall)
+        go build -o bigend ./cmd/bigend
+        exec ./bigend "$@"
         ;;
     pollard)
         go build -o pollard ./cmd/pollard
         exec ./pollard "$@"
         ;;
-    praude)
-        go build -o praude ./cmd/praude
-        exec ./praude "$@"
+    gurgeh|praude)
+        go build -o gurgeh ./cmd/gurgeh
+        exec ./gurgeh "$@"
         ;;
-    tandemonium)
-        go build -o tandemonium ./cmd/tandemonium
-        exec ./tandemonium "$@"
+    coldwine|tandemonium)
+        go build -o coldwine ./cmd/coldwine
+        exec ./coldwine "$@"
         ;;
     *)
         echo "Unknown tool: $TOOL"

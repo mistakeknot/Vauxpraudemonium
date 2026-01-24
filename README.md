@@ -1,8 +1,8 @@
-# Tandemonium
+# Coldwine
 
 > **TUI-first task orchestration for human-AI collaboration**
 
-Tandemonium is a terminal-native tool for solo developers. It orchestrates multiple AI coding sessions with git worktree isolation, tmux session persistence, and a structured review flow. The current roadmap is a **Go + Bubble Tea** TUI that focuses on **Execute-only** (multi-agent orchestration + review). Planning and PM refinement are deferred to later milestones.
+Coldwine is a terminal-native tool for solo developers. It orchestrates multiple AI coding sessions with git worktree isolation, tmux session persistence, and a structured review flow. The current roadmap is a **Go + Bubble Tea** TUI that focuses on **Execute-only** (multi-agent orchestration + review). Planning and PM refinement are deferred to later milestones.
 
 ## What It Does (MVP)
 
@@ -31,18 +31,18 @@ Tandemonium is a terminal-native tool for solo developers. It orchestrates multi
 
 ```bash
 # Build
-go build ./cmd/tandemonium
+go build ./cmd/coldwine
 
 # Run
-./tandemonium
+./coldwine
 ```
 
 ## Configuration
 
-Project config lives at `.tandemonium/config.toml` (TOML). Layering order:
+Project config lives at `.coldwine/config.toml` (TOML). Layering order:
 
-1) `~/.config/tandemonium/config.toml`
-2) `.tandemonium/config.toml`
+1) `~/.config/coldwine/config.toml`
+2) `.coldwine/config.toml`
 3) env vars
 4) CLI flags
 
@@ -65,10 +65,10 @@ timeout_seconds = 30
 
 ## Local State
 
-All state lives in `.tandemonium/`:
+All state lives in `.coldwine/`:
 
 ```
-.tandemonium/
+.coldwine/
 ├── state.db         # SQLite runtime state (WAL)
 ├── specs/           # Task specs (YAML, committed)
 └── sessions/        # tmux logs + metadata
@@ -78,13 +78,13 @@ All state lives in `.tandemonium/`:
 
 ```
 cmd/
-  tandemonium/        # Primary binary
+  coldwine/        # Primary binary
 internal/
   agent/              # Detection + agent logic
   cli/                # Cobra commands
   config/             # TOML config loader
   git/                # Worktrees + branch operations
-  project/            # .tandemonium initialization
+  project/            # .coldwine initialization
   review/             # Review queue
   storage/            # SQLite layer
   tmux/               # tmux session management
@@ -94,23 +94,23 @@ prd/                  # Product requirements
 
 ## CLI
 
-Primary binary is `tandemonium`. A `tand` alias may be provided by installers or user shell aliasing.
+Primary binary is `coldwine`. A `tand` alias may be provided by installers or user shell aliasing.
 
 Current commands (stubs for MVP scaffolding):
 
 ```bash
-tandemonium init
-tandemonium status
-tandemonium doctor
-tandemonium recover
-tandemonium cleanup
+coldwine init
+coldwine status
+coldwine doctor
+coldwine recover
+coldwine cleanup
 ```
 
 Mail helpers (MCP parity):
 
 ```bash
-tandemonium mail summarize --thread <thread-id> --llm --examples
-tandemonium mail summarize --dry-run --llm --json
+coldwine mail summarize --thread <thread-id> --llm --examples
+coldwine mail summarize --dry-run --llm --json
 ```
 
 `--dry-run` validates your `llm_summary.command` with synthetic input, without requiring a real thread.
@@ -121,6 +121,6 @@ See `docs/cli/agent.md` for agent registry commands.
 
 This repository is mid-transition to the Go/TUI execute-only MVP. Rust/Tauri artifacts have been removed. See:
 
-- `prd/tandemonium-spec.md`
+- `prd/coldwine-spec.md`
 - `docs/plans/2026-01-11-go-tui-execute-mvp-design.md`
 - `docs/plans/2026-01-11-go-tui-execute-mvp-implementation-plan.md`

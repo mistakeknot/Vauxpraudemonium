@@ -50,14 +50,24 @@ func loadProjectRegistry(projectRoot string) (Registry, error) {
 	if projectRoot == "" {
 		return Registry{Targets: map[string]Target{}}, nil
 	}
-	agentsPath := filepath.Join(projectRoot, ".praude", "agents.toml")
+	// Check .gurgeh first, then .praude for backward compatibility
+	gurgDir := filepath.Join(projectRoot, ".gurgeh")
+	praudeDir := filepath.Join(projectRoot, ".praude")
+	configDir := gurgDir
+	if _, err := os.Stat(gurgDir); os.IsNotExist(err) {
+		if _, err := os.Stat(praudeDir); err == nil {
+			configDir = praudeDir
+		}
+	}
+
+	agentsPath := filepath.Join(configDir, "agents.toml")
 	if _, err := os.Stat(agentsPath); err == nil {
 		return loadRegistry(agentsPath)
 	} else if err != nil && !os.IsNotExist(err) {
 		return Registry{}, err
 	}
 
-	compatPath := filepath.Join(projectRoot, ".praude", "config.toml")
+	compatPath := filepath.Join(configDir, "config.toml")
 	if _, err := os.Stat(compatPath); err != nil {
 		if os.IsNotExist(err) {
 			return Registry{Targets: map[string]Target{}}, nil

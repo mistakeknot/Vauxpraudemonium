@@ -11,22 +11,22 @@ import (
 type ToolTab int
 
 const (
-	TabVauxhall ToolTab = iota
+	TabBigend ToolTab = iota
 	TabPollard
-	TabPraude
-	TabTandemonium
+	TabGurgeh
+	TabColdwine
 )
 
 func (t ToolTab) String() string {
 	switch t {
-	case TabVauxhall:
-		return "Vauxhall"
+	case TabBigend:
+		return "Bigend"
 	case TabPollard:
 		return "Pollard"
-	case TabPraude:
-		return "Praude"
-	case TabTandemonium:
-		return "Tandemonium"
+	case TabGurgeh:
+		return "Gurgeh"
+	case TabColdwine:
+		return "Coldwine"
 	default:
 		return "Unknown"
 	}
@@ -35,13 +35,13 @@ func (t ToolTab) String() string {
 // Key returns the keyboard shortcut for the tab
 func (t ToolTab) Key() string {
 	switch t {
-	case TabVauxhall:
+	case TabBigend:
 		return "1"
 	case TabPollard:
 		return "2"
-	case TabPraude:
+	case TabGurgeh:
 		return "3"
-	case TabTandemonium:
+	case TabColdwine:
 		return "4"
 	default:
 		return ""

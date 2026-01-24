@@ -108,11 +108,11 @@ findings:
 	}
 }
 
-func TestPraudeSpecs(t *testing.T) {
+func TestGurgSpecs(t *testing.T) {
 	tmpDir := t.TempDir()
 
 	// Empty - should return empty slice
-	specs, err := PraudeSpecs(tmpDir)
+	specs, err := GurgSpecs(tmpDir)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -137,7 +137,7 @@ requirements:
 		t.Fatal(err)
 	}
 
-	specs, err = PraudeSpecs(tmpDir)
+	specs, err = GurgSpecs(tmpDir)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -149,11 +149,11 @@ requirements:
 	}
 }
 
-func TestTandemoniumEpics(t *testing.T) {
+func TestColdwineEpics(t *testing.T) {
 	tmpDir := t.TempDir()
 
 	// Empty - should return empty slice
-	epics, err := TandemoniumEpics(tmpDir)
+	epics, err := ColdwineEpics(tmpDir)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -180,7 +180,7 @@ stories:
 		t.Fatal(err)
 	}
 
-	epics, err = TandemoniumEpics(tmpDir)
+	epics, err = ColdwineEpics(tmpDir)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -202,10 +202,10 @@ func TestCountFunctions(t *testing.T) {
 	if count := CountPollardInsights(tmpDir); count != 0 {
 		t.Errorf("expected 0 insights, got %d", count)
 	}
-	if count := CountPraudeSpecs(tmpDir); count != 0 {
+	if count := CountGurgSpecs(tmpDir); count != 0 {
 		t.Errorf("expected 0 specs, got %d", count)
 	}
-	if count := CountTandemoniumEpics(tmpDir); count != 0 {
+	if count := CountColdwineEpics(tmpDir); count != 0 {
 		t.Errorf("expected 0 epics, got %d", count)
 	}
 
@@ -213,10 +213,10 @@ func TestCountFunctions(t *testing.T) {
 	if PollardHasData(tmpDir) {
 		t.Error("expected PollardHasData=false")
 	}
-	if PraudeHasData(tmpDir) {
-		t.Error("expected PraudeHasData=false")
+	if GurgHasData(tmpDir) {
+		t.Error("expected GurgHasData=false")
 	}
-	if TandemoniumHasData(tmpDir) {
-		t.Error("expected TandemoniumHasData=false")
+	if ColdwineHasData(tmpDir) {
+		t.Error("expected ColdwineHasData=false")
 	}
 }
