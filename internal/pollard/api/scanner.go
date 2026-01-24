@@ -29,10 +29,11 @@ import (
 
 // Scanner provides programmatic access to Pollard hunters.
 type Scanner struct {
-	projectPath string
-	config      *config.Config
-	registry    *hunters.Registry
-	db          *state.DB
+	projectPath  string
+	config       *config.Config
+	registry     *hunters.Registry
+	db           *state.DB
+	orchestrator *ResearchOrchestrator
 }
 
 // ScanOptions configures a scan operation.
@@ -83,12 +84,14 @@ func NewScanner(projectPath string) (*Scanner, error) {
 		return nil, fmt.Errorf("failed to open state database: %w", err)
 	}
 
-	return &Scanner{
+	s := &Scanner{
 		projectPath: projectPath,
 		config:      cfg,
 		registry:    hunters.DefaultRegistry(),
 		db:          db,
-	}, nil
+	}
+	s.orchestrator = NewResearchOrchestrator(s)
+	return s, nil
 }
 
 // Close releases resources held by the scanner.
@@ -472,6 +475,83 @@ func (s *Scanner) GenerateResearchBrief(ctx context.Context, featureRef string) 
 	}
 
 	return brief.String(), nil
+}
+
+// =============================================================================
+// Agent-Native Intelligent Research
+// =============================================================================
+// These methods implement the agent-native architecture where the user's AI
+// agent is the primary research capability, with API hunters as supplements.
+
+// IntelligentResearch uses agent-driven research with optional API supplements.
+// This is the recommended research method for PRD-based research.
+func (s *Scanner) IntelligentResearch(ctx context.Context, vision, problem string, requirements []string) (*ScanResult, error) {
+	return s.orchestrator.Research(ctx, vision, problem, requirements)
+}
+
+// IntelligentResearchForEpic conducts implementation-focused research.
+func (s *Scanner) IntelligentResearchForEpic(ctx context.Context, title, description string) (*ScanResult, error) {
+	return s.orchestrator.ResearchForEpic(ctx, title, description)
+}
+
+// SuggestHunters returns recommended hunters based on PRD content analysis.
+func (s *Scanner) SuggestHunters(vision, problem string, requirements []string) []HunterSelection {
+	selections := s.orchestrator.SuggestHunters(vision, problem, requirements)
+	result := make([]HunterSelection, len(selections))
+	for i, sel := range selections {
+		result[i] = HunterSelection{
+			Name:      sel.Name,
+			Score:     sel.Score,
+			Queries:   sel.Queries,
+			Domain:    sel.Domain,
+			Reasoning: sel.Reasoning,
+		}
+	}
+	return result
+}
+
+// HunterSelection represents a selected hunter with relevance information.
+type HunterSelection struct {
+	Name      string
+	Score     float64
+	Queries   []string
+	Domain    string
+	Reasoning string
+}
+
+// SuggestNewHunter determines if a custom hunter would be beneficial.
+func (s *Scanner) SuggestNewHunter(vision, problem string, requirements []string) (string, bool) {
+	return s.orchestrator.SuggestNewHunter(vision, problem, requirements)
+}
+
+// CreateCustomHunter uses the AI agent to design a new hunter for a domain.
+func (s *Scanner) CreateCustomHunter(ctx context.Context, domain, contextInfo string) (*CustomHunterSpec, error) {
+	spec, err := s.orchestrator.CreateCustomHunter(ctx, domain, contextInfo)
+	if err != nil {
+		return nil, err
+	}
+	return &CustomHunterSpec{
+		Name:           spec.Name,
+		Description:    spec.Description,
+		APIEndpoint:    spec.APIEndpoint,
+		NoAPI:          spec.NoAPI,
+		Recommendation: spec.Recommendation,
+	}, nil
+}
+
+// CustomHunterSpec defines a runtime-configurable hunter (API type).
+type CustomHunterSpec struct {
+	Name           string
+	Description    string
+	APIEndpoint    string
+	NoAPI          bool
+	Recommendation string
+}
+
+// GetResearchBrief generates a research brief for the given PRD content.
+func (s *Scanner) GetResearchBrief(vision, problem string, requirements []string) string {
+	brief := s.orchestrator.GetResearchBrief(vision, problem, requirements)
+	return brief.ToPrompt()
 }
 
 // =============================================================================

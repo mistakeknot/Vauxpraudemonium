@@ -12,6 +12,32 @@
 | **Vauxhall** | Global mission control that observes all projects AND directs agents to work on tasks. |
 | **Intermute** | Agent coordination layer (messages, reservations, conflict resolution). Separate project, successor to MCP Agent Mail. |
 
+## Core Design Principle: Agent-Native Architecture
+
+> **All modules use the user's existing AI agents (Claude, Codex) as the primary capability layer.**
+> APIs are optional enhancements, never requirements.
+
+This foundational principle applies across all Vauxpraudemonium tools:
+
+| Tool | Primary Capability | Optional Enhancement |
+|------|-------------------|---------------------|
+| **Pollard** | AI agent conducts research via web search, document analysis | API hunters supplement when keys available |
+| **Praude** | AI agent conducts PRD interviews, validates specifications | - |
+| **Tandemonium** | AI agent executes tasks, coordinates work | - |
+| **Vauxhall** | Observes and directs user's AI agents | - |
+
+**Rationale:**
+1. Users already have AI agent subscriptions (Claude, Codex) with web search, document analysis, and code generation capabilities
+2. Building separate API integrations duplicates these capabilities
+3. API integrations require users to obtain/manage keys they may not have
+4. Agent-based approach enables dynamic capability creation without code changes
+
+**Implementation Pattern:**
+1. Generate intelligent prompts/briefs from tool context (PRD, task, research goal)
+2. User's AI agent executes the work using its native capabilities
+3. Parse agent output into structured artifacts (YAML, markdown)
+4. Optionally supplement with API calls if user has configured credentials
+
 ## Work Item Hierarchy
 
 ```

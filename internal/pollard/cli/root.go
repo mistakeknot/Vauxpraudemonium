@@ -31,4 +31,8 @@ func init() {
 	rootCmd.AddCommand(linkCmd)
 	rootCmd.AddCommand(exportCmd)
 	rootCmd.AddCommand(initCmd)
+	// Agent-native research commands
+	rootCmd.AddCommand(researchCmd)
+	rootCmd.AddCommand(suggestCmd)
+	rootCmd.AddCommand(hunterCmd)
 }

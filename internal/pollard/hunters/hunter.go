@@ -173,5 +173,7 @@ func DefaultRegistry() *Registry {
 	reg.Register(NewLegalHunter())
 	reg.Register(NewEconomicsHunter())
 	reg.Register(NewWikiHunter())
+	// Agent-native hunter (primary research mechanism)
+	reg.Register(NewAgentHunter())
 	return reg
 }
