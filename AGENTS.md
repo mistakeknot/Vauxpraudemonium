@@ -1,6 +1,6 @@
 # Vauxpraudemonium - Development Guide
 
-Unified monorepo for AI agent development tools: Vauxhall, Praude, and Tandemonium.
+Unified monorepo for AI agent development tools: Vauxhall, Praude, Tandemonium, and Pollard.
 
 ## Quick Reference
 
@@ -9,6 +9,7 @@ Unified monorepo for AI agent development tools: Vauxhall, Praude, and Tandemoni
 | **Vauxhall** | Multi-project agent mission control (web + TUI) | `./dev vauxhall` |
 | **Praude** | TUI-first PRD generation and validation | `./dev praude` |
 | **Tandemonium** | Task orchestration for human-AI collaboration | `./dev tandemonium` |
+| **Pollard** | Continuous research intelligence (hunters + reports) | `go run ./cmd/pollard` |
 
 | Item | Value |
 |------|-------|
@@ -22,17 +23,21 @@ Unified monorepo for AI agent development tools: Vauxhall, Praude, and Tandemoni
 
 ### Done
 - Monorepo structure with shared TUI package
-- All three tools build and run
+- All four tools build and run
 - Tokyo Night color palette standardized
+- Pollard hunters implemented (GitHub, HackerNews, arXiv, Competitor)
+- Pollard report generation (landscape, competitive, trends, research)
+- Pollard API for Praude/Tandemonium integration
 
 ### In Progress
 - Vauxhall TUI mode
-- MCP Agent Mail integration
+- Intermute messaging (file-based, transitioning to HTTP)
 
 ### TODO
 - Migrate TUI components to use shared `pkg/tui`
 - Remote host support for Vauxhall
 - Cross-tool coordination features
+- Pollard integration into Vauxhall daemon
 
 ---
 
@@ -43,7 +48,8 @@ Vauxpraudemonium/
 ├── cmd/
 │   ├── vauxhall/           # Vauxhall entry point
 │   ├── praude/             # Praude entry point
-│   └── tandemonium/        # Tandemonium entry point
+│   ├── tandemonium/        # Tandemonium entry point
+│   └── pollard/            # Pollard entry point
 ├── internal/
 │   ├── vauxhall/           # Vauxhall-specific code
 │   │   ├── aggregator/     # Data aggregation
@@ -66,16 +72,26 @@ Vauxpraudemonium/
 │   │   ├── specs/          # PRD schema, validation
 │   │   ├── suggestions/    # Staged updates
 │   │   └── tui/            # Bubble Tea TUI
-│   └── tandemonium/        # Tandemonium-specific code
-│       ├── agent/          # Agent adapters
+│   ├── tandemonium/        # Tandemonium-specific code
+│   │   ├── agent/          # Agent adapters
+│   │   ├── cli/            # CLI commands
+│   │   ├── config/         # Configuration
+│   │   ├── git/            # Git/worktree management
+│   │   ├── project/        # Project detection
+│   │   ├── specs/          # Task schema
+│   │   ├── storage/        # SQLite storage
+│   │   ├── tmux/           # tmux integration
+│   │   └── tui/            # Bubble Tea TUI
+│   └── pollard/            # Pollard-specific code
+│       ├── api/            # Programmatic API for integration
 │       ├── cli/            # CLI commands
 │       ├── config/         # Configuration
-│       ├── git/            # Git/worktree management
-│       ├── project/        # Project detection
-│       ├── specs/          # Task schema
-│       ├── storage/        # SQLite storage
-│       ├── tmux/           # tmux integration
-│       └── tui/            # Bubble Tea TUI
+│       ├── hunters/        # Research agents (github, hackernews, arxiv, competitor)
+│       ├── insights/       # Synthesized findings
+│       ├── patterns/       # Implementation patterns
+│       ├── reports/        # Markdown report generation
+│       ├── sources/        # Raw collected data types
+│       └── state/          # SQLite state management
 ├── pkg/
 │   ├── agenttargets/       # Shared run-target registry/resolver
 │   └── tui/                # Shared TUI styles (Tokyo Night)
@@ -239,6 +255,58 @@ tandemonium start <id>   # Start task (creates worktree)
 tandemonium stop <id>    # Stop task
 ```
 
+### Pollard
+
+Continuous research intelligence for product development. Named after Cayce Pollard from William Gibson's *Pattern Recognition*.
+
+**Hunters (Research Agents):**
+| Hunter | Purpose | API |
+|--------|---------|-----|
+| `github-scout` | Find relevant OSS implementations | GitHub Search API |
+| `trend-watcher` | Track industry discourse | HackerNews Algolia API |
+| `research-scout` | Track academic research | arXiv API |
+| `competitor-tracker` | Monitor competitor changes | HTML scraping |
+
+**Key Paths:**
+- `.pollard/config.yaml` - Hunter configs and schedules
+- `.pollard/state.db` - SQLite run history and freshness
+- `.pollard/sources/github/` - Raw GitHub repo data
+- `.pollard/sources/hackernews/` - Trend items
+- `.pollard/sources/research/` - Academic papers
+- `.pollard/insights/competitive/` - Competitor changes
+- `.pollard/reports/` - Generated markdown reports
+
+**Commands:**
+```bash
+pollard init                        # Initialize .pollard/
+pollard scan                        # Run all enabled hunters
+pollard scan --hunter github-scout  # Run specific hunter
+pollard scan --dry-run              # Show what would run
+pollard report                      # Generate landscape report
+pollard report --type competitive   # Competitive analysis
+pollard report --type trends        # Industry trends
+pollard report --type research      # Academic papers
+pollard report --stdout             # Output to terminal
+```
+
+**API Integration:**
+Praude and Tandemonium can trigger Pollard research via the API:
+```go
+import "github.com/mistakeknot/vauxpraudemonium/internal/pollard/api"
+
+scanner := api.NewScanner(projectPath)
+result, _ := scanner.ResearchForPRD(ctx, vision, problem, requirements)
+result, _ := scanner.ResearchForEpic(ctx, epicTitle, description)
+result, _ := scanner.ResearchUserPersonas(ctx, personas, painpoints)
+```
+
+**Rate Limits (Free by Default):**
+| API | Unauthenticated | With Token |
+|-----|-----------------|------------|
+| GitHub | 60 req/hr | 5000 req/hr |
+| HackerNews | Generous | N/A |
+| arXiv | 1 req/3s | N/A |
+
 ---
 
 ## Shared TUI Package
@@ -298,6 +366,8 @@ tui.PriorityBadge(1)  // "P1" (yellow)
 | `VAUXHALL_SCAN_ROOTS` | Vauxhall | ~/projects |
 | `PRAUDE_CONFIG` | Praude | .praude/config.toml |
 | `TANDEMONIUM_CONFIG` | Tandemonium | .tandemonium/config.toml |
+| `GITHUB_TOKEN` | Pollard | (optional, faster rate limit) |
+| `POLLARD_GITHUB_TOKEN` | Pollard | (alternative to GITHUB_TOKEN) |
 
 ---
 
@@ -325,12 +395,30 @@ Scopes: vauxhall, praude, tandemonium, tui, build
 - Tandemonium reads `.praude/specs/` for PRD context
 - Tasks can reference PRD IDs
 
+### Praude → Pollard
+- Praude can trigger Pollard research during PRD creation
+- `scanner.ResearchForPRD()` runs relevant hunters
+- `scanner.ResearchUserPersonas()` for persona research
+- Research results feed into PRD context
+
+### Tandemonium → Pollard
+- Tandemonium can trigger Pollard research for epics
+- `scanner.ResearchForEpic()` runs hunters with epic context
+- Patterns from Pollard inform implementation decisions
+
+### Pollard → Praude/Tandemonium
+- Insights link to Praude Features
+- Patterns link to Tandemonium Epics
+- Recommendations suggest feature priorities
+
 ### Vauxhall → All
-- Reads Praude specs, Tandemonium tasks, MCP Agent Mail
+- Reads Praude specs, Tandemonium tasks, Pollard insights
 - Monitors tmux sessions across all projects
 - Read-only aggregation (observes, doesn't control)
+- Future: Runs Pollard hunters via daemon
 
-### MCP Agent Mail
-- Cross-project agent coordination
-- File reservations for conflict prevention
-- Message routing between agents
+### Intermute (Future)
+- Cross-tool agent coordination layer
+- Replaces MCP Agent Mail
+- File-based messaging now, HTTP API planned
+- Message format in `.pollard/inbox/` and `.pollard/outbox/`

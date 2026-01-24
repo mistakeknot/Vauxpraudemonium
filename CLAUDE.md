@@ -8,6 +8,7 @@ Unified monorepo for AI agent development tools:
 - **Vauxhall**: Multi-project agent mission control (web + TUI)
 - **Praude**: TUI-first PRD generation and validation
 - **Tandemonium**: Task orchestration for human-AI collaboration
+- **Pollard**: Continuous research intelligence for product development
 
 ## Quick Commands
 
@@ -17,6 +18,13 @@ Unified monorepo for AI agent development tools:
 ./dev vauxhall          # Vauxhall web mode
 ./dev praude            # Praude TUI
 ./dev tandemonium       # Tandemonium TUI
+
+# Pollard CLI
+go run ./cmd/pollard init           # Initialize .pollard/
+go run ./cmd/pollard scan           # Run all hunters
+go run ./cmd/pollard scan --hunter github-scout
+go run ./cmd/pollard report         # Generate landscape report
+go run ./cmd/pollard report --type competitive
 
 # Build all
 go build ./cmd/...
@@ -33,6 +41,7 @@ go test ./...
 | `internal/{tool}/` | Tool-specific code |
 | `pkg/tui/` | Shared TUI styles (Tokyo Night) |
 | `docs/{tool}/` | Tool-specific documentation |
+| `.pollard/` | Pollard data directory (sources, insights, reports) |
 
 ## Design Decisions (Do Not Re-Ask)
 
@@ -42,3 +51,5 @@ go test ./...
 - htmx + Tailwind for Vauxhall web
 - SQLite for local state (read-only to external DBs)
 - tmux integration via CLI commands
+- Pollard hunters use free API tiers by default (no auth required)
+- Intermute for cross-tool messaging (file-based until HTTP API built)
