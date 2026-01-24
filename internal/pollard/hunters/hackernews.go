@@ -269,9 +269,9 @@ func (h *HackerNewsHunter) writeOutput(cfg HunterConfig, output hnTrendsOutput) 
 		outputDir = "insights/trends"
 	}
 
-	// Make path absolute if project path is provided
+	// Make path absolute if project path is provided, always under .pollard/
 	if cfg.ProjectPath != "" {
-		outputDir = filepath.Join(cfg.ProjectPath, outputDir)
+		outputDir = filepath.Join(cfg.ProjectPath, ".pollard", outputDir)
 	}
 
 	// Create directory if needed

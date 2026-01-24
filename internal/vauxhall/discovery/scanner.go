@@ -12,12 +12,31 @@ import (
 
 // Project represents a discovered project with tooling
 type Project struct {
-	Path           string     `json:"path"`
-	Name           string     `json:"name"`
-	HasPraude      bool       `json:"has_praude"`
-	HasTandemonium bool       `json:"has_tandemonium"`
-	HasAgentMail   bool       `json:"has_agent_mail"`
-	TaskStats      *TaskStats `json:"task_stats,omitempty"`
+	Path           string        `json:"path"`
+	Name           string        `json:"name"`
+	HasPraude      bool          `json:"has_praude"`
+	HasTandemonium bool          `json:"has_tandemonium"`
+	HasPollard     bool          `json:"has_pollard"`
+	HasAgentMail   bool          `json:"has_agent_mail"`
+	TaskStats      *TaskStats    `json:"task_stats,omitempty"`
+	PollardStats   *PollardStats `json:"pollard_stats,omitempty"`
+	PraudeStats    *PraudeStats  `json:"praude_stats,omitempty"`
+}
+
+// PollardStats holds research data statistics
+type PollardStats struct {
+	Sources    int `json:"sources"`
+	Insights   int `json:"insights"`
+	Reports    int `json:"reports"`
+	LastReport string `json:"last_report,omitempty"`
+}
+
+// PraudeStats holds PRD statistics
+type PraudeStats struct {
+	Total  int `json:"total"`
+	Draft  int `json:"draft"`
+	Active int `json:"active"`
+	Done   int `json:"done"`
 }
 
 // TaskStats holds task count statistics for a project
@@ -81,7 +100,7 @@ func (s *Scanner) Scan() ([]Project, error) {
 			}
 
 			// Check for tooling directories
-			if d.IsDir() && (d.Name() == ".praude" || d.Name() == ".tandemonium" || d.Name() == ".agent_mail") {
+			if d.IsDir() && (d.Name() == ".praude" || d.Name() == ".tandemonium" || d.Name() == ".pollard" || d.Name() == ".agent_mail") {
 				projectPath := filepath.Dir(path)
 				if seen[projectPath] {
 					return nil
@@ -89,9 +108,9 @@ func (s *Scanner) Scan() ([]Project, error) {
 				seen[projectPath] = true
 
 				project := s.examineProject(projectPath)
-				if project.HasPraude || project.HasTandemonium {
+				if project.HasPraude || project.HasTandemonium || project.HasPollard {
 					projects = append(projects, project)
-					slog.Debug("discovered project", "path", projectPath, "praude", project.HasPraude, "tandemonium", project.HasTandemonium)
+					slog.Debug("discovered project", "path", projectPath, "praude", project.HasPraude, "tandemonium", project.HasTandemonium, "pollard", project.HasPollard)
 				}
 				return filepath.SkipDir
 			}
@@ -130,6 +149,11 @@ func (s *Scanner) examineProject(path string) Project {
 	// Check for .tandemonium/
 	if info, err := os.Stat(filepath.Join(path, ".tandemonium")); err == nil && info.IsDir() {
 		project.HasTandemonium = true
+	}
+
+	// Check for .pollard/
+	if info, err := os.Stat(filepath.Join(path, ".pollard")); err == nil && info.IsDir() {
+		project.HasPollard = true
 	}
 
 	// Check for .agent_mail/

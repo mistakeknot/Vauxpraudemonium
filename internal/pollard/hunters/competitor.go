@@ -474,9 +474,11 @@ func extractFirstLink(html string) string {
 
 // stripTags removes HTML tags from a string.
 func stripTags(html string) string {
-	// Remove script and style content
-	scriptPattern := regexp.MustCompile(`(?is)<(script|style)[^>]*>.*?</\1>`)
+	// Remove script and style content (Go's RE2 doesn't support backreferences)
+	scriptPattern := regexp.MustCompile(`(?is)<script[^>]*>.*?</script>`)
 	html = scriptPattern.ReplaceAllString(html, "")
+	stylePattern := regexp.MustCompile(`(?is)<style[^>]*>.*?</style>`)
+	html = stylePattern.ReplaceAllString(html, "")
 
 	// Remove all tags
 	tagPattern := regexp.MustCompile(`<[^>]+>`)

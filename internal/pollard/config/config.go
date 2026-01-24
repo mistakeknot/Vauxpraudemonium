@@ -184,9 +184,9 @@ func DefaultConfig() *Config {
 				},
 				MaxResults: 50,
 				MinStars:   100,
-				Output:     "sources/github/",
+				// Output empty - uses hunter's default: .pollard/sources/github/
 			},
-			"trend-watcher": {
+			"hackernews-trendwatcher": {
 				Enabled:  true,
 				Interval: "2h",
 				Queries: []string{
@@ -196,9 +196,9 @@ func DefaultConfig() *Config {
 				},
 				MinPoints:  50,
 				MaxResults: 50,
-				Output:     "insights/trends/",
+				// Output empty - uses hunter's default: .pollard/insights/trends/
 			},
-			"research-scout": {
+			"arxiv-scout": {
 				Enabled:  true,
 				Interval: "4h",
 				Categories: []string{
@@ -213,7 +213,7 @@ func DefaultConfig() *Config {
 					"developer tools",
 				},
 				MaxResults: 50,
-				Output:     "sources/research/",
+				// Output empty - uses hunter's default: .pollard/sources/research/
 			},
 			"competitor-tracker": {
 				Enabled:  true,
@@ -234,7 +234,7 @@ func DefaultConfig() *Config {
 						GitHub:    "paul-gauthier/aider",
 					},
 				},
-				Output: "insights/competitive/",
+				// Output empty - uses hunter's default: .pollard/insights/competitive/
 			},
 			// New general-purpose hunters (disabled by default - enable as needed)
 			"openalex": {
@@ -245,7 +245,6 @@ func DefaultConfig() *Config {
 					"machine learning",
 				},
 				MaxResults: 100,
-				Output:     "sources/openalex/",
 			},
 			"pubmed": {
 				Enabled:  false,
@@ -258,7 +257,6 @@ func DefaultConfig() *Config {
 					"Food Hypersensitivity",
 				},
 				MaxResults: 50,
-				Output:     "sources/pubmed/",
 			},
 			"usda-nutrition": {
 				Enabled:  false,
@@ -273,7 +271,6 @@ func DefaultConfig() *Config {
 				},
 				IncludeAllergens: true,
 				MaxResults:       50,
-				Output:           "sources/nutrition/",
 			},
 			"legal": {
 				Enabled:  false,
@@ -288,7 +285,6 @@ func DefaultConfig() *Config {
 				},
 				DateFiledAfter: "2020-01-01",
 				MaxResults:     50,
-				Output:         "sources/legal/",
 			},
 			"economics": {
 				Enabled:  false,
@@ -304,7 +300,6 @@ func DefaultConfig() *Config {
 					"DEU",
 				},
 				MaxResults: 50,
-				Output:     "sources/economics/",
 			},
 			"wiki": {
 				Enabled:  false,
@@ -317,7 +312,6 @@ func DefaultConfig() *Config {
 				IncludeWikidata:  true,
 				Languages:        []string{"en"},
 				MaxResults:       20,
-				Output:           "sources/wiki/",
 			},
 		},
 		Linking: LinkingConfig{
