@@ -47,8 +47,8 @@ func TestFilterSessionsByProject(t *testing.T) {
 	m.projectsList.Select(1)
 	m.updateLists()
 
-	if len(m.sessionList.Items()) != 1 {
-		t.Fatalf("expected 1 session, got %d", len(m.sessionList.Items()))
+	if len(m.sessionList.Items()) != 2 {
+		t.Fatalf("expected 1 session + header, got %d", len(m.sessionList.Items()))
 	}
 }
 

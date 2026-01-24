@@ -16,18 +16,18 @@ type fakeAgg struct {
 	restartCalled bool
 }
 
-func (f *fakeAgg) GetState() aggregator.State { return f.state }
-func (f *fakeAgg) Refresh(ctx context.Context) error { return nil }
+func (f *fakeAgg) GetState() aggregator.State                           { return f.state }
+func (f *fakeAgg) Refresh(ctx context.Context) error                    { return nil }
 func (f *fakeAgg) NewSession(name, projectPath, agentType string) error { return nil }
 func (f *fakeAgg) RestartSession(name, projectPath, agentType string) error {
 	f.restartCalled = true
 	return nil
 }
-func (f *fakeAgg) RenameSession(oldName, newName string) error { return nil }
-func (f *fakeAgg) ForkSession(name, projectPath, agentType string) error { return nil }
-func (f *fakeAgg) AttachSession(name string) error { return nil }
+func (f *fakeAgg) RenameSession(oldName, newName string) error                       { return nil }
+func (f *fakeAgg) ForkSession(name, projectPath, agentType string) error             { return nil }
+func (f *fakeAgg) AttachSession(name string) error                                   { return nil }
 func (f *fakeAgg) StartMCP(ctx context.Context, projectPath, component string) error { return nil }
-func (f *fakeAgg) StopMCP(projectPath, component string) error { return nil }
+func (f *fakeAgg) StopMCP(projectPath, component string) error                       { return nil }
 
 func TestRestartKeyTriggersAction(t *testing.T) {
 	agg := &fakeAgg{state: aggregator.State{Sessions: []aggregator.TmuxSession{{
@@ -38,6 +38,7 @@ func TestRestartKeyTriggersAction(t *testing.T) {
 	m := New(agg, "")
 	m.activeTab = TabSessions
 	m.updateLists()
+	m.sessionList.Select(1)
 
 	_, _ = m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'k'}})
 	if !agg.restartCalled {
@@ -54,6 +55,7 @@ func TestForkKeyShowsPrompt(t *testing.T) {
 	m := New(agg, "")
 	m.activeTab = TabSessions
 	m.updateLists()
+	m.sessionList.Select(1)
 
 	mm, _ := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'f'}})
 	updated := mm.(Model)
