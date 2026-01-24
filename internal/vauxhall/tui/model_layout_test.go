@@ -17,15 +17,15 @@ type fakeAggLayout struct {
 	state aggregator.State
 }
 
-func (f *fakeAggLayout) GetState() aggregator.State { return f.state }
-func (f *fakeAggLayout) Refresh(ctx context.Context) error { return nil }
-func (f *fakeAggLayout) NewSession(string, string, string) error { return nil }
-func (f *fakeAggLayout) RestartSession(string, string, string) error { return nil }
-func (f *fakeAggLayout) RenameSession(string, string) error { return nil }
-func (f *fakeAggLayout) ForkSession(string, string, string) error { return nil }
-func (f *fakeAggLayout) AttachSession(string) error { return nil }
+func (f *fakeAggLayout) GetState() aggregator.State                     { return f.state }
+func (f *fakeAggLayout) Refresh(ctx context.Context) error              { return nil }
+func (f *fakeAggLayout) NewSession(string, string, string) error        { return nil }
+func (f *fakeAggLayout) RestartSession(string, string, string) error    { return nil }
+func (f *fakeAggLayout) RenameSession(string, string) error             { return nil }
+func (f *fakeAggLayout) ForkSession(string, string, string) error       { return nil }
+func (f *fakeAggLayout) AttachSession(string) error                     { return nil }
 func (f *fakeAggLayout) StartMCP(context.Context, string, string) error { return nil }
-func (f *fakeAggLayout) StopMCP(string, string) error { return nil }
+func (f *fakeAggLayout) StopMCP(string, string) error                   { return nil }
 
 func TestFilterSessionsByProject(t *testing.T) {
 	agg := &fakeAggLayout{state: aggregator.State{
@@ -49,6 +49,43 @@ func TestFilterSessionsByProject(t *testing.T) {
 
 	if len(m.sessionList.Items()) != 1 {
 		t.Fatalf("expected 1 session, got %d", len(m.sessionList.Items()))
+	}
+}
+
+func TestSessionGroupingBuildsHeaders(t *testing.T) {
+	agg := &fakeAggLayout{state: aggregator.State{
+		Projects: []discovery.Project{{Path: "/p/one"}, {Path: "/p/two"}},
+		Sessions: []aggregator.TmuxSession{
+			{Name: "a", ProjectPath: "/p/one"},
+			{Name: "b", ProjectPath: "/p/two"},
+		},
+	}}
+	m := New(agg, "")
+	m.activeTab = TabSessions
+	m.updateLists()
+	items := m.sessionList.Items()
+	if len(items) != 4 {
+		t.Fatalf("expected 4 items (2 headers + 2 sessions), got %d", len(items))
+	}
+	if _, ok := items[0].(GroupHeaderItem); !ok {
+		t.Fatalf("expected header as first item")
+	}
+}
+
+func TestAgentGroupingBuildsHeaders(t *testing.T) {
+	agg := &fakeAggLayout{state: aggregator.State{
+		Projects: []discovery.Project{{Path: "/p/one"}},
+		Agents:   []aggregator.Agent{{Name: "Alpha", ProjectPath: "/p/one"}},
+	}}
+	m := New(agg, "")
+	m.activeTab = TabAgents
+	m.updateLists()
+	items := m.agentList.Items()
+	if len(items) != 2 {
+		t.Fatalf("expected 2 items (header + agent), got %d", len(items))
+	}
+	if _, ok := items[0].(GroupHeaderItem); !ok {
+		t.Fatalf("expected header as first item")
 	}
 }
 

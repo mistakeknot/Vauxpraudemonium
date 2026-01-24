@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"path/filepath"
+	"sort"
 	"strings"
 	"time"
 
@@ -226,31 +227,31 @@ func filterAgentItems(items []list.Item, state FilterState, statusByAgent map[st
 
 // Model is the main TUI model
 type Model struct {
-	agg         aggregatorAPI
-	tmuxClient  statusClient
-	statusCache map[string]cachedStatus
-	statusTTL   time.Duration
-	now         func() time.Time
-	width       int
-	height      int
-	activeTab   Tab
-	activePane  Pane
-	buildInfo   string
-	sessionList list.Model
+	agg          aggregatorAPI
+	tmuxClient   statusClient
+	statusCache  map[string]cachedStatus
+	statusTTL    time.Duration
+	now          func() time.Time
+	width        int
+	height       int
+	activeTab    Tab
+	activePane   Pane
+	buildInfo    string
+	sessionList  list.Model
 	projectsList list.Model
-	agentList   list.Model
-	mcpList     list.Model
-	mcpProject  string
-	showMCP     bool
+	agentList    list.Model
+	mcpList      list.Model
+	mcpProject   string
+	showMCP      bool
 	filterActive bool
 	filterInput  textinput.Model
 	filterStates map[Tab]FilterState
-	promptMode  promptMode
-	promptInput textinput.Model
-	promptSess  *aggregator.TmuxSession
-	err         error
-	lastRefresh time.Time
-	quitting    bool
+	promptMode   promptMode
+	promptInput  textinput.Model
+	promptSess   *aggregator.TmuxSession
+	err          error
+	lastRefresh  time.Time
+	quitting     bool
 }
 
 // SessionItem represents a session in the list
@@ -296,7 +297,7 @@ type ProjectItem struct {
 	}
 }
 
-func (i ProjectItem) Title() string       { return i.Name }
+func (i ProjectItem) Title() string { return i.Name }
 func (i ProjectItem) Description() string {
 	if i.TaskStats != nil {
 		return fmt.Sprintf("📋 %d todo, %d in progress, %d done", i.TaskStats.Todo, i.TaskStats.InProgress, i.TaskStats.Done)
@@ -304,6 +305,24 @@ func (i ProjectItem) Description() string {
 	return i.Path
 }
 func (i ProjectItem) FilterValue() string { return i.Name + " " + i.Path }
+
+// GroupHeaderItem represents a grouped header in session/agent lists.
+type GroupHeaderItem struct {
+	ProjectPath string
+	Name        string
+	Count       int
+	Expanded    bool
+}
+
+func (i GroupHeaderItem) Title() string {
+	if i.Count > 0 {
+		return fmt.Sprintf("%s (%d)", i.Name, i.Count)
+	}
+	return i.Name
+}
+
+func (i GroupHeaderItem) Description() string { return "" }
+func (i GroupHeaderItem) FilterValue() string { return i.Name + " " + i.ProjectPath }
 
 // AgentItem represents an agent in the list
 type AgentItem struct {
@@ -320,25 +339,99 @@ func (i AgentItem) Description() string {
 }
 func (i AgentItem) FilterValue() string { return i.Agent.Name + " " + i.Agent.Program }
 
+func groupSessionItemsByProject(items []list.Item) []list.Item {
+	if len(items) == 0 {
+		return items
+	}
+	grouped := map[string][]SessionItem{}
+	for _, item := range items {
+		session, ok := item.(SessionItem)
+		if !ok {
+			continue
+		}
+		grouped[session.Session.ProjectPath] = append(grouped[session.Session.ProjectPath], session)
+	}
+	keys := make([]string, 0, len(grouped))
+	for key := range grouped {
+		keys = append(keys, key)
+	}
+	sort.Strings(keys)
+	out := make([]list.Item, 0, len(items)+len(keys))
+	for _, key := range keys {
+		name := filepath.Base(key)
+		if key == "" {
+			name = "Unassigned"
+		}
+		groupItems := grouped[key]
+		out = append(out, GroupHeaderItem{
+			ProjectPath: key,
+			Name:        name,
+			Count:       len(groupItems),
+			Expanded:    true,
+		})
+		for _, session := range groupItems {
+			out = append(out, session)
+		}
+	}
+	return out
+}
+
+func groupAgentItemsByProject(items []list.Item) []list.Item {
+	if len(items) == 0 {
+		return items
+	}
+	grouped := map[string][]AgentItem{}
+	for _, item := range items {
+		agent, ok := item.(AgentItem)
+		if !ok {
+			continue
+		}
+		grouped[agent.Agent.ProjectPath] = append(grouped[agent.Agent.ProjectPath], agent)
+	}
+	keys := make([]string, 0, len(grouped))
+	for key := range grouped {
+		keys = append(keys, key)
+	}
+	sort.Strings(keys)
+	out := make([]list.Item, 0, len(items)+len(keys))
+	for _, key := range keys {
+		name := filepath.Base(key)
+		if key == "" {
+			name = "Unassigned"
+		}
+		groupItems := grouped[key]
+		out = append(out, GroupHeaderItem{
+			ProjectPath: key,
+			Name:        name,
+			Count:       len(groupItems),
+			Expanded:    true,
+		})
+		for _, agent := range groupItems {
+			out = append(out, agent)
+		}
+	}
+	return out
+}
+
 // Key bindings
 type keyMap struct {
-	Tab       key.Binding
-	ShiftTab  key.Binding
-	Refresh   key.Binding
-	FocusLeft key.Binding
+	Tab        key.Binding
+	ShiftTab   key.Binding
+	Refresh    key.Binding
+	FocusLeft  key.Binding
 	FocusRight key.Binding
-	Filter    key.Binding
-	New       key.Binding
-	Rename    key.Binding
-	Fork      key.Binding
-	Restart   key.Binding
-	Attach    key.Binding
-	ToggleMCP key.Binding
-	Toggle    key.Binding
-	Enter     key.Binding
-	Quit      key.Binding
-	Help      key.Binding
-	Number    []key.Binding
+	Filter     key.Binding
+	New        key.Binding
+	Rename     key.Binding
+	Fork       key.Binding
+	Restart    key.Binding
+	Attach     key.Binding
+	ToggleMCP  key.Binding
+	Toggle     key.Binding
+	Enter      key.Binding
+	Quit       key.Binding
+	Help       key.Binding
+	Number     []key.Binding
 }
 
 var keys = keyMap{
@@ -466,19 +559,19 @@ func New(agg aggregatorAPI, buildInfo string) Model {
 	promptInput.Width = 40
 
 	return Model{
-		agg:         agg,
-		tmuxClient:  tmux.NewClient(),
-		statusCache: make(map[string]cachedStatus),
-		statusTTL:   2 * time.Second,
-		now:         time.Now,
-		activeTab:   TabDashboard,
-		activePane:  PaneProjects,
-		buildInfo:   buildInfo,
-		sessionList: sessionList,
+		agg:          agg,
+		tmuxClient:   tmux.NewClient(),
+		statusCache:  make(map[string]cachedStatus),
+		statusTTL:    2 * time.Second,
+		now:          time.Now,
+		activeTab:    TabDashboard,
+		activePane:   PaneProjects,
+		buildInfo:    buildInfo,
+		sessionList:  sessionList,
 		projectsList: projectsList,
-		agentList:   agentList,
-		mcpList:     mcpList,
-		filterInput: filterInput,
+		agentList:    agentList,
+		mcpList:      mcpList,
+		filterInput:  filterInput,
 		filterStates: map[Tab]FilterState{
 			TabSessions: {Raw: ""},
 			TabAgents:   {Raw: ""},
@@ -918,7 +1011,8 @@ func (m *Model) updateLists() {
 			AgentType: s.AgentType,
 		})
 	}
-	m.sessionList.SetItems(filterSessionItems(sessionItems, m.filterStateFor(TabSessions)))
+	filteredSessions := filterSessionItems(sessionItems, m.filterStateFor(TabSessions))
+	m.sessionList.SetItems(groupSessionItemsByProject(filteredSessions))
 
 	// Update agent list
 	agentItems := make([]list.Item, 0, len(state.Agents))
@@ -928,7 +1022,8 @@ func (m *Model) updateLists() {
 		}
 		agentItems = append(agentItems, AgentItem{Agent: a})
 	}
-	m.agentList.SetItems(filterAgentItems(agentItems, m.filterStateFor(TabAgents), statusByAgent))
+	filteredAgents := filterAgentItems(agentItems, m.filterStateFor(TabAgents), statusByAgent)
+	m.agentList.SetItems(groupAgentItemsByProject(filteredAgents))
 }
 
 func (m *Model) updateMCPList() {
