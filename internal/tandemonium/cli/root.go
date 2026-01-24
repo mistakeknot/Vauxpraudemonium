@@ -1,6 +1,7 @@
 package cli
 
 import (
+	"encoding/json"
 	"fmt"
 	"strings"
 	"time"
@@ -9,10 +10,12 @@ import (
 	"github.com/mistakeknot/vauxpraudemonium/internal/tandemonium/cli/commands"
 	"github.com/mistakeknot/vauxpraudemonium/internal/tandemonium/config"
 	"github.com/mistakeknot/vauxpraudemonium/internal/tandemonium/epics"
+	tandemoniumPlan "github.com/mistakeknot/vauxpraudemonium/internal/tandemonium/plan"
 	"github.com/mistakeknot/vauxpraudemonium/internal/tandemonium/prd"
 	"github.com/mistakeknot/vauxpraudemonium/internal/tandemonium/project"
 	"github.com/mistakeknot/vauxpraudemonium/internal/tandemonium/specs"
 	"github.com/mistakeknot/vauxpraudemonium/internal/tandemonium/tui"
+	"github.com/mistakeknot/vauxpraudemonium/pkg/plan"
 	"github.com/spf13/cobra"
 )
 
@@ -61,6 +64,7 @@ func newRootCommand() *cobra.Command {
 		},
 	}
 	var initFromPRD string
+	var initPlanMode bool
 	initCmd := &cobra.Command{
 		Use:   "init",
 		Short: "Initialize .tandemonium in current directory",
@@ -73,8 +77,11 @@ Use --from-prd to import epics from an existing Praude PRD instead:
   tandemonium init --from-prd mvp
 `,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			// Handle --from-prd flag
+			// Handle --from-prd flag with optional --plan
 			if initFromPRD != "" {
+				if initPlanMode {
+					return runInitFromPRDPlan(cmd, initFromPRD)
+				}
 				return runInitFromPRD(cmd, initFromPRD, initExisting, cmd.Flags().Changed("existing"))
 			}
 			opts := initOptions{
@@ -93,6 +100,7 @@ Use --from-prd to import epics from an existing Praude PRD instead:
 	initCmd.Flags().IntVar(&initDepth, "depth", 0, "Exploration depth (1-3)")
 	initCmd.Flags().BoolVar(&initUseTUI, "tui", false, "Show progress UI")
 	initCmd.Flags().StringVar(&initFromPRD, "from-prd", "", "Import epics from a Praude PRD (e.g., PRD-001, mvp)")
+	initCmd.Flags().BoolVar(&initPlanMode, "plan", false, "Generate plan JSON instead of executing")
 	root.AddCommand(initCmd)
 	root.AddCommand(
 		commands.AgentCmd(),
@@ -109,6 +117,7 @@ Use --from-prd to import epics from an existing Praude PRD instead:
 		commands.ExportCmd(),
 		commands.ImportCmd(),
 		commands.ScanCmd(),
+		commands.ApplyCmd(),
 	)
 	root.Flags().BoolVarP(&quickMode, "quick", "q", false, "Create task in quick mode")
 	return root
@@ -177,3 +186,69 @@ func runInitFromPRD(cmd *cobra.Command, prdID, existing string, existingSet bool
 	fmt.Fprintf(out, "Wrote epics to %s\n", specsDir)
 	return nil
 }
+
+// runInitFromPRDPlan generates a plan for init --from-prd.
+func runInitFromPRDPlan(cmd *cobra.Command, prdID string) error {
+	out := cmd.OutOrStdout()
+
+	root, err := project.FindRoot(".")
+	if err != nil {
+		// If no root, use cwd
+		root = "."
+	}
+
+	// Import the PRD to get epic data
+	result, err := prd.ImportFromPRD(prd.ImportOptions{
+		Root:  root,
+		PRDID: prdID,
+	})
+	if err != nil {
+		return fmt.Errorf("failed to import PRD: %w", err)
+	}
+
+	// Convert to plan format
+	var epicPlans []tandemoniumPlan.EpicPlan
+	for _, e := range result.Epics {
+		ep := tandemoniumPlan.EpicPlan{
+			ID:     e.ID,
+			Title:  e.Title,
+			Status: string(e.Status),
+		}
+		for _, s := range e.Stories {
+			ep.Stories = append(ep.Stories, tandemoniumPlan.StoryPlan{
+				ID:                 s.ID,
+				Title:              s.Title,
+				AcceptanceCriteria: s.AcceptanceCriteria,
+			})
+		}
+		epicPlans = append(epicPlans, ep)
+	}
+
+	p, err := tandemoniumPlan.GenerateInitPlan(tandemoniumPlan.InitPlanOptions{
+		Root:     root,
+		PRDID:    prdID,
+		Epics:    epicPlans,
+		Warnings: result.Warnings,
+	})
+	if err != nil {
+		return err
+	}
+
+	planPath, err := p.Save(root)
+	if err != nil {
+		return err
+	}
+
+	data, err := json.MarshalIndent(p, "", "  ")
+	if err != nil {
+		return err
+	}
+	fmt.Fprintln(out, string(data))
+	fmt.Fprintf(out, "\nPlan saved to: %s\n", planPath)
+	fmt.Fprintln(out, "Run 'tandemonium apply' to execute this plan.")
+
+	return nil
+}
+
+// Silence unused import warnings
+var _ = plan.Version

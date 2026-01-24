@@ -2,6 +2,7 @@ package commands
 
 import (
 	"bufio"
+	"encoding/json"
 	"fmt"
 	"io"
 	"os"
@@ -11,11 +12,13 @@ import (
 
 	"github.com/mistakeknot/vauxpraudemonium/internal/praude/agents"
 	"github.com/mistakeknot/vauxpraudemonium/internal/praude/config"
+	praudePlan "github.com/mistakeknot/vauxpraudemonium/internal/praude/plan"
 	"github.com/mistakeknot/vauxpraudemonium/internal/praude/project"
 	"github.com/mistakeknot/vauxpraudemonium/internal/praude/research"
 	"github.com/mistakeknot/vauxpraudemonium/internal/praude/scan"
 	"github.com/mistakeknot/vauxpraudemonium/internal/praude/specs"
 	"github.com/mistakeknot/vauxpraudemonium/internal/praude/suggestions"
+	"github.com/mistakeknot/vauxpraudemonium/pkg/plan"
 	"github.com/spf13/cobra"
 	"gopkg.in/yaml.v3"
 )
@@ -39,6 +42,7 @@ func InterviewCmd() *cobra.Command {
 		skipBootstrap bool
 		skipResearch  bool
 		configFile    string
+		planMode      bool
 	)
 	cmd := &cobra.Command{
 		Use:   "interview",
@@ -97,6 +101,11 @@ The config file format:
 
 			// Determine if we're in non-interactive mode
 			nonInteractive := configFile != "" || vision != "" || users != "" || problem != "" || requirements != ""
+
+			// Handle plan mode
+			if planMode {
+				return runInterviewPlan(cmd.OutOrStdout(), root, interviewCfg)
+			}
 
 			reader := bufio.NewReader(cmd.InOrStdin())
 			out := cmd.OutOrStdout()
@@ -236,6 +245,7 @@ The config file format:
 	cmd.Flags().BoolVar(&skipBootstrap, "skip-bootstrap", false, "Skip agent bootstrap/suggestions")
 	cmd.Flags().BoolVar(&skipResearch, "skip-research", false, "Skip research step")
 	cmd.Flags().StringVar(&configFile, "config", "", "YAML config file with interview answers")
+	cmd.Flags().BoolVar(&planMode, "plan", false, "Generate plan JSON instead of executing")
 	return cmd
 }
 
@@ -453,3 +463,49 @@ func firstNonEmpty(values ...string) string {
 	}
 	return ""
 }
+
+// runInterviewPlan generates a plan for the interview command.
+func runInterviewPlan(out io.Writer, root string, cfg InterviewConfig) error {
+	specDir := project.SpecsDir(root)
+	if err := os.MkdirAll(specDir, 0o755); err != nil {
+		return err
+	}
+
+	nextID, err := specs.NextID(specDir)
+	if err != nil {
+		return err
+	}
+
+	p, err := praudePlan.GenerateInterviewPlan(praudePlan.InterviewPlanOptions{
+		Root:         root,
+		NextID:       nextID,
+		Vision:       cfg.Vision,
+		Users:        cfg.Users,
+		Problem:      cfg.Problem,
+		Requirements: cfg.Requirements,
+	})
+	if err != nil {
+		return err
+	}
+
+	// Save the plan
+	planPath, err := p.Save(root)
+	if err != nil {
+		return err
+	}
+
+	// Output the plan as JSON
+	data, err := json.MarshalIndent(p, "", "  ")
+	if err != nil {
+		return err
+	}
+	fmt.Fprintln(out, string(data))
+	fmt.Fprintf(out, "\nPlan saved to: %s\n", planPath)
+	fmt.Fprintln(out, "Run 'praude apply' to execute this plan.")
+
+	return nil
+}
+
+// Ensure we use the imported packages
+var _ = plan.Version
+var _ = praudePlan.GenerateInterviewPlan

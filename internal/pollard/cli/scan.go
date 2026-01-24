@@ -2,6 +2,7 @@ package cli
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"os"
 	"os/signal"
@@ -11,13 +12,15 @@ import (
 
 	"github.com/mistakeknot/vauxpraudemonium/internal/pollard/config"
 	"github.com/mistakeknot/vauxpraudemonium/internal/pollard/hunters"
+	pollardPlan "github.com/mistakeknot/vauxpraudemonium/internal/pollard/plan"
 	"github.com/mistakeknot/vauxpraudemonium/internal/pollard/sources"
 	"github.com/mistakeknot/vauxpraudemonium/internal/pollard/state"
 )
 
 var (
-	scanHunter string
-	scanDryRun bool
+	scanHunter   string
+	scanDryRun   bool
+	scanPlanMode bool
 )
 
 var scanCmd = &cobra.Command{
@@ -80,6 +83,43 @@ var scanCmd = &cobra.Command{
 
 		if len(hunterNames) == 0 {
 			fmt.Println("No enabled hunters to run.")
+			return nil
+		}
+
+		// Plan mode - generate JSON plan
+		if scanPlanMode {
+			hunterConfigs := make(map[string]pollardPlan.HunterConfig)
+			for _, name := range hunterNames {
+				hcfg, _ := cfg.GetHunterConfig(name)
+				hunterConfigs[name] = pollardPlan.HunterConfig{
+					Queries:    hcfg.Queries,
+					MaxResults: hcfg.MaxResults,
+					Interval:   hcfg.Interval,
+					Output:     hcfg.Output,
+				}
+			}
+
+			p, err := pollardPlan.GenerateScanPlan(pollardPlan.ScanPlanOptions{
+				Root:          cwd,
+				HunterNames:   hunterNames,
+				HunterConfigs: hunterConfigs,
+			})
+			if err != nil {
+				return err
+			}
+
+			planPath, err := p.Save(cwd)
+			if err != nil {
+				return err
+			}
+
+			data, err := json.MarshalIndent(p, "", "  ")
+			if err != nil {
+				return err
+			}
+			fmt.Println(string(data))
+			fmt.Printf("\nPlan saved to: %s\n", planPath)
+			fmt.Println("Run 'pollard apply' to execute this plan.")
 			return nil
 		}
 
@@ -188,4 +228,5 @@ var scanCmd = &cobra.Command{
 func init() {
 	scanCmd.Flags().StringVar(&scanHunter, "hunter", "", "Run a specific hunter by name")
 	scanCmd.Flags().BoolVar(&scanDryRun, "dry-run", false, "Show what would run without executing")
+	scanCmd.Flags().BoolVar(&scanPlanMode, "plan", false, "Generate plan JSON instead of executing")
 }

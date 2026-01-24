@@ -1,17 +1,20 @@
 package cli
 
 import (
+	"encoding/json"
 	"fmt"
 	"os"
 
 	"github.com/spf13/cobra"
 
+	pollardPlan "github.com/mistakeknot/vauxpraudemonium/internal/pollard/plan"
 	"github.com/mistakeknot/vauxpraudemonium/internal/pollard/reports"
 )
 
 var (
-	reportType   string
-	reportStdout bool
+	reportType     string
+	reportStdout   bool
+	reportPlanMode bool
 )
 
 var reportCmd = &cobra.Command{
@@ -34,6 +37,31 @@ Examples:
 		cwd, err := os.Getwd()
 		if err != nil {
 			return err
+		}
+
+		// Plan mode - generate JSON plan
+		if reportPlanMode {
+			p, err := pollardPlan.GenerateReportPlan(pollardPlan.ReportPlanOptions{
+				Root:       cwd,
+				ReportType: reportType,
+			})
+			if err != nil {
+				return err
+			}
+
+			planPath, err := p.Save(cwd)
+			if err != nil {
+				return err
+			}
+
+			data, err := json.MarshalIndent(p, "", "  ")
+			if err != nil {
+				return err
+			}
+			fmt.Println(string(data))
+			fmt.Printf("\nPlan saved to: %s\n", planPath)
+			fmt.Println("Run 'pollard apply' to execute this plan.")
+			return nil
 		}
 
 		generator := reports.NewGenerator(cwd)
@@ -75,4 +103,5 @@ Examples:
 func init() {
 	reportCmd.Flags().StringVar(&reportType, "type", "landscape", "Report type: landscape, competitive, trends, research")
 	reportCmd.Flags().BoolVar(&reportStdout, "stdout", false, "Output report to stdout instead of file")
+	reportCmd.Flags().BoolVar(&reportPlanMode, "plan", false, "Generate plan JSON instead of executing")
 }
