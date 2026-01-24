@@ -26,8 +26,10 @@ Unified monorepo for AI agent development tools: Vauxhall, Praude, Tandemonium, 
 - All four tools build and run
 - Tokyo Night color palette standardized
 - Pollard hunters implemented (GitHub, HackerNews, arXiv, Competitor)
+- Pollard general-purpose hunters (OpenAlex, PubMed, USDA, Legal, Economics, Wiki)
 - Pollard report generation (landscape, competitive, trends, research)
 - Pollard API for Praude/Tandemonium integration
+- Pollard GetInsightsForFeature/GenerateResearchBrief for agent context
 
 ### In Progress
 - Vauxhall TUI mode
@@ -259,7 +261,11 @@ tandemonium stop <id>    # Stop task
 
 Continuous research intelligence for product development. Named after Cayce Pollard from William Gibson's *Pattern Recognition*.
 
+Pollard is a **general-purpose research system** that can research any domain: technology, medicine, law, economics, nutrition, and more.
+
 **Hunters (Research Agents):**
+
+*Tech-Focused (enabled by default):*
 | Hunter | Purpose | API |
 |--------|---------|-----|
 | `github-scout` | Find relevant OSS implementations | GitHub Search API |
@@ -267,12 +273,28 @@ Continuous research intelligence for product development. Named after Cayce Poll
 | `research-scout` | Track academic research | arXiv API |
 | `competitor-tracker` | Monitor competitor changes | HTML scraping |
 
+*General-Purpose (disabled by default, enable as needed):*
+| Hunter | Purpose | API | Auth |
+|--------|---------|-----|------|
+| `openalex` | 260M+ academic works, all disciplines | OpenAlex | Email (optional) |
+| `pubmed` | 37M+ biomedical/medical citations | NCBI E-utilities | API key (optional) |
+| `usda-nutrition` | 1.4M+ foods, nutrients, allergens | USDA FoodData Central | API key (required) |
+| `legal` | 9M+ US court decisions | CourtListener | API key (required) |
+| `economics` | Global economic indicators | World Bank | None |
+| `wiki` | Millions of entities, all domains | Wikipedia/Wikidata | None |
+
 **Key Paths:**
 - `.pollard/config.yaml` - Hunter configs and schedules
 - `.pollard/state.db` - SQLite run history and freshness
 - `.pollard/sources/github/` - Raw GitHub repo data
 - `.pollard/sources/hackernews/` - Trend items
-- `.pollard/sources/research/` - Academic papers
+- `.pollard/sources/research/` - Academic papers (arXiv)
+- `.pollard/sources/openalex/` - Multi-domain academic works
+- `.pollard/sources/pubmed/` - Biomedical articles
+- `.pollard/sources/nutrition/` - Food/nutrition data
+- `.pollard/sources/legal/` - Court cases
+- `.pollard/sources/economics/` - Economic indicators
+- `.pollard/sources/wiki/` - Wikipedia/Wikidata entities
 - `.pollard/insights/competitive/` - Competitor changes
 - `.pollard/reports/` - Generated markdown reports
 
@@ -281,6 +303,8 @@ Continuous research intelligence for product development. Named after Cayce Poll
 pollard init                        # Initialize .pollard/
 pollard scan                        # Run all enabled hunters
 pollard scan --hunter github-scout  # Run specific hunter
+pollard scan --hunter openalex      # Run OpenAlex (multi-domain academic)
+pollard scan --hunter pubmed        # Run PubMed (medical research)
 pollard scan --dry-run              # Show what would run
 pollard report                      # Generate landscape report
 pollard report --type competitive   # Competitive analysis
@@ -298,14 +322,33 @@ scanner := api.NewScanner(projectPath)
 result, _ := scanner.ResearchForPRD(ctx, vision, problem, requirements)
 result, _ := scanner.ResearchForEpic(ctx, epicTitle, description)
 result, _ := scanner.ResearchUserPersonas(ctx, personas, painpoints)
+
+// Get insights linked to a feature (for Tandemonium)
+insights, _ := scanner.GetInsightsForFeature(ctx, "FEAT-001")
+brief, _ := scanner.GenerateResearchBrief(ctx, "FEAT-001")
 ```
 
-**Rate Limits (Free by Default):**
-| API | Unauthenticated | With Token |
-|-----|-----------------|------------|
+**Environment Variables:**
+| Variable | Hunter | Required |
+|----------|--------|----------|
+| `GITHUB_TOKEN` | github-scout | No (faster with) |
+| `OPENALEX_EMAIL` | openalex | No (faster with) |
+| `NCBI_API_KEY` | pubmed | No (faster with) |
+| `USDA_API_KEY` | usda-nutrition | Yes |
+| `COURTLISTENER_API_KEY` | legal | Yes |
+
+**Rate Limits:**
+| API | Unauthenticated | With Token/Email |
+|-----|-----------------|------------------|
 | GitHub | 60 req/hr | 5000 req/hr |
 | HackerNews | Generous | N/A |
 | arXiv | 1 req/3s | N/A |
+| OpenAlex | 10 req/s | 100k/day (with email) |
+| PubMed | 3 req/s | 10 req/s |
+| USDA | N/A | 12k req/hr |
+| CourtListener | N/A | Generous |
+| World Bank | Polite use | N/A |
+| Wikipedia | 5 req/s | N/A |
 
 ---
 
@@ -368,6 +411,10 @@ tui.PriorityBadge(1)  // "P1" (yellow)
 | `TANDEMONIUM_CONFIG` | Tandemonium | .tandemonium/config.toml |
 | `GITHUB_TOKEN` | Pollard | (optional, faster rate limit) |
 | `POLLARD_GITHUB_TOKEN` | Pollard | (alternative to GITHUB_TOKEN) |
+| `OPENALEX_EMAIL` | Pollard | (optional, polite pool access) |
+| `NCBI_API_KEY` | Pollard | (optional, faster PubMed) |
+| `USDA_API_KEY` | Pollard | (required for usda-nutrition) |
+| `COURTLISTENER_API_KEY` | Pollard | (required for legal) |
 
 ---
 

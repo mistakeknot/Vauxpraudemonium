@@ -8,7 +8,7 @@ Unified monorepo for AI agent development tools:
 - **Vauxhall**: Multi-project agent mission control (web + TUI)
 - **Praude**: TUI-first PRD generation and validation
 - **Tandemonium**: Task orchestration for human-AI collaboration
-- **Pollard**: Continuous research intelligence for product development
+- **Pollard**: General-purpose research intelligence (tech, medicine, law, economics, etc.)
 
 ## Quick Commands
 
@@ -23,6 +23,8 @@ Unified monorepo for AI agent development tools:
 go run ./cmd/pollard init           # Initialize .pollard/
 go run ./cmd/pollard scan           # Run all hunters
 go run ./cmd/pollard scan --hunter github-scout
+go run ./cmd/pollard scan --hunter openalex   # Multi-domain academic
+go run ./cmd/pollard scan --hunter pubmed     # Medical research
 go run ./cmd/pollard report         # Generate landscape report
 go run ./cmd/pollard report --type competitive
 
@@ -51,5 +53,6 @@ go test ./...
 - htmx + Tailwind for Vauxhall web
 - SQLite for local state (read-only to external DBs)
 - tmux integration via CLI commands
-- Pollard hunters use free API tiers by default (no auth required)
+- Pollard tech hunters use free API tiers (no auth required)
+- Pollard general-purpose hunters: some require API keys (USDA, CourtListener)
 - Intermute for cross-tool messaging (file-based until HTTP API built)
