@@ -317,8 +317,14 @@ Fuzzy search over all available actions:
 ```
 Autarch/
 ├── cmd/
-│   └── autarch/main.go           # Single binary
+│   ├── autarch/main.go           # Unified TUI (all tools)
+│   ├── gurgeh/main.go            # Standalone PRD tool
+│   ├── coldwine/main.go          # Standalone task orchestration
+│   ├── pollard/main.go           # Standalone research
+│   └── bigend/main.go            # Standalone session control
 ├── internal/
+│   ├── embedded/                 # Embedded Intermute wrapper
+│   │   └── server.go             # Start/stop, shared DB path
 │   └── tui/
 │       ├── app.go                # Main app model
 │       ├── tabs.go               # Tab bar component
@@ -375,17 +381,26 @@ autarch (single binary)
 ### User Experience
 
 ```bash
-# Install
+# Install full suite
 go install github.com/mistakeknot/autarch/cmd/autarch@latest
+autarch                    # Unified TUI with all tools
 
-# Run (starts embedded Intermute + TUI)
-autarch
+# Or install just what you need
+go install github.com/mistakeknot/autarch/cmd/gurgeh@latest
+gurgeh                     # Standalone PRD tool
 
-# Or use CLI commands
-autarch gurgeh list
-autarch coldwine status
-autarch pollard scan
+go install github.com/mistakeknot/autarch/cmd/coldwine@latest
+coldwine                   # Standalone task orchestration
+
+go install github.com/mistakeknot/autarch/cmd/pollard@latest
+pollard                    # Standalone research tool
+
+go install github.com/mistakeknot/autarch/cmd/bigend@latest
+bigend                     # Standalone session control
 ```
+
+All binaries embed Intermute and share the same database (`~/.autarch/data.db`).
+If you start with just `gurgeh` and later install `autarch`, your data is already there.
 
 ### Data Location
 
