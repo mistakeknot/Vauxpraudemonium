@@ -358,6 +358,83 @@ Intermute/
 │           └── domain.go         # Domain queries
 ```
 
+## Deployment Model: Embedded Intermute
+
+Autarch embeds Intermute as a library - single binary, single process.
+
+```
+autarch (single binary)
+├── embedded Intermute server (goroutine on :7338)
+│   ├── SQLite event log (~/.autarch/data.db)
+│   ├── REST API
+│   └── WebSocket hub
+├── TUI client (connects to localhost:7338)
+└── CLI commands
+```
+
+### User Experience
+
+```bash
+# Install
+go install github.com/mistakeknot/autarch/cmd/autarch@latest
+
+# Run (starts embedded Intermute + TUI)
+autarch
+
+# Or use CLI commands
+autarch gurgeh list
+autarch coldwine status
+autarch pollard scan
+```
+
+### Data Location
+
+```
+~/.autarch/
+├── data.db           # SQLite event log (all state)
+├── config.toml       # Global config
+└── briefs/           # Agent brief files (content)
+```
+
+### Multi-Machine Mode
+
+For advanced setups (laptop + server, multiple agents):
+
+```bash
+# On server: run standalone Intermute
+intermute --port 7338
+
+# On laptop: connect to remote
+autarch --server server.local:7338
+```
+
+Intermute remains a separate repo/binary for this use case, but most users just run `autarch`.
+
+### Implementation
+
+```go
+// cmd/autarch/main.go
+func main() {
+    // Start embedded Intermute
+    srv := intermute.NewEmbedded(intermute.Config{
+        DBPath: "~/.autarch/data.db",
+        Port:   7338,
+    })
+    go srv.Start()
+    defer srv.Stop()
+
+    // Run TUI or CLI
+    if isTUI() {
+        runTUI("localhost:7338")
+    } else {
+        runCLI("localhost:7338")
+    }
+}
+```
+
+Intermute exposes `NewEmbedded()` that runs the server in-process without
+binding to external network (uses localhost only by default).
+
 ## Open Questions
 
 1. **Project scoping**: Should all domain entities be project-scoped like messages?
@@ -368,8 +445,5 @@ Intermute/
    - **Option B**: Store content in Intermute (blob column or external storage)
    - **Recommendation**: Option A for now, keeps Intermute lightweight
 
-3. **Offline mode**: Should Autarch work without Intermute?
-   - **Recommendation**: No - keep it simple, Intermute is always required
-
-4. **Authentication**: How do multiple users access the same Intermute?
+3. **Authentication**: How do multiple users access the same Intermute?
    - **Recommendation**: Use existing project-scoped API keys, add user identity later
