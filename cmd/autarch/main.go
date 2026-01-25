@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"path/filepath"
 	"runtime/debug"
 	"strings"
 	"syscall"
@@ -24,8 +25,12 @@ import (
 	"github.com/mistakeknot/autarch/internal/bigend/web"
 	coldwineCli "github.com/mistakeknot/autarch/internal/coldwine/cli"
 	coldwineIntermute "github.com/mistakeknot/autarch/internal/coldwine/intermute"
+	"github.com/mistakeknot/autarch/internal/embedded"
+	"github.com/mistakeknot/autarch/internal/tui"
+	"github.com/mistakeknot/autarch/internal/tui/views"
 	gurgehCli "github.com/mistakeknot/autarch/internal/gurgeh/cli"
 	gurgehIntermute "github.com/mistakeknot/autarch/internal/gurgeh/intermute"
+	"github.com/mistakeknot/autarch/pkg/autarch"
 	pollardCli "github.com/mistakeknot/autarch/internal/pollard/cli"
 	pollardIntermute "github.com/mistakeknot/autarch/internal/pollard/intermute"
 )
@@ -43,6 +48,7 @@ Available tools:
   pollard   General-purpose research intelligence`,
 	}
 
+	root.AddCommand(tuiCmd())
 	root.AddCommand(bigendCmd())
 	root.AddCommand(gurgehCmd())
 	root.AddCommand(coldwineCmd())
@@ -51,6 +57,88 @@ Available tools:
 	if err := root.Execute(); err != nil {
 		os.Exit(1)
 	}
+}
+
+func tuiCmd() *cobra.Command {
+	var (
+		port    int
+		dataDir string
+	)
+
+	cmd := &cobra.Command{
+		Use:   "tui",
+		Short: "Launch unified TUI with embedded Intermute",
+		Long: `Launch the unified Autarch TUI with all tools accessible via tabs.
+
+The TUI starts an embedded Intermute server for shared state storage.
+All domain data (specs, epics, tasks, insights, sessions) is stored
+in a local SQLite database.
+
+Navigation:
+  1-4       Switch between tabs (Bigend, Gurgeh, Coldwine, Pollard)
+  Ctrl+P    Open command palette
+  ?         Show help
+  q         Quit`,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			// Suppress logging in TUI mode
+			logger := slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{
+				Level: slog.LevelError,
+			}))
+			slog.SetDefault(logger)
+
+			// Resolve data directory
+			if dataDir == "" {
+				home, err := os.UserHomeDir()
+				if err != nil {
+					return fmt.Errorf("failed to get home directory: %w", err)
+				}
+				dataDir = filepath.Join(home, ".autarch")
+			}
+
+			// Ensure data directory exists
+			if err := os.MkdirAll(dataDir, 0755); err != nil {
+				return fmt.Errorf("failed to create data directory: %w", err)
+			}
+
+			// Start embedded Intermute server
+			dbPath := filepath.Join(dataDir, "data.db")
+			srv, err := embedded.New(embedded.Config{
+				Host:   "127.0.0.1",
+				Port:   port,
+				DBPath: dbPath,
+			})
+			if err != nil {
+				return fmt.Errorf("failed to create embedded server: %w", err)
+			}
+
+			if err := srv.Start(); err != nil {
+				return fmt.Errorf("failed to start embedded server: %w", err)
+			}
+			defer srv.Stop()
+
+			// Create client connecting to embedded server
+			client := autarch.NewClient(srv.URL())
+
+			// Create views
+			bigendView := views.NewBigendView(client)
+			gurgehView := views.NewGurgehView(client)
+			coldwineView := views.NewColdwineView(client)
+			pollardView := views.NewPollardView(client)
+
+			// Run unified TUI
+			return tui.Run(client,
+				bigendView,
+				gurgehView,
+				coldwineView,
+				pollardView,
+			)
+		},
+	}
+
+	cmd.Flags().IntVar(&port, "port", 7338, "Embedded Intermute server port")
+	cmd.Flags().StringVar(&dataDir, "data-dir", "", "Data directory (default: ~/.autarch)")
+
+	return cmd
 }
 
 func bigendCmd() *cobra.Command {
