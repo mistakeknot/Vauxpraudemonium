@@ -2,6 +2,7 @@ package intermute
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"strings"
 	"time"
@@ -40,7 +41,18 @@ func Start(ctx context.Context, opts Options) (func(), error) {
 	if project == "" {
 		project = strings.TrimSpace(os.Getenv("INTERMUTE_PROJECT"))
 	}
-	client := newClient(url)
+	apiKey := strings.TrimSpace(os.Getenv("INTERMUTE_API_KEY"))
+	if apiKey != "" && project == "" {
+		return nil, fmt.Errorf("INTERMUTE_PROJECT required when INTERMUTE_API_KEY is set")
+	}
+	var clientOpts []ic.Option
+	if apiKey != "" {
+		clientOpts = append(clientOpts, ic.WithAPIKey(apiKey))
+	}
+	if project != "" {
+		clientOpts = append(clientOpts, ic.WithProject(project))
+	}
+	client := newClient(url, clientOpts...)
 	agent, err := registerAgent(ctx, client, ic.Agent{
 		Name:         name,
 		Project:      project,

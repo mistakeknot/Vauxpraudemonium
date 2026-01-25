@@ -629,6 +629,22 @@ func intermuteEnabled() bool {
 	return intermuteURL() != ""
 }
 
+func intermuteClient() (*ic.Client, error) {
+	apiKey := strings.TrimSpace(os.Getenv("INTERMUTE_API_KEY"))
+	project := strings.TrimSpace(os.Getenv("INTERMUTE_PROJECT"))
+	if apiKey != "" && project == "" {
+		return nil, fmt.Errorf("INTERMUTE_PROJECT required when INTERMUTE_API_KEY is set")
+	}
+	var opts []ic.Option
+	if apiKey != "" {
+		opts = append(opts, ic.WithAPIKey(apiKey))
+	}
+	if project != "" {
+		opts = append(opts, ic.WithProject(project))
+	}
+	return ic.New(intermuteURL(), opts...), nil
+}
+
 // ProcessInbox processes pending messages in Pollard's inbox.
 // This is the Intermute-compatible message handling interface.
 func (s *Scanner) ProcessInbox(ctx context.Context) error {
@@ -743,7 +759,10 @@ type intermuteResponse struct {
 }
 
 func (s *Scanner) processIntermuteInbox(ctx context.Context) error {
-	client := ic.New(intermuteURL())
+	client, err := intermuteClient()
+	if err != nil {
+		return err
+	}
 	inbox, err := client.InboxSince(ctx, "pollard", s.intermuteCursor)
 	if err != nil {
 		return fmt.Errorf("intermute inbox: %w", err)
@@ -787,7 +806,10 @@ func (s *Scanner) processIntermuteInbox(ctx context.Context) error {
 // This is called by Praude/Tandemonium to request research.
 func SendResearchRequest(projectPath string, payload ResearchPayload, from string) (*ResearchMessage, error) {
 	if intermuteEnabled() {
-		client := ic.New(intermuteURL())
+		client, err := intermuteClient()
+		if err != nil {
+			return nil, err
+		}
 		body, err := json.Marshal(payload)
 		if err != nil {
 			return nil, err
@@ -849,7 +871,10 @@ func WaitForResponse(projectPath, msgID string, timeout time.Duration) (*Researc
 		if agent == "" {
 			return nil, fmt.Errorf("INTERMUTE_AGENT_NAME required for intermute response polling")
 		}
-		client := ic.New(intermuteURL())
+		client, err := intermuteClient()
+		if err != nil {
+			return nil, err
+		}
 		deadline := time.Now().Add(timeout)
 		var cursor uint64
 		for time.Now().Before(deadline) {
