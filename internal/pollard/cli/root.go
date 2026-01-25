@@ -10,8 +10,8 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/mistakeknot/vauxpraudemonium/internal/pollard/config"
-	"github.com/mistakeknot/vauxpraudemonium/internal/pollard/proposal"
+	"github.com/mistakeknot/autarch/internal/pollard/config"
+	"github.com/mistakeknot/autarch/internal/pollard/proposal"
 )
 
 var rootCmd = &cobra.Command{

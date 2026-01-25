@@ -1,4 +1,4 @@
-// Package tui provides shared TUI styles and components for Vauxpraudemonium projects.
+// Package tui provides shared TUI styles and components for Autarch projects.
 package tui
 
 import "github.com/charmbracelet/lipgloss"

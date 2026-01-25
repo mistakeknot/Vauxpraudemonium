@@ -3,7 +3,7 @@ package tui
 import (
 	"testing"
 
-	"github.com/mistakeknot/vauxpraudemonium/internal/gurgeh/specs"
+	"github.com/mistakeknot/autarch/internal/gurgeh/specs"
 )
 
 func TestGroupTreeFlatten(t *testing.T) {

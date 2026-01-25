@@ -3,8 +3,8 @@ package commands
 import (
 	"path/filepath"
 
-	"github.com/mistakeknot/vauxpraudemonium/internal/coldwine/plan"
-	"github.com/mistakeknot/vauxpraudemonium/internal/coldwine/project"
+	"github.com/mistakeknot/autarch/internal/coldwine/plan"
+	"github.com/mistakeknot/autarch/internal/coldwine/project"
 	"github.com/spf13/cobra"
 )
 

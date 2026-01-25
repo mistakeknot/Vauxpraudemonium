@@ -6,7 +6,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/mistakeknot/vauxpraudemonium/internal/gurgeh/project"
+	"github.com/mistakeknot/autarch/internal/gurgeh/project"
 )
 
 func TestListCommandOutputsSpecs(t *testing.T) {

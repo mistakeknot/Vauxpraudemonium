@@ -5,7 +5,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/mistakeknot/vauxpraudemonium/internal/coldwine/storage"
+	"github.com/mistakeknot/autarch/internal/coldwine/storage"
 	"github.com/spf13/cobra"
 )
 

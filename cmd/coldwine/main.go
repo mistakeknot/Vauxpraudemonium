@@ -3,7 +3,7 @@ package main
 import (
 	"os"
 
-	"github.com/mistakeknot/vauxpraudemonium/internal/coldwine/cli"
+	"github.com/mistakeknot/autarch/internal/coldwine/cli"
 )
 
 func main() {

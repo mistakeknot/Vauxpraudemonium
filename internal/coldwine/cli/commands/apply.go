@@ -8,10 +8,10 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/mistakeknot/vauxpraudemonium/internal/coldwine/epics"
-	tandemoniumPlan "github.com/mistakeknot/vauxpraudemonium/internal/coldwine/plan"
-	"github.com/mistakeknot/vauxpraudemonium/internal/coldwine/project"
-	"github.com/mistakeknot/vauxpraudemonium/pkg/plan"
+	"github.com/mistakeknot/autarch/internal/coldwine/epics"
+	tandemoniumPlan "github.com/mistakeknot/autarch/internal/coldwine/plan"
+	"github.com/mistakeknot/autarch/internal/coldwine/project"
+	"github.com/mistakeknot/autarch/pkg/plan"
 )
 
 // ApplyCmd creates the apply command.

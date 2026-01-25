@@ -6,9 +6,9 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/mistakeknot/vauxpraudemonium/internal/coldwine/config"
-	"github.com/mistakeknot/vauxpraudemonium/internal/coldwine/project"
-	"github.com/mistakeknot/vauxpraudemonium/internal/coldwine/storage"
+	"github.com/mistakeknot/autarch/internal/coldwine/config"
+	"github.com/mistakeknot/autarch/internal/coldwine/project"
+	"github.com/mistakeknot/autarch/internal/coldwine/storage"
 )
 
 func TestSendMessageAndFetchInbox(t *testing.T) {

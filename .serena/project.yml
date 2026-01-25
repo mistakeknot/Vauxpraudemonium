@@ -85,5 +85,5 @@ excluded_tools: []
 # (contrary to the memories, which are loaded on demand).
 initial_prompt: ""
 
-project_name: "Vauxpraudemonium"
+project_name: "Autarch"
 included_optional_tools: []

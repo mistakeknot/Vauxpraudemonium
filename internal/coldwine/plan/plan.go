@@ -8,8 +8,8 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/mistakeknot/vauxpraudemonium/pkg/discovery"
-	"github.com/mistakeknot/vauxpraudemonium/pkg/plan"
+	"github.com/mistakeknot/autarch/pkg/discovery"
+	"github.com/mistakeknot/autarch/pkg/plan"
 )
 
 func Run(in io.Reader, out io.Writer, planDir string) error {

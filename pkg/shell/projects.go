@@ -6,7 +6,7 @@ import (
 
 	"github.com/charmbracelet/bubbles/list"
 	tea "github.com/charmbracelet/bubbletea"
-	"github.com/mistakeknot/vauxpraudemonium/pkg/tui"
+	"github.com/mistakeknot/autarch/pkg/tui"
 )
 
 // Project represents a discovered project

@@ -6,9 +6,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/mistakeknot/vauxpraudemonium/internal/gurgeh/brief"
-	"github.com/mistakeknot/vauxpraudemonium/internal/gurgeh/project"
-	"github.com/mistakeknot/vauxpraudemonium/internal/gurgeh/specs"
+	"github.com/mistakeknot/autarch/internal/gurgeh/brief"
+	"github.com/mistakeknot/autarch/internal/gurgeh/project"
+	"github.com/mistakeknot/autarch/internal/gurgeh/specs"
 )
 
 func writeResearchBrief(root, id, researchPath string, now time.Time) (string, error) {

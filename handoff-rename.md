@@ -87,7 +87,7 @@ commands, and branding). This implies a wide refactor and consistent compatibili
 7) Update any release scripts or external references if present.
 
 ## Open Questions for Owner
-- Should repo name Vauxpraudemonium remain, or should it also be renamed?
+- Should repo name Autarch remain, or should it also be renamed?
 - Do we want to keep legacy config directories forever or deprecate on a timeline?
 - Should we preserve old CLI names as aliases or remove outright?
 

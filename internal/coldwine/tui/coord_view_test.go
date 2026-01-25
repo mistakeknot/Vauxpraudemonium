@@ -4,7 +4,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/mistakeknot/vauxpraudemonium/internal/coldwine/storage"
+	"github.com/mistakeknot/autarch/internal/coldwine/storage"
 )
 
 func TestCoordTabRendersInboxAndLocks(t *testing.T) {

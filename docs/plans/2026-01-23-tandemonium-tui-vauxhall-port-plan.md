@@ -2,7 +2,7 @@
 
 > **For Claude:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task.
 
-**Bead:** `Vauxpraudemonium-78w (Task reference)`
+**Bead:** `Autarch-78w (Task reference)`
 
 **Goal:** Port Tandemonium’s TUI rendering to use Vauxhall’s lipgloss-based styling while keeping the current two-pane layout and behaviors intact.
 
@@ -45,7 +45,7 @@ Expected: FAIL (no header rendering yet).
 // styles.go
 package tui
 
-import shared "github.com/mistakeknot/vauxpraudemonium/pkg/tui"
+import shared "github.com/mistakeknot/autarch/pkg/tui"
 
 var (
 	BaseStyle = shared.BaseStyle

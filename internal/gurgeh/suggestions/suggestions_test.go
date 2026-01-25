@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/mistakeknot/vauxpraudemonium/internal/gurgeh/specs"
+	"github.com/mistakeknot/autarch/internal/gurgeh/specs"
 )
 
 func TestCreateSuggestionTemplateIncludesSections(t *testing.T) {

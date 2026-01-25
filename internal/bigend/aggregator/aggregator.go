@@ -11,14 +11,14 @@ import (
 	"sync"
 	"time"
 
-	"github.com/mistakeknot/vauxpraudemonium/internal/bigend/agentcmd"
-	"github.com/mistakeknot/vauxpraudemonium/internal/bigend/agentmail"
-	"github.com/mistakeknot/vauxpraudemonium/internal/bigend/config"
-	"github.com/mistakeknot/vauxpraudemonium/internal/bigend/discovery"
-	"github.com/mistakeknot/vauxpraudemonium/internal/bigend/mcp"
-	"github.com/mistakeknot/vauxpraudemonium/internal/bigend/coldwine"
-	"github.com/mistakeknot/vauxpraudemonium/internal/bigend/tmux"
-	gurgSpecs "github.com/mistakeknot/vauxpraudemonium/internal/gurgeh/specs"
+	"github.com/mistakeknot/autarch/internal/bigend/agentcmd"
+	"github.com/mistakeknot/autarch/internal/bigend/agentmail"
+	"github.com/mistakeknot/autarch/internal/bigend/config"
+	"github.com/mistakeknot/autarch/internal/bigend/discovery"
+	"github.com/mistakeknot/autarch/internal/bigend/mcp"
+	"github.com/mistakeknot/autarch/internal/bigend/coldwine"
+	"github.com/mistakeknot/autarch/internal/bigend/tmux"
+	gurgSpecs "github.com/mistakeknot/autarch/internal/gurgeh/specs"
 )
 
 // Agent represents a detected AI agent

@@ -5,8 +5,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/mistakeknot/vauxpraudemonium/internal/bigend/aggregator"
-	"github.com/mistakeknot/vauxpraudemonium/internal/bigend/tmux"
+	"github.com/mistakeknot/autarch/internal/bigend/aggregator"
+	"github.com/mistakeknot/autarch/internal/bigend/tmux"
 )
 
 type fakeAggStatus struct {

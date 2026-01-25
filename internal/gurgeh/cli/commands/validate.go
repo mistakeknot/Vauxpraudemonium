@@ -7,9 +7,9 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/mistakeknot/vauxpraudemonium/internal/gurgeh/config"
-	"github.com/mistakeknot/vauxpraudemonium/internal/gurgeh/project"
-	"github.com/mistakeknot/vauxpraudemonium/internal/gurgeh/specs"
+	"github.com/mistakeknot/autarch/internal/gurgeh/config"
+	"github.com/mistakeknot/autarch/internal/gurgeh/project"
+	"github.com/mistakeknot/autarch/internal/gurgeh/specs"
 	"github.com/spf13/cobra"
 )
 

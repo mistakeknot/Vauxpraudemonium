@@ -1,6 +1,6 @@
 package agent
 
-import "github.com/mistakeknot/vauxpraudemonium/internal/coldwine/project"
+import "github.com/mistakeknot/autarch/internal/coldwine/project"
 
 type WorktreeCreator interface {
 	Create(repo, path, branch string) error

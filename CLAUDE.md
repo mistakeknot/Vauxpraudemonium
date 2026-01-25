@@ -1,4 +1,4 @@
-# Vauxpraudemonium
+# Autarch
 
 > See `AGENTS.md` for comprehensive development guide.
 
@@ -47,7 +47,7 @@ go test ./...
 
 ## Design Decisions (Do Not Re-Ask)
 
-- Module: `github.com/mistakeknot/vauxpraudemonium`
+- Module: `github.com/mistakeknot/autarch`
 - Shared TUI package with Tokyo Night colors
 - Bubble Tea for all TUIs
 - htmx + Tailwind for Bigend web

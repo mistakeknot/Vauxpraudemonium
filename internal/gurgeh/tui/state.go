@@ -1,6 +1,6 @@
 package tui
 
-import "github.com/mistakeknot/vauxpraudemonium/internal/gurgeh/specs"
+import "github.com/mistakeknot/autarch/internal/gurgeh/specs"
 
 type SharedState struct {
 	Summaries []specs.Summary

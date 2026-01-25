@@ -7,8 +7,8 @@ import (
 
 	"github.com/spf13/cobra"
 
-	pollardPlan "github.com/mistakeknot/vauxpraudemonium/internal/pollard/plan"
-	"github.com/mistakeknot/vauxpraudemonium/internal/pollard/reports"
+	pollardPlan "github.com/mistakeknot/autarch/internal/pollard/plan"
+	"github.com/mistakeknot/autarch/internal/pollard/reports"
 )
 
 var (

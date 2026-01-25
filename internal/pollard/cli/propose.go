@@ -12,9 +12,9 @@ import (
 	"github.com/spf13/cobra"
 	"gopkg.in/yaml.v3"
 
-	pollardPlan "github.com/mistakeknot/vauxpraudemonium/internal/pollard/plan"
-	"github.com/mistakeknot/vauxpraudemonium/internal/pollard/proposal"
-	"github.com/mistakeknot/vauxpraudemonium/pkg/plan"
+	pollardPlan "github.com/mistakeknot/autarch/internal/pollard/plan"
+	"github.com/mistakeknot/autarch/internal/pollard/proposal"
+	"github.com/mistakeknot/autarch/pkg/plan"
 )
 
 var (

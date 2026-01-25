@@ -4,7 +4,7 @@ import (
 	"testing"
 
 	tea "github.com/charmbracelet/bubbletea"
-	"github.com/mistakeknot/vauxpraudemonium/internal/coldwine/storage"
+	"github.com/mistakeknot/autarch/internal/coldwine/storage"
 )
 
 func TestCoordSelectionMoves(t *testing.T) {

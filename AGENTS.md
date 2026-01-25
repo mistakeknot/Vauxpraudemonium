@@ -1,4 +1,4 @@
-# Vauxgurgehmonium - Development Guide
+# Autarch - Development Guide
 
 Unified monorepo for AI agent development tools: Bigend, Gurgeh, Coldwine, and Pollard.
 
@@ -14,7 +14,7 @@ Unified monorepo for AI agent development tools: Bigend, Gurgeh, Coldwine, and P
 | Item | Value |
 |------|-------|
 | Language | Go 1.24+ |
-| Module | `github.com/mistakeknot/vauxgurgehmonium` |
+| Module | `github.com/mistakeknot/autarch` |
 | TUI Framework | Bubble Tea + lipgloss |
 | Web Framework | net/http + htmx + Tailwind |
 | Database | SQLite (WAL mode) |
@@ -46,7 +46,7 @@ Unified monorepo for AI agent development tools: Bigend, Gurgeh, Coldwine, and P
 ## Project Structure
 
 ```
-Vauxgurgehmonium/
+Autarch/
 ├── cmd/
 │   ├── bigend/           # Bigend entry point
 │   ├── gurgeh/             # Gurgeh entry point
@@ -146,7 +146,7 @@ go test ./internal/bigend/tmux -v
 
 **Shared agent targets** (global + per-project overrides):
 
-- Global: `~/.config/vauxgurgehmonium/agents.toml`
+- Global: `~/.config/autarch/agents.toml`
 - Project: `.gurgeh/agents.toml`
 - Compat: `.gurgeh/config.toml` `[agents]` (used if `.gurgeh/agents.toml` missing)
 
@@ -316,7 +316,7 @@ pollard report --stdout             # Output to terminal
 **API Integration:**
 Gurgeh and Coldwine can trigger Pollard research via the API:
 ```go
-import "github.com/mistakeknot/vauxgurgehmonium/internal/pollard/api"
+import "github.com/mistakeknot/autarch/internal/pollard/api"
 
 scanner := api.NewScanner(projectPath)
 result, _ := scanner.ResearchForPRD(ctx, vision, problem, requirements)

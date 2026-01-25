@@ -3,9 +3,9 @@ package tui
 import (
 	"path/filepath"
 
-	"github.com/mistakeknot/vauxpraudemonium/internal/gurgeh/git"
-	"github.com/mistakeknot/vauxpraudemonium/internal/gurgeh/project"
-	"github.com/mistakeknot/vauxpraudemonium/internal/gurgeh/suggestions"
+	"github.com/mistakeknot/autarch/internal/gurgeh/git"
+	"github.com/mistakeknot/autarch/internal/gurgeh/project"
+	"github.com/mistakeknot/autarch/internal/gurgeh/suggestions"
 )
 
 type suggestionsState struct {

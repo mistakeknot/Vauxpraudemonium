@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/mistakeknot/vauxpraudemonium/internal/coldwine/project"
-	"github.com/mistakeknot/vauxpraudemonium/internal/coldwine/tmux"
+	"github.com/mistakeknot/autarch/internal/coldwine/project"
+	"github.com/mistakeknot/autarch/internal/coldwine/tmux"
 	"github.com/spf13/cobra"
 )
 

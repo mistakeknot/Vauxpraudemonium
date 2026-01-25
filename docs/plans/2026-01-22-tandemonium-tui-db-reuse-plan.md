@@ -26,7 +26,7 @@ package tui
 import (
     "testing"
 
-    "github.com/mistakeknot/vauxpraudemonium/internal/tandemonium/storage"
+    "github.com/mistakeknot/autarch/internal/tandemonium/storage"
 )
 
 func TestNewModelWithDBUsesDBLoaders(t *testing.T) {
@@ -73,8 +73,8 @@ package tui
 import (
     "testing"
 
-    "github.com/mistakeknot/vauxpraudemonium/internal/tandemonium/git"
-    "github.com/mistakeknot/vauxpraudemonium/internal/tandemonium/storage"
+    "github.com/mistakeknot/autarch/internal/tandemonium/git"
+    "github.com/mistakeknot/autarch/internal/tandemonium/storage"
 )
 
 type fakeGitRunner struct{ calls [][]string }
@@ -213,9 +213,9 @@ package tui
 import (
     "database/sql"
 
-    "github.com/mistakeknot/vauxpraudemonium/internal/tandemonium/git"
-    "github.com/mistakeknot/vauxpraudemonium/internal/tandemonium/project"
-    "github.com/mistakeknot/vauxpraudemonium/internal/tandemonium/storage"
+    "github.com/mistakeknot/autarch/internal/tandemonium/git"
+    "github.com/mistakeknot/autarch/internal/tandemonium/project"
+    "github.com/mistakeknot/autarch/internal/tandemonium/storage"
 )
 
 type ApproveAdapter struct {

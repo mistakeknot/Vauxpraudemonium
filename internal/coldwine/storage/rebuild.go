@@ -5,7 +5,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/mistakeknot/vauxpraudemonium/internal/coldwine/project"
+	"github.com/mistakeknot/autarch/internal/coldwine/project"
 	"gopkg.in/yaml.v3"
 )
 

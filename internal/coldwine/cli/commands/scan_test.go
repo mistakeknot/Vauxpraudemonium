@@ -6,7 +6,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/mistakeknot/vauxpraudemonium/internal/coldwine/project"
+	"github.com/mistakeknot/autarch/internal/coldwine/project"
 )
 
 func TestScanCommandWritesSummary(t *testing.T) {

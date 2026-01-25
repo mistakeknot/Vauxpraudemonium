@@ -9,8 +9,8 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 
-	"github.com/mistakeknot/vauxpraudemonium/pkg/toolpane"
-	"github.com/mistakeknot/vauxpraudemonium/pkg/tui"
+	"github.com/mistakeknot/autarch/pkg/toolpane"
+	"github.com/mistakeknot/autarch/pkg/tui"
 )
 
 // Pane focus state

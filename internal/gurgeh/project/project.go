@@ -4,7 +4,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/mistakeknot/vauxpraudemonium/internal/gurgeh/config"
+	"github.com/mistakeknot/autarch/internal/gurgeh/config"
 )
 
 const GurgDir = ".gurgeh"

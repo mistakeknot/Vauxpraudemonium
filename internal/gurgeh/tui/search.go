@@ -3,7 +3,7 @@ package tui
 import (
 	"strings"
 
-	"github.com/mistakeknot/vauxpraudemonium/internal/gurgeh/specs"
+	"github.com/mistakeknot/autarch/internal/gurgeh/specs"
 )
 
 type SearchState struct {

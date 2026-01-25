@@ -1,126 +1,82 @@
-# Coldwine
+# Autarch
 
-> **TUI-first task orchestration for human-AI collaboration**
+> **AI Agent Development Tools Suite**
 
-Coldwine is a terminal-native tool for solo developers. It orchestrates multiple AI coding sessions with git worktree isolation, tmux session persistence, and a structured review flow. The current roadmap is a **Go + Bubble Tea** TUI that focuses on **Execute-only** (multi-agent orchestration + review). Planning and PM refinement are deferred to later milestones.
+Autarch is a unified monorepo for AI agent development tools, following the Culture novel ship naming convention.
 
-## What It Does (MVP)
+## Tools
 
-- Launches a TUI to manage active agent sessions
-- Creates isolated git worktrees per task
-- Streams tmux output for completion/blocker detection
-- Provides a review queue for completed tasks
-- Stores runtime state locally in SQLite (WAL) and task specs in YAML
+| Tool | Purpose | Command |
+|------|---------|---------|
+| **Bigend** | Multi-project agent mission control (web + TUI) | `./dev bigend` |
+| **Gurgeh** | TUI-first PRD generation and validation | `./dev gurgeh` |
+| **Coldwine** | Task orchestration for human-AI collaboration | `./dev coldwine` |
+| **Pollard** | Continuous research intelligence (hunters + reports) | `go run ./cmd/pollard` |
 
 ## Tech Stack
 
-- **Language:** Go 1.22+
-- **TUI:** Bubble Tea + Lip Gloss
-- **Persistence:** SQLite (WAL) + YAML specs in git
-- **Process isolation:** tmux
-- **Git:** native `git` commands
+- **Language:** Go 1.24+
+- **Module:** `github.com/mistakeknot/autarch`
+- **TUI:** Bubble Tea + Lip Gloss (Tokyo Night palette)
+- **Web:** net/http + htmx + Tailwind
+- **Database:** SQLite (WAL mode)
 
 ## Prerequisites
 
-- macOS or Linux (tmux required)
-- Git 2.23+ (worktrees)
+- macOS or Linux
 - Go 1.24+
-- tmux
+- tmux (for Coldwine)
+- Git 2.23+ (for worktrees)
 
-## Quick Start (Development)
+## Quick Start
 
 ```bash
-# Build
-go build ./cmd/coldwine
+# Build all tools
+go build ./cmd/...
 
-# Run
-./coldwine
+# Run individual tools
+./dev bigend      # Mission control (web mode)
+./dev bigend --tui # Mission control (TUI mode)
+./dev gurgeh      # PRD generation
+./dev coldwine    # Task orchestration
+
+# Pollard (research intelligence)
+go run ./cmd/pollard init
+go run ./cmd/pollard scan
+go run ./cmd/pollard report
+```
+
+## Project Structure
+
+```
+autarch/
+├── cmd/
+│   ├── bigend/       # Mission control entry point
+│   ├── gurgeh/       # PRD generation entry point
+│   ├── coldwine/     # Task orchestration entry point
+│   └── pollard/      # Research intelligence entry point
+├── internal/
+│   ├── bigend/       # Bigend-specific code
+│   ├── gurgeh/       # Gurgeh-specific code
+│   ├── coldwine/     # Coldwine-specific code
+│   └── pollard/      # Pollard-specific code
+├── pkg/
+│   ├── tui/          # Shared TUI components
+│   ├── shell/        # Shell integration
+│   └── discovery/    # Project discovery
+└── docs/             # Documentation
 ```
 
 ## Configuration
 
-Project config lives at `.coldwine/config.toml` (TOML). Layering order:
+Each tool has its own config directory:
+- Bigend: `.bigend/`
+- Gurgeh: `.gurgeh/` (legacy: `.praude/`)
+- Coldwine: `.coldwine/` (legacy: `.tandemonium/`)
+- Pollard: `.pollard/`
 
-1) `~/.config/coldwine/config.toml`
-2) `.coldwine/config.toml`
-3) env vars
-4) CLI flags
+Global agent targets: `~/.config/autarch/agents.toml`
 
-Minimal example:
+## Documentation
 
-```toml
-[general]
-max_agents = 4
-
-[git]
-branch_strategy = "feature"
-
-auto_commit_specs = true
-
-[llm_summary]
-# Optional: user-managed CLI for summaries (default example uses Claude)
-command = "claude"
-timeout_seconds = 30
-```
-
-## Local State
-
-All state lives in `.coldwine/`:
-
-```
-.coldwine/
-├── state.db         # SQLite runtime state (WAL)
-├── specs/           # Task specs (YAML, committed)
-└── sessions/        # tmux logs + metadata
-```
-
-## Repo Layout (Go)
-
-```
-cmd/
-  coldwine/        # Primary binary
-internal/
-  agent/              # Detection + agent logic
-  cli/                # Cobra commands
-  config/             # TOML config loader
-  git/                # Worktrees + branch operations
-  project/            # .coldwine initialization
-  review/             # Review queue
-  storage/            # SQLite layer
-  tmux/               # tmux session management
-  tui/                # Bubble Tea models + views
-prd/                  # Product requirements
-```
-
-## CLI
-
-Primary binary is `coldwine`. A `tand` alias may be provided by installers or user shell aliasing.
-
-Current commands (stubs for MVP scaffolding):
-
-```bash
-coldwine init
-coldwine status
-coldwine doctor
-coldwine recover
-coldwine cleanup
-```
-
-Mail helpers (MCP parity):
-
-```bash
-coldwine mail summarize --thread <thread-id> --llm --examples
-coldwine mail summarize --dry-run --llm --json
-```
-
-`--dry-run` validates your `llm_summary.command` with synthetic input, without requiring a real thread.
-See `docs/cli/mail.md` for the full mail command reference.
-See `docs/cli/agent.md` for agent registry commands.
-
-## Status
-
-This repository is mid-transition to the Go/TUI execute-only MVP. Rust/Tauri artifacts have been removed. See:
-
-- `prd/coldwine-spec.md`
-- `docs/plans/2026-01-11-go-tui-execute-mvp-design.md`
-- `docs/plans/2026-01-11-go-tui-execute-mvp-implementation-plan.md`
+See `AGENTS.md` for comprehensive development guide.

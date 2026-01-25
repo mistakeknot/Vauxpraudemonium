@@ -12,8 +12,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/mistakeknot/vauxpraudemonium/internal/pollard/pipeline"
-	"github.com/mistakeknot/vauxpraudemonium/internal/pollard/scoring"
+	"github.com/mistakeknot/autarch/internal/pollard/pipeline"
+	"github.com/mistakeknot/autarch/internal/pollard/scoring"
 	"gopkg.in/yaml.v3"
 )
 

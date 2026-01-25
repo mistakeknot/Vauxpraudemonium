@@ -19,11 +19,11 @@ import (
 	"strings"
 	"time"
 
-	"github.com/mistakeknot/vauxpraudemonium/internal/pollard/config"
-	"github.com/mistakeknot/vauxpraudemonium/internal/pollard/hunters"
-	"github.com/mistakeknot/vauxpraudemonium/internal/pollard/insights"
-	"github.com/mistakeknot/vauxpraudemonium/internal/pollard/sources"
-	"github.com/mistakeknot/vauxpraudemonium/internal/pollard/state"
+	"github.com/mistakeknot/autarch/internal/pollard/config"
+	"github.com/mistakeknot/autarch/internal/pollard/hunters"
+	"github.com/mistakeknot/autarch/internal/pollard/insights"
+	"github.com/mistakeknot/autarch/internal/pollard/sources"
+	"github.com/mistakeknot/autarch/internal/pollard/state"
 	"gopkg.in/yaml.v3"
 )
 

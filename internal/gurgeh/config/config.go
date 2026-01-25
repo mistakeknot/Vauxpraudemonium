@@ -5,7 +5,7 @@ import (
 	"path/filepath"
 
 	"github.com/BurntSushi/toml"
-	"github.com/mistakeknot/vauxpraudemonium/pkg/agenttargets"
+	"github.com/mistakeknot/autarch/pkg/agenttargets"
 )
 
 type Config struct {
@@ -65,7 +65,7 @@ func loadSharedAgents(projectRoot string) (map[string]AgentProfile, error) {
 	if err != nil {
 		return nil, nil
 	}
-	globalPath := filepath.Join(configDir, "vauxpraudemonium", "agents.toml")
+	globalPath := filepath.Join(configDir, "autarch", "agents.toml")
 	globalReg, projectReg, err := agenttargets.Load(globalPath, projectRoot)
 	if err != nil {
 		return nil, err

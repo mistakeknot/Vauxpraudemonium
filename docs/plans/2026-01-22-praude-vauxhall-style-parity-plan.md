@@ -2,7 +2,7 @@
 
 > **For Claude:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task.
 
-**Bead:** `Vauxpraudemonium-wtl` (Task reference)
+**Bead:** `Autarch-wtl` (Task reference)
 
 **Goal:** Make Praude’s TUI visually match Vauxhall’s styling (colors, borders, panel titles, and help bar) while keeping current list/detail behavior.
 
@@ -55,7 +55,7 @@ package tui
 import (
 	"strings"
 
-	sharedtui "github.com/mistakeknot/vauxpraudemonium/pkg/tui"
+	sharedtui "github.com/mistakeknot/autarch/pkg/tui"
 )
 
 func renderHeader(title, focus string) string {
@@ -124,7 +124,7 @@ Expected: FAIL (no border chars).
 In `internal/praude/tui/layout.go` wrap panels using shared `PanelStyle`:
 
 ```go
-import sharedtui "github.com/mistakeknot/vauxpraudemonium/pkg/tui"
+import sharedtui "github.com/mistakeknot/autarch/pkg/tui"
 
 func stylePanel(content string, width, height int) string {
 	style := sharedtui.PanelStyle.Copy().Width(width).Height(height)
@@ -184,7 +184,7 @@ Expected: PASS/FAIL depending on styling updates; keep as smoke test.
 Update `renderGroupListItem` to apply shared styles:
 
 ```go
-import sharedtui "github.com/mistakeknot/vauxpraudemonium/pkg/tui"
+import sharedtui "github.com/mistakeknot/autarch/pkg/tui"
 
 // selected uses SelectedStyle, unselected uses UnselectedStyle
 ```
@@ -239,7 +239,7 @@ Expected: PASS/FAIL depending on current output.
 Update overlay view to use shared styles:
 
 ```go
-import sharedtui "github.com/mistakeknot/vauxpraudemonium/pkg/tui"
+import sharedtui "github.com/mistakeknot/autarch/pkg/tui"
 
 boxStyle := sharedtui.PanelStyle.Copy().Padding(1, 2).BorderForeground(sharedtui.ColorPrimary)
 header := sharedtui.TitleStyle.Render("Search")

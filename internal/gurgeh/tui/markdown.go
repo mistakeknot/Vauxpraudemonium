@@ -4,7 +4,7 @@ import (
 	"strings"
 
 	"github.com/charmbracelet/glamour"
-	"github.com/mistakeknot/vauxpraudemonium/internal/gurgeh/specs"
+	"github.com/mistakeknot/autarch/internal/gurgeh/specs"
 )
 
 type MarkdownCache struct {

@@ -7,8 +7,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/mistakeknot/vauxpraudemonium/internal/gurgeh/project"
-	"github.com/mistakeknot/vauxpraudemonium/pkg/discovery"
+	"github.com/mistakeknot/autarch/internal/gurgeh/project"
+	"github.com/mistakeknot/autarch/pkg/discovery"
 	"github.com/spf13/cobra"
 )
 

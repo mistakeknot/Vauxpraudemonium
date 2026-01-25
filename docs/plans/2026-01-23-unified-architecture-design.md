@@ -1,4 +1,4 @@
-# Vauxpraudemonium Unified Architecture Design
+# Autarch Unified Architecture Design
 
 **Date:** 2026-01-23
 
@@ -17,7 +17,7 @@
 > **All modules use the user's existing AI agents (Claude, Codex) as the primary capability layer.**
 > APIs are optional enhancements, never requirements.
 
-This foundational principle applies across all Vauxpraudemonium tools:
+This foundational principle applies across all Autarch tools:
 
 | Tool | Primary Capability | Optional Enhancement |
 |------|-------------------|---------------------|

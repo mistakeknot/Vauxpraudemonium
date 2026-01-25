@@ -3,7 +3,7 @@ package specs
 import (
 	"os"
 
-	fileutil "github.com/mistakeknot/vauxpraudemonium/internal/file"
+	fileutil "github.com/mistakeknot/autarch/internal/file"
 	"gopkg.in/yaml.v3"
 )
 

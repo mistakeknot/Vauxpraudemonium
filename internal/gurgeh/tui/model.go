@@ -9,13 +9,13 @@ import (
 	"unicode/utf8"
 
 	tea "github.com/charmbracelet/bubbletea"
-	"github.com/mistakeknot/vauxpraudemonium/internal/gurgeh/agents"
-	"github.com/mistakeknot/vauxpraudemonium/internal/gurgeh/archive"
-	"github.com/mistakeknot/vauxpraudemonium/internal/gurgeh/config"
-	"github.com/mistakeknot/vauxpraudemonium/internal/gurgeh/project"
-	"github.com/mistakeknot/vauxpraudemonium/internal/gurgeh/research"
-	"github.com/mistakeknot/vauxpraudemonium/internal/gurgeh/specs"
-	"github.com/mistakeknot/vauxpraudemonium/internal/gurgeh/suggestions"
+	"github.com/mistakeknot/autarch/internal/gurgeh/agents"
+	"github.com/mistakeknot/autarch/internal/gurgeh/archive"
+	"github.com/mistakeknot/autarch/internal/gurgeh/config"
+	"github.com/mistakeknot/autarch/internal/gurgeh/project"
+	"github.com/mistakeknot/autarch/internal/gurgeh/research"
+	"github.com/mistakeknot/autarch/internal/gurgeh/specs"
+	"github.com/mistakeknot/autarch/internal/gurgeh/suggestions"
 )
 
 type Model struct {

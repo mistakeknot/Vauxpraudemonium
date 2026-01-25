@@ -5,7 +5,7 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/mistakeknot/vauxpraudemonium/internal/pollard/pipeline"
+	"github.com/mistakeknot/autarch/internal/pollard/pipeline"
 )
 
 // CorrelatedTopic represents a topic that appears across multiple hunters.

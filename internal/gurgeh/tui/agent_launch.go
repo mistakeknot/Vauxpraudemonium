@@ -3,8 +3,8 @@ package tui
 import (
 	"strings"
 
-	"github.com/mistakeknot/vauxpraudemonium/internal/gurgeh/agents"
-	"github.com/mistakeknot/vauxpraudemonium/internal/gurgeh/config"
+	"github.com/mistakeknot/autarch/internal/gurgeh/agents"
+	"github.com/mistakeknot/autarch/internal/gurgeh/config"
 )
 
 var launchAgent = agents.Launch

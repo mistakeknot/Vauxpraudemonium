@@ -6,10 +6,10 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/mistakeknot/vauxpraudemonium/internal/gurgeh/archive"
-	"github.com/mistakeknot/vauxpraudemonium/internal/gurgeh/project"
-	"github.com/mistakeknot/vauxpraudemonium/internal/gurgeh/specs"
-	"github.com/mistakeknot/vauxpraudemonium/internal/gurgeh/tui"
+	"github.com/mistakeknot/autarch/internal/gurgeh/archive"
+	"github.com/mistakeknot/autarch/internal/gurgeh/project"
+	"github.com/mistakeknot/autarch/internal/gurgeh/specs"
+	"github.com/mistakeknot/autarch/internal/gurgeh/tui"
 	"github.com/spf13/cobra"
 )
 

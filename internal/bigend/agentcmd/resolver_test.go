@@ -5,7 +5,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	vconfig "github.com/mistakeknot/vauxpraudemonium/internal/bigend/config"
+	vconfig "github.com/mistakeknot/autarch/internal/bigend/config"
 )
 
 func TestResolveCommandFallback(t *testing.T) {
@@ -24,7 +24,7 @@ func TestResolveUsesSharedTargets(t *testing.T) {
 	cfg := &vconfig.Config{}
 	dir := t.TempDir()
 	t.Setenv("XDG_CONFIG_HOME", dir)
-	configDir := filepath.Join(dir, "vauxpraudemonium")
+	configDir := filepath.Join(dir, "autarch")
 	if err := os.MkdirAll(configDir, 0o755); err != nil {
 		t.Fatal(err)
 	}

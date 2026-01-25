@@ -2,7 +2,7 @@
 
 > **For Claude:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task.
 
-**Bead:** `Vauxpraudemonium-i0e` (Task reference)
+**Bead:** `Autarch-i0e` (Task reference)
 
 **Goal:** Port agent-deck's list UX into Praude, with status-grouped PRDs, responsive layout, and persisted UI state.
 
@@ -303,7 +303,7 @@ package tui
 import (
 	"testing"
 
-	"github.com/mistakeknot/vauxpraudemonium/internal/praude/specs"
+	"github.com/mistakeknot/autarch/internal/praude/specs"
 )
 
 func TestGroupTreeFlatten(t *testing.T) {
@@ -339,7 +339,7 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/mistakeknot/vauxpraudemonium/internal/praude/specs"
+	"github.com/mistakeknot/autarch/internal/praude/specs"
 )
 
 type ItemType int
@@ -442,7 +442,7 @@ package tui
 import (
 	"testing"
 
-	"github.com/mistakeknot/vauxpraudemonium/internal/praude/specs"
+	"github.com/mistakeknot/autarch/internal/praude/specs"
 	tea "github.com/charmbracelet/bubbletea"
 )
 
@@ -476,7 +476,7 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/bubbles/textinput"
 	"github.com/charmbracelet/lipgloss"
-	"github.com/mistakeknot/vauxpraudemonium/internal/praude/specs"
+	"github.com/mistakeknot/autarch/internal/praude/specs"
 )
 
 type SearchOverlay struct {

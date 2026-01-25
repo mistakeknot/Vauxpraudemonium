@@ -2,7 +2,7 @@ package tui
 
 import (
 	"github.com/charmbracelet/lipgloss"
-	shared "github.com/mistakeknot/vauxpraudemonium/pkg/tui"
+	shared "github.com/mistakeknot/autarch/pkg/tui"
 )
 
 var (

@@ -6,7 +6,7 @@
 
 **Goal:** Implement a shared run-target registry/resolver used by Praude, Tandemonium, and Vauxhall with global defaults and per-project overrides.
 
-**Architecture:** Add `pkg/agenttargets` to centralize target definitions, config loading, merging, and resolution. Use a global config file at `~/.config/vauxpraudemonium/agents.toml` and a project override at `.praude/agents.toml`, with compatibility support for `[agents]` in `.praude/config.toml`. Update Praude and Vauxhall to resolve through the shared package; Tandemonium resolves via project path.
+**Architecture:** Add `pkg/agenttargets` to centralize target definitions, config loading, merging, and resolution. Use a global config file at `~/.config/autarch/agents.toml` and a project override at `.praude/agents.toml`, with compatibility support for `[agents]` in `.praude/config.toml`. Update Praude and Vauxhall to resolve through the shared package; Tandemonium resolves via project path.
 
 **Tech Stack:** Go, TOML (BurntSushi), standard library.
 
@@ -254,7 +254,7 @@ git add internal/praude internal/vauxhall/agentcmd internal/tandemonium
 
 **Step 1: Update docs**
 
-- Document global config: `~/.config/vauxpraudemonium/agents.toml`
+- Document global config: `~/.config/autarch/agents.toml`
 - Document per-project overrides: `.praude/agents.toml`
 - Note compatibility with `.praude/config.toml` `[agents]`
 

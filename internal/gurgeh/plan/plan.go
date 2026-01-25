@@ -4,8 +4,8 @@ package plan
 import (
 	"time"
 
-	"github.com/mistakeknot/vauxpraudemonium/pkg/discovery"
-	"github.com/mistakeknot/vauxpraudemonium/pkg/plan"
+	"github.com/mistakeknot/autarch/pkg/discovery"
+	"github.com/mistakeknot/autarch/pkg/plan"
 )
 
 // InterviewPlanItems contains the items for an interview plan.

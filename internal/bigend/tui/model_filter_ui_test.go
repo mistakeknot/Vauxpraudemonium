@@ -7,8 +7,8 @@ import (
 	"github.com/charmbracelet/bubbles/list"
 	tea "github.com/charmbracelet/bubbletea"
 
-	"github.com/mistakeknot/vauxpraudemonium/internal/bigend/aggregator"
-	"github.com/mistakeknot/vauxpraudemonium/internal/bigend/tmux"
+	"github.com/mistakeknot/autarch/internal/bigend/aggregator"
+	"github.com/mistakeknot/autarch/internal/bigend/tmux"
 )
 
 func TestFilterClearsOnEscape(t *testing.T) {

@@ -21,7 +21,7 @@ Create a shared package (proposed `pkg/agenttargets`) that defines:
 ## Architecture
 
 ### Config Sources
-- **Global**: `~/.config/vauxpraudemonium/agents.toml`
+- **Global**: `~/.config/autarch/agents.toml`
 - **Project override**: `.praude/agents.toml`
 - **Compat**: allow `[agents]` from `.praude/config.toml` to be merged as a project source
 

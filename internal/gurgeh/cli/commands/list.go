@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/mistakeknot/vauxpraudemonium/internal/gurgeh/project"
-	"github.com/mistakeknot/vauxpraudemonium/internal/gurgeh/specs"
+	"github.com/mistakeknot/autarch/internal/gurgeh/project"
+	"github.com/mistakeknot/autarch/internal/gurgeh/specs"
 	"github.com/spf13/cobra"
 )
 

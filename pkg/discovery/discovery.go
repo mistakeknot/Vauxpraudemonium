@@ -1,4 +1,4 @@
-// Package discovery provides cross-tool data access for Vauxpraudemonium tools.
+// Package discovery provides cross-tool data access for Autarch tools.
 // It allows each tool to discover and reference data from other tools.
 package discovery
 

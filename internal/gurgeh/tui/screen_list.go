@@ -5,7 +5,7 @@ import (
 	"strings"
 
 	tea "github.com/charmbracelet/bubbletea"
-	sharedtui "github.com/mistakeknot/vauxpraudemonium/pkg/tui"
+	sharedtui "github.com/mistakeknot/autarch/pkg/tui"
 )
 
 type ListScreen struct{}

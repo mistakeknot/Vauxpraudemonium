@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/mistakeknot/vauxpraudemonium/internal/pollard/hunters"
-	"github.com/mistakeknot/vauxpraudemonium/internal/pollard/selector"
+	"github.com/mistakeknot/autarch/internal/pollard/hunters"
+	"github.com/mistakeknot/autarch/internal/pollard/selector"
 )
 
 // ResearchOrchestrator coordinates agent-driven research with optional API supplements.

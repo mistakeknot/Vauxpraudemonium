@@ -5,8 +5,8 @@ import (
 
 	"github.com/charmbracelet/bubbles/list"
 
-	"github.com/mistakeknot/vauxpraudemonium/internal/bigend/aggregator"
-	"github.com/mistakeknot/vauxpraudemonium/internal/bigend/tmux"
+	"github.com/mistakeknot/autarch/internal/bigend/aggregator"
+	"github.com/mistakeknot/autarch/internal/bigend/tmux"
 )
 
 func TestFilterParsesStatusTokens(t *testing.T) {

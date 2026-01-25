@@ -3,7 +3,7 @@ package tui
 import (
 	"strings"
 
-	sharedtui "github.com/mistakeknot/vauxpraudemonium/pkg/tui"
+	sharedtui "github.com/mistakeknot/autarch/pkg/tui"
 )
 
 func renderHelpOverlay() string {

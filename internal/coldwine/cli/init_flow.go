@@ -11,11 +11,11 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/mistakeknot/vauxpraudemonium/internal/coldwine/agent"
-	"github.com/mistakeknot/vauxpraudemonium/internal/coldwine/epics"
-	"github.com/mistakeknot/vauxpraudemonium/internal/coldwine/explore"
-	"github.com/mistakeknot/vauxpraudemonium/internal/coldwine/initflow"
-	"github.com/mistakeknot/vauxpraudemonium/internal/coldwine/project"
+	"github.com/mistakeknot/autarch/internal/coldwine/agent"
+	"github.com/mistakeknot/autarch/internal/coldwine/epics"
+	"github.com/mistakeknot/autarch/internal/coldwine/explore"
+	"github.com/mistakeknot/autarch/internal/coldwine/initflow"
+	"github.com/mistakeknot/autarch/internal/coldwine/project"
 	"gopkg.in/yaml.v3"
 )
 

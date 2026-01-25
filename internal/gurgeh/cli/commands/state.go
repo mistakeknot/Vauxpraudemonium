@@ -3,8 +3,8 @@ package commands
 import (
 	"os"
 
-	"github.com/mistakeknot/vauxpraudemonium/internal/gurgeh/project"
-	"github.com/mistakeknot/vauxpraudemonium/internal/gurgeh/tui"
+	"github.com/mistakeknot/autarch/internal/gurgeh/project"
+	"github.com/mistakeknot/autarch/internal/gurgeh/tui"
 )
 
 func loadUIState(root string) (tui.UIState, error) {

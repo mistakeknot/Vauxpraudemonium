@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/mistakeknot/vauxpraudemonium/internal/gurgeh/agents"
+	"github.com/mistakeknot/autarch/internal/gurgeh/agents"
 )
 
 func TestNewKeyStartsInterviewForNewSpec(t *testing.T) {

@@ -2,7 +2,7 @@
 
 > **For Claude:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task.
 
-**Bead:** `Vauxpraudemonium-interview-iter` (Task reference)
+**Bead:** `Autarch-interview-iter` (Task reference)
 
 **Goal:** Make `n` create a new PRD and immediately start an agent-driven interview; make `g` re-interview the selected PRD with per-step iteration (enter) and step navigation (`[`/`]`), preserving non-interview fields.
 
@@ -32,7 +32,7 @@ import (
     "path/filepath"
     "testing"
 
-    "github.com/mistakeknot/vauxpraudemonium/internal/praude/agents"
+    "github.com/mistakeknot/autarch/internal/praude/agents"
 )
 
 func TestNewKeyStartsInterviewForNewSpec(t *testing.T) {

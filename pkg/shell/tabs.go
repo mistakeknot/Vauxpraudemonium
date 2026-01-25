@@ -4,7 +4,7 @@ import (
 	"fmt"
 
 	"github.com/charmbracelet/lipgloss"
-	"github.com/mistakeknot/vauxpraudemonium/pkg/tui"
+	"github.com/mistakeknot/autarch/pkg/tui"
 )
 
 // ToolTab represents a top-level tool tab

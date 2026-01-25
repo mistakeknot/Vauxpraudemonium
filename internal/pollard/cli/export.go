@@ -7,8 +7,8 @@ import (
 	"github.com/spf13/cobra"
 	"gopkg.in/yaml.v3"
 
-	"github.com/mistakeknot/vauxpraudemonium/internal/pollard/insights"
-	"github.com/mistakeknot/vauxpraudemonium/internal/pollard/patterns"
+	"github.com/mistakeknot/autarch/internal/pollard/insights"
+	"github.com/mistakeknot/autarch/internal/pollard/patterns"
 )
 
 var (

@@ -5,9 +5,9 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/mistakeknot/vauxpraudemonium/pkg/agenttargets"
-	pconfig "github.com/mistakeknot/vauxpraudemonium/internal/gurgeh/config"
-	vconfig "github.com/mistakeknot/vauxpraudemonium/internal/bigend/config"
+	"github.com/mistakeknot/autarch/pkg/agenttargets"
+	pconfig "github.com/mistakeknot/autarch/internal/gurgeh/config"
+	vconfig "github.com/mistakeknot/autarch/internal/bigend/config"
 )
 
 // Resolver finds agent commands based on config with sensible fallbacks.
@@ -24,7 +24,7 @@ func (r *Resolver) Resolve(agentType, projectPath string) (string, []string) {
 	key := strings.ToLower(agentType)
 	globalPath := ""
 	if configDir, err := os.UserConfigDir(); err == nil {
-		globalPath = filepath.Join(configDir, "vauxpraudemonium", "agents.toml")
+		globalPath = filepath.Join(configDir, "autarch", "agents.toml")
 	}
 	globalReg, projectReg, err := agenttargets.Load(globalPath, projectPath)
 	if err == nil {

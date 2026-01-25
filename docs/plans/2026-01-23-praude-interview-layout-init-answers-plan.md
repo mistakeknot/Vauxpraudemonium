@@ -2,7 +2,7 @@
 
 > **For Claude:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task.
 
-**Bead:** `Vauxpraudemonium-bgq` (Task reference)
+**Bead:** `Autarch-bgq` (Task reference)
 
 **Goal:** Modernize the Praude interview UI (header nav + top-left selector + top-right read-only section + bottom chat/composer with swap + open file), auto-init .praude on first run, and optionally seed PRD answers with a coding-agent scan when creating a new PRD.
 

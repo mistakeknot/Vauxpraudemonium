@@ -7,7 +7,7 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/mistakeknot/vauxpraudemonium/internal/pollard/insights"
+	"github.com/mistakeknot/autarch/internal/pollard/insights"
 )
 
 var linkFeature string

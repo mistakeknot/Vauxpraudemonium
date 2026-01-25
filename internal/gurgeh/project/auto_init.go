@@ -4,7 +4,7 @@ import (
 	"os"
 	"time"
 
-	"github.com/mistakeknot/vauxpraudemonium/internal/gurgeh/specs"
+	"github.com/mistakeknot/autarch/internal/gurgeh/specs"
 )
 
 // EnsureInitialized creates .praude and a template spec on first run.

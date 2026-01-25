@@ -10,7 +10,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/mistakeknot/vauxpraudemonium/internal/coldwine/config"
+	"github.com/mistakeknot/autarch/internal/coldwine/config"
 )
 
 type LLMMessage struct {

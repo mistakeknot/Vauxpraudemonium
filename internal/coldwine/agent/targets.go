@@ -4,13 +4,13 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/mistakeknot/vauxpraudemonium/pkg/agenttargets"
+	"github.com/mistakeknot/autarch/pkg/agenttargets"
 )
 
 func ResolveTarget(projectRoot, name string) (agenttargets.ResolvedTarget, error) {
 	globalPath := ""
 	if configDir, err := os.UserConfigDir(); err == nil {
-		globalPath = filepath.Join(configDir, "vauxpraudemonium", "agents.toml")
+		globalPath = filepath.Join(configDir, "autarch", "agents.toml")
 	}
 	globalReg, projectReg, err := agenttargets.Load(globalPath, projectRoot)
 	if err != nil {

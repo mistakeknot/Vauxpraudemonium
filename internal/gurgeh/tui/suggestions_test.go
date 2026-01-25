@@ -8,7 +8,7 @@ import (
 	"time"
 
 	tea "github.com/charmbracelet/bubbletea"
-	"github.com/mistakeknot/vauxpraudemonium/internal/gurgeh/suggestions"
+	"github.com/mistakeknot/autarch/internal/gurgeh/suggestions"
 )
 
 func TestSuggestionAcceptAppliesUpdate(t *testing.T) {

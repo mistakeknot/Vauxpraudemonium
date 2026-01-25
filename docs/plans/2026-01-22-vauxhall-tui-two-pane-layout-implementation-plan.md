@@ -2,7 +2,7 @@
 
 > **For Claude:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task.
 
-**Bead:** `Vauxpraudemonium-x7y` (Task reference)
+**Bead:** `Autarch-x7y` (Task reference)
 
 **Goal:** Pin Projects on the left and filter Sessions/Agents by selected project in the TUI.
 
@@ -28,7 +28,7 @@ import (
 	"testing"
 
 	"github.com/charmbracelet/bubbles/list"
-	"github.com/mistakeknot/vauxpraudemonium/internal/vauxhall/aggregator"
+	"github.com/mistakeknot/autarch/internal/vauxhall/aggregator"
 )
 
 type fakeAgg struct { state aggregator.State }

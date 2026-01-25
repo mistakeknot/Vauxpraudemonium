@@ -7,8 +7,8 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/mistakeknot/vauxpraudemonium/internal/pollard/insights"
-	"github.com/mistakeknot/vauxpraudemonium/internal/pollard/patterns"
+	"github.com/mistakeknot/autarch/internal/pollard/insights"
+	"github.com/mistakeknot/autarch/internal/pollard/patterns"
 )
 
 var searchCmd = &cobra.Command{

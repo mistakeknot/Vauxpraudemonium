@@ -1,4 +1,4 @@
-// Package plan provides shared types for the plan/apply pattern across Vauxpraudemonium tools.
+// Package plan provides shared types for the plan/apply pattern across Autarch tools.
 package plan
 
 import (

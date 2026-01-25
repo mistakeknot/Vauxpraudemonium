@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/mistakeknot/vauxpraudemonium/internal/gurgeh/agents"
+	"github.com/mistakeknot/autarch/internal/gurgeh/agents"
 )
 
 func TestViewIncludesHeaders(t *testing.T) {

@@ -9,8 +9,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/mistakeknot/vauxpraudemonium/internal/coldwine/config"
-	"github.com/mistakeknot/vauxpraudemonium/internal/coldwine/storage"
+	"github.com/mistakeknot/autarch/internal/coldwine/config"
+	"github.com/mistakeknot/autarch/internal/coldwine/storage"
 )
 
 const maxInlineAttachmentBytes int64 = 64 * 1024

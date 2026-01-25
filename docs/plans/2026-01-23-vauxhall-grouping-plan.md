@@ -2,7 +2,7 @@
 
 > **For Claude:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task.
 
-**Bead:** `Vauxpraudemonium-3yl` (Task reference)
+**Bead:** `Autarch-3yl` (Task reference)
 
 **Goal:** Group sessions and agents by project in the Vauxhall TUI and Web UI, with collapsible groups in the TUI.
 

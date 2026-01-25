@@ -50,7 +50,7 @@ func TestLoadConfigMergesGlobalAgents(t *testing.T) {
 
 	configHome := t.TempDir()
 	t.Setenv("XDG_CONFIG_HOME", configHome)
-	globalDir := filepath.Join(configHome, "vauxpraudemonium")
+	globalDir := filepath.Join(configHome, "autarch")
 	if err := os.MkdirAll(globalDir, 0o755); err != nil {
 		t.Fatal(err)
 	}

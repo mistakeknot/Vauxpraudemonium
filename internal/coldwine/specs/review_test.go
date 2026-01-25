@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	fileutil "github.com/mistakeknot/vauxpraudemonium/internal/file"
+	fileutil "github.com/mistakeknot/autarch/internal/file"
 )
 
 func TestUpdateUserStory(t *testing.T) {

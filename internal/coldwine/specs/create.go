@@ -8,7 +8,7 @@ import (
 	"strings"
 	"time"
 
-	fileutil "github.com/mistakeknot/vauxpraudemonium/internal/file"
+	fileutil "github.com/mistakeknot/autarch/internal/file"
 )
 
 func CreateQuickSpec(dir, raw string, now time.Time) (string, error) {

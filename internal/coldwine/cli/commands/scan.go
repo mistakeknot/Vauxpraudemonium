@@ -3,7 +3,7 @@ package commands
 import (
 	"path/filepath"
 
-	"github.com/mistakeknot/vauxpraudemonium/internal/coldwine/explore"
+	"github.com/mistakeknot/autarch/internal/coldwine/explore"
 	"github.com/spf13/cobra"
 )
 

@@ -11,14 +11,14 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 
-	"github.com/mistakeknot/vauxpraudemonium/internal/coldwine/agent"
-	"github.com/mistakeknot/vauxpraudemonium/internal/coldwine/config"
-	"github.com/mistakeknot/vauxpraudemonium/internal/coldwine/explore"
-	"github.com/mistakeknot/vauxpraudemonium/internal/coldwine/git"
-	"github.com/mistakeknot/vauxpraudemonium/internal/coldwine/project"
-	"github.com/mistakeknot/vauxpraudemonium/internal/coldwine/specs"
-	"github.com/mistakeknot/vauxpraudemonium/internal/coldwine/storage"
-	"github.com/mistakeknot/vauxpraudemonium/internal/coldwine/tmux"
+	"github.com/mistakeknot/autarch/internal/coldwine/agent"
+	"github.com/mistakeknot/autarch/internal/coldwine/config"
+	"github.com/mistakeknot/autarch/internal/coldwine/explore"
+	"github.com/mistakeknot/autarch/internal/coldwine/git"
+	"github.com/mistakeknot/autarch/internal/coldwine/project"
+	"github.com/mistakeknot/autarch/internal/coldwine/specs"
+	"github.com/mistakeknot/autarch/internal/coldwine/storage"
+	"github.com/mistakeknot/autarch/internal/coldwine/tmux"
 )
 
 type Model struct {

@@ -4,8 +4,8 @@ package plan
 import (
 	"os"
 
-	"github.com/mistakeknot/vauxpraudemonium/pkg/discovery"
-	"github.com/mistakeknot/vauxpraudemonium/pkg/plan"
+	"github.com/mistakeknot/autarch/pkg/discovery"
+	"github.com/mistakeknot/autarch/pkg/plan"
 )
 
 // ScanPlanItems contains the items for a scan plan.

@@ -1,4 +1,4 @@
-module github.com/mistakeknot/vauxpraudemonium
+module github.com/mistakeknot/autarch
 
 go 1.24.0
 

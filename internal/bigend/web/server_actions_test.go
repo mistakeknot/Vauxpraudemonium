@@ -6,11 +6,11 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/mistakeknot/vauxpraudemonium/internal/bigend/aggregator"
-	"github.com/mistakeknot/vauxpraudemonium/internal/bigend/agentmail"
-	"github.com/mistakeknot/vauxpraudemonium/internal/bigend/config"
-	"github.com/mistakeknot/vauxpraudemonium/internal/bigend/discovery"
-	"github.com/mistakeknot/vauxpraudemonium/internal/bigend/coldwine"
+	"github.com/mistakeknot/autarch/internal/bigend/aggregator"
+	"github.com/mistakeknot/autarch/internal/bigend/agentmail"
+	"github.com/mistakeknot/autarch/internal/bigend/config"
+	"github.com/mistakeknot/autarch/internal/bigend/discovery"
+	"github.com/mistakeknot/autarch/internal/bigend/coldwine"
 )
 
 type fakeAgg struct {

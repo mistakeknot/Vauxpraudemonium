@@ -4,9 +4,9 @@ import (
 	"os"
 
 	tea "github.com/charmbracelet/bubbletea"
-	"github.com/mistakeknot/vauxpraudemonium/internal/gurgeh/cli/commands"
-	"github.com/mistakeknot/vauxpraudemonium/internal/gurgeh/project"
-	"github.com/mistakeknot/vauxpraudemonium/internal/gurgeh/tui"
+	"github.com/mistakeknot/autarch/internal/gurgeh/cli/commands"
+	"github.com/mistakeknot/autarch/internal/gurgeh/project"
+	"github.com/mistakeknot/autarch/internal/gurgeh/tui"
 	"github.com/spf13/cobra"
 )
 

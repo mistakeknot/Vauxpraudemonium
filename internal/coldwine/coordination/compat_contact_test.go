@@ -3,7 +3,7 @@ package coordination
 import (
 	"testing"
 
-	"github.com/mistakeknot/vauxpraudemonium/internal/coldwine/storage"
+	"github.com/mistakeknot/autarch/internal/coldwine/storage"
 )
 
 func TestContactPolicyAndRequestFlow(t *testing.T) {

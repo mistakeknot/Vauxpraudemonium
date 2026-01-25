@@ -2,7 +2,7 @@
 
 > **For Claude:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task.
 
-**Bead:** `Vauxpraudemonium-i6o (Task reference)`
+**Bead:** `Autarch-i6o (Task reference)`
 
 **Goal:** Replace `tandemonium init` vision/MVP prompts with an agent-assisted repo scan that generates epic + story specs and keeps them updated via on-demand and background scans.
 

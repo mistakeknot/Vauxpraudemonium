@@ -1,4 +1,4 @@
-# Vauxpraudemonium Project Overview
+# Autarch Project Overview
 
 Unified monorepo for AI agent development tools:
 - **Vauxhall**: Multi-project agent mission control (web + TUI)
@@ -8,7 +8,7 @@ Unified monorepo for AI agent development tools:
 
 ## Tech Stack
 - Language: Go 1.24+
-- Module: `github.com/mistakeknot/vauxpraudemonium`
+- Module: `github.com/mistakeknot/autarch`
 - TUI: Bubble Tea + lipgloss (Tokyo Night colors)
 - Web: net/http + htmx + Tailwind
 - Database: SQLite (WAL mode, modernc.org/sqlite for CGO-free)

@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/mistakeknot/vauxpraudemonium/internal/coldwine/project"
+	"github.com/mistakeknot/autarch/internal/coldwine/project"
 )
 
 func TestRecoverRebuildsFromSpecs(t *testing.T) {

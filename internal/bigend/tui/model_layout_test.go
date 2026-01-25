@@ -9,8 +9,8 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 
-	"github.com/mistakeknot/vauxpraudemonium/internal/bigend/aggregator"
-	"github.com/mistakeknot/vauxpraudemonium/internal/bigend/discovery"
+	"github.com/mistakeknot/autarch/internal/bigend/aggregator"
+	"github.com/mistakeknot/autarch/internal/bigend/discovery"
 )
 
 type fakeAggLayout struct {

@@ -3,7 +3,7 @@ package commands
 import (
     "testing"
 
-    "github.com/mistakeknot/vauxpraudemonium/internal/coldwine/specs"
+    "github.com/mistakeknot/autarch/internal/coldwine/specs"
 )
 
 func TestSummariesToCounts(t *testing.T) {

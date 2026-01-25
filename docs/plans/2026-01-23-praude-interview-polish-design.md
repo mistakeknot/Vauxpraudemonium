@@ -1,6 +1,6 @@
 # Praude Interview UI Polish Design
 
-**Bead:** `Vauxpraudemonium-rte`
+**Bead:** `Autarch-rte`
 
 ## Goal
 Make the interview UI feel like a modern agent TUI by polishing the composer, chat transcript, and header nav without changing core behavior.

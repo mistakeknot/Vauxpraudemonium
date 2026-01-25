@@ -10,12 +10,12 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/mistakeknot/vauxpraudemonium/internal/pollard/config"
-	"github.com/mistakeknot/vauxpraudemonium/internal/pollard/hunters"
-	pollardPlan "github.com/mistakeknot/vauxpraudemonium/internal/pollard/plan"
-	"github.com/mistakeknot/vauxpraudemonium/internal/pollard/proposal"
-	"github.com/mistakeknot/vauxpraudemonium/internal/pollard/sources"
-	"github.com/mistakeknot/vauxpraudemonium/internal/pollard/state"
+	"github.com/mistakeknot/autarch/internal/pollard/config"
+	"github.com/mistakeknot/autarch/internal/pollard/hunters"
+	pollardPlan "github.com/mistakeknot/autarch/internal/pollard/plan"
+	"github.com/mistakeknot/autarch/internal/pollard/proposal"
+	"github.com/mistakeknot/autarch/internal/pollard/sources"
+	"github.com/mistakeknot/autarch/internal/pollard/state"
 )
 
 var (

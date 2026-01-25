@@ -4,7 +4,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/mistakeknot/vauxpraudemonium/internal/coldwine/config"
+	"github.com/mistakeknot/autarch/internal/coldwine/config"
 )
 
 func TestReviewDiffLoadsFiles(t *testing.T) {

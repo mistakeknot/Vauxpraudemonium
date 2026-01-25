@@ -10,8 +10,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/mistakeknot/vauxpraudemonium/internal/coldwine/initflow"
-	"github.com/mistakeknot/vauxpraudemonium/internal/coldwine/project"
+	"github.com/mistakeknot/autarch/internal/coldwine/initflow"
+	"github.com/mistakeknot/autarch/internal/coldwine/project"
 )
 
 type failingGenerator struct{}

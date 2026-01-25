@@ -7,10 +7,10 @@ import (
 	"os"
 	"path/filepath"
 
-	praudePlan "github.com/mistakeknot/vauxpraudemonium/internal/gurgeh/plan"
-	"github.com/mistakeknot/vauxpraudemonium/internal/gurgeh/project"
-	"github.com/mistakeknot/vauxpraudemonium/internal/gurgeh/specs"
-	"github.com/mistakeknot/vauxpraudemonium/pkg/plan"
+	praudePlan "github.com/mistakeknot/autarch/internal/gurgeh/plan"
+	"github.com/mistakeknot/autarch/internal/gurgeh/project"
+	"github.com/mistakeknot/autarch/internal/gurgeh/specs"
+	"github.com/mistakeknot/autarch/pkg/plan"
 	"github.com/spf13/cobra"
 	"gopkg.in/yaml.v3"
 )

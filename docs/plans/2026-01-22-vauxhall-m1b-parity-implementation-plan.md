@@ -2,7 +2,7 @@
 
 > **For Claude:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task.
 
-**Bead:** `Vauxpraudemonium-8gv` (Task reference)
+**Bead:** `Autarch-8gv` (Task reference)
 
 **Goal:** Add Agent Deck-style session control + repo MCP manager with web and TUI parity.
 
@@ -183,7 +183,7 @@ package agentcmd
 
 import (
 	"testing"
-	vconfig "github.com/mistakeknot/vauxpraudemonium/internal/vauxhall/config"
+	vconfig "github.com/mistakeknot/autarch/internal/vauxhall/config"
 )
 
 func TestResolveCommandFallback(t *testing.T) {
@@ -241,8 +241,8 @@ package agentcmd
 import (
 	strings
 
-	pconfig "github.com/mistakeknot/vauxpraudemonium/internal/praude/config"
-	vconfig "github.com/mistakeknot/vauxpraudemonium/internal/vauxhall/config"
+	pconfig "github.com/mistakeknot/autarch/internal/praude/config"
+	vconfig "github.com/mistakeknot/autarch/internal/vauxhall/config"
 )
 
 type Resolver struct { cfg *vconfig.Config }

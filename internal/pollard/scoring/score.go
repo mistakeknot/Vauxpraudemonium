@@ -6,7 +6,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/mistakeknot/vauxpraudemonium/internal/pollard/pipeline"
+	"github.com/mistakeknot/autarch/internal/pollard/pipeline"
 )
 
 // Scorer calculates quality scores for research items.

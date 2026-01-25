@@ -7,10 +7,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/mistakeknot/vauxpraudemonium/internal/gurgeh/agents"
-	"github.com/mistakeknot/vauxpraudemonium/internal/gurgeh/config"
-	"github.com/mistakeknot/vauxpraudemonium/internal/gurgeh/project"
-	"github.com/mistakeknot/vauxpraudemonium/internal/gurgeh/scan"
+	"github.com/mistakeknot/autarch/internal/gurgeh/agents"
+	"github.com/mistakeknot/autarch/internal/gurgeh/config"
+	"github.com/mistakeknot/autarch/internal/gurgeh/project"
+	"github.com/mistakeknot/autarch/internal/gurgeh/scan"
 	"gopkg.in/yaml.v3"
 )
 

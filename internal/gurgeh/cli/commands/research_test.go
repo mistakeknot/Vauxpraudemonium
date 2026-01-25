@@ -7,8 +7,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/mistakeknot/vauxpraudemonium/internal/gurgeh/agents"
-	"github.com/mistakeknot/vauxpraudemonium/internal/gurgeh/specs"
+	"github.com/mistakeknot/autarch/internal/gurgeh/agents"
+	"github.com/mistakeknot/autarch/internal/gurgeh/specs"
 )
 
 func TestResearchCommandCreatesResearch(t *testing.T) {

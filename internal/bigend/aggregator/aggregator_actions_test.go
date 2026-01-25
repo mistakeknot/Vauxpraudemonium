@@ -3,9 +3,9 @@ package aggregator
 import (
 	"testing"
 
-	"github.com/mistakeknot/vauxpraudemonium/internal/bigend/config"
-	"github.com/mistakeknot/vauxpraudemonium/internal/bigend/discovery"
-	"github.com/mistakeknot/vauxpraudemonium/internal/bigend/tmux"
+	"github.com/mistakeknot/autarch/internal/bigend/config"
+	"github.com/mistakeknot/autarch/internal/bigend/discovery"
+	"github.com/mistakeknot/autarch/internal/bigend/tmux"
 )
 
 type fakeTmux struct {

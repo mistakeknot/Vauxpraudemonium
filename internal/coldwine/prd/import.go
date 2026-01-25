@@ -6,8 +6,8 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/mistakeknot/vauxpraudemonium/internal/coldwine/epics"
-	praudeSpecs "github.com/mistakeknot/vauxpraudemonium/internal/gurgeh/specs"
+	"github.com/mistakeknot/autarch/internal/coldwine/epics"
+	praudeSpecs "github.com/mistakeknot/autarch/internal/gurgeh/specs"
 )
 
 // ImportOptions configures how PRD import behaves.

@@ -9,7 +9,7 @@ import (
 	"sync"
 	"time"
 
-	gurgSpecs "github.com/mistakeknot/vauxpraudemonium/internal/gurgeh/specs"
+	gurgSpecs "github.com/mistakeknot/autarch/internal/gurgeh/specs"
 )
 
 // ProjectManager manages discovered projects

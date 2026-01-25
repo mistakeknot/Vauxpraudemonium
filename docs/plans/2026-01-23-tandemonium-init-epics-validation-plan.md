@@ -2,7 +2,7 @@
 
 > **For Claude:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task.
 
-**Bead:** `Vauxpraudemonium-3hn (Task reference)`
+**Bead:** `Autarch-3hn (Task reference)`
 
 **Goal:** Enforce strict validation of agent-generated epics/stories, produce a clear error report + raw output files, and improve prompt guidance so invalid outputs do not write specs.
 

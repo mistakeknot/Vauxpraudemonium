@@ -2,7 +2,7 @@
 
 > **For Claude:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task.
 
-**Bead:** `Vauxpraudemonium-rn9` (Task reference)
+**Bead:** `Autarch-rn9` (Task reference)
 
 **Goal:** Make Vauxhall start focused on the Projects pane and visibly indicate focus with a border around the active pane.
 

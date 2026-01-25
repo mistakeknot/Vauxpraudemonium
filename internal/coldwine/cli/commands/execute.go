@@ -2,10 +2,10 @@ package commands
 
 import (
 	tea "github.com/charmbracelet/bubbletea"
-	"github.com/mistakeknot/vauxpraudemonium/internal/coldwine/config"
-	"github.com/mistakeknot/vauxpraudemonium/internal/coldwine/project"
-	"github.com/mistakeknot/vauxpraudemonium/internal/coldwine/storage"
-	"github.com/mistakeknot/vauxpraudemonium/internal/coldwine/tui"
+	"github.com/mistakeknot/autarch/internal/coldwine/config"
+	"github.com/mistakeknot/autarch/internal/coldwine/project"
+	"github.com/mistakeknot/autarch/internal/coldwine/storage"
+	"github.com/mistakeknot/autarch/internal/coldwine/tui"
 	"github.com/spf13/cobra"
 )
 

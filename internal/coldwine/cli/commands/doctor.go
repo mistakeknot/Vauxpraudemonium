@@ -4,12 +4,12 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/mistakeknot/vauxpraudemonium/internal/coldwine/drift"
-	"github.com/mistakeknot/vauxpraudemonium/internal/coldwine/git"
-	"github.com/mistakeknot/vauxpraudemonium/internal/coldwine/project"
-	"github.com/mistakeknot/vauxpraudemonium/internal/coldwine/specs"
-	"github.com/mistakeknot/vauxpraudemonium/internal/coldwine/storage"
-	"github.com/mistakeknot/vauxpraudemonium/internal/coldwine/tmux"
+	"github.com/mistakeknot/autarch/internal/coldwine/drift"
+	"github.com/mistakeknot/autarch/internal/coldwine/git"
+	"github.com/mistakeknot/autarch/internal/coldwine/project"
+	"github.com/mistakeknot/autarch/internal/coldwine/specs"
+	"github.com/mistakeknot/autarch/internal/coldwine/storage"
+	"github.com/mistakeknot/autarch/internal/coldwine/tmux"
 	"github.com/spf13/cobra"
 )
 

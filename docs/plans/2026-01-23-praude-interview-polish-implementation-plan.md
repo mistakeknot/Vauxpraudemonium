@@ -2,7 +2,7 @@
 
 > **For Claude:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task.
 
-**Bead:** `Vauxpraudemonium-rte` (Task reference)
+**Bead:** `Autarch-rte` (Task reference)
 
 **Goal:** Polish the interview UI to match an Agent-Desk style by redesigning the composer, chat transcript, and header nav.
 

@@ -7,7 +7,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/mistakeknot/vauxpraudemonium/internal/bigend/config"
+	"github.com/mistakeknot/autarch/internal/bigend/config"
 )
 
 // Project represents a discovered project with tooling

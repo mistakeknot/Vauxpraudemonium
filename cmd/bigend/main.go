@@ -15,12 +15,12 @@ import (
 
 	tea "github.com/charmbracelet/bubbletea"
 
-	"github.com/mistakeknot/vauxpraudemonium/internal/bigend/aggregator"
-	"github.com/mistakeknot/vauxpraudemonium/internal/bigend/config"
-	"github.com/mistakeknot/vauxpraudemonium/internal/bigend/daemon"
-	"github.com/mistakeknot/vauxpraudemonium/internal/bigend/discovery"
-	"github.com/mistakeknot/vauxpraudemonium/internal/bigend/tui"
-	"github.com/mistakeknot/vauxpraudemonium/internal/bigend/web"
+	"github.com/mistakeknot/autarch/internal/bigend/aggregator"
+	"github.com/mistakeknot/autarch/internal/bigend/config"
+	"github.com/mistakeknot/autarch/internal/bigend/daemon"
+	"github.com/mistakeknot/autarch/internal/bigend/discovery"
+	"github.com/mistakeknot/autarch/internal/bigend/tui"
+	"github.com/mistakeknot/autarch/internal/bigend/web"
 )
 
 func main() {

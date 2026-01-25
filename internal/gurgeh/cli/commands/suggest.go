@@ -7,12 +7,12 @@ import (
 	"strings"
 	"time"
 
-	"github.com/mistakeknot/vauxpraudemonium/internal/gurgeh/agents"
-	"github.com/mistakeknot/vauxpraudemonium/internal/gurgeh/brief"
-	"github.com/mistakeknot/vauxpraudemonium/internal/gurgeh/config"
-	"github.com/mistakeknot/vauxpraudemonium/internal/gurgeh/project"
-	"github.com/mistakeknot/vauxpraudemonium/internal/gurgeh/specs"
-	"github.com/mistakeknot/vauxpraudemonium/internal/gurgeh/suggestions"
+	"github.com/mistakeknot/autarch/internal/gurgeh/agents"
+	"github.com/mistakeknot/autarch/internal/gurgeh/brief"
+	"github.com/mistakeknot/autarch/internal/gurgeh/config"
+	"github.com/mistakeknot/autarch/internal/gurgeh/project"
+	"github.com/mistakeknot/autarch/internal/gurgeh/specs"
+	"github.com/mistakeknot/autarch/internal/gurgeh/suggestions"
 	"github.com/spf13/cobra"
 )
 

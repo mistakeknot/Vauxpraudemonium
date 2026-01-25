@@ -1,6 +1,6 @@
 package main
 
-import "github.com/mistakeknot/vauxpraudemonium/internal/pollard/cli"
+import "github.com/mistakeknot/autarch/internal/pollard/cli"
 
 func main() {
 	cli.Execute()

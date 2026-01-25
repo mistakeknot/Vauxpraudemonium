@@ -6,7 +6,7 @@ import (
 	"os"
 	"testing"
 
-	"github.com/mistakeknot/vauxpraudemonium/internal/coldwine/project"
+	"github.com/mistakeknot/autarch/internal/coldwine/project"
 )
 
 func TestDoctorJSONOutput(t *testing.T) {

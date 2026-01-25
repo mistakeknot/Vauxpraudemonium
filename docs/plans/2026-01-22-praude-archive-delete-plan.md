@@ -2,7 +2,7 @@
 
 > **For Claude:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task.
 
-**Bead:** `Vauxpraudemonium-bwe` (Task reference)
+**Bead:** `Autarch-bwe` (Task reference)
 
 **Goal:** Add archive/delete/undo for PRDs and artifacts with TUI and CLI support, plus a show-archived toggle.
 
@@ -124,7 +124,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/mistakeknot/vauxpraudemonium/internal/praude/project"
+	"github.com/mistakeknot/autarch/internal/praude/project"
 )
 
 func TestArchiveMovesSpec(t *testing.T) {
@@ -165,8 +165,8 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/mistakeknot/vauxpraudemonium/internal/praude/project"
-	"github.com/mistakeknot/vauxpraudemonium/internal/praude/specs"
+	"github.com/mistakeknot/autarch/internal/praude/project"
+	"github.com/mistakeknot/autarch/internal/praude/specs"
 )
 
 type Result struct {
@@ -257,7 +257,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/mistakeknot/vauxpraudemonium/internal/praude/project"
+	"github.com/mistakeknot/autarch/internal/praude/project"
 )
 
 func TestArchiveKeyMovesSpec(t *testing.T) {
@@ -338,7 +338,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/mistakeknot/vauxpraudemonium/internal/praude/project"
+	"github.com/mistakeknot/autarch/internal/praude/project"
 )
 
 func TestArchiveCommandMovesSpec(t *testing.T) {

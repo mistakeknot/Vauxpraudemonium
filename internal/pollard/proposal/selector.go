@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/mistakeknot/vauxpraudemonium/internal/pollard/config"
+	"github.com/mistakeknot/autarch/internal/pollard/config"
 )
 
 // AgendaSelector applies selected agendas to the Pollard configuration.

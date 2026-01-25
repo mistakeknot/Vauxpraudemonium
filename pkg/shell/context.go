@@ -4,7 +4,7 @@ package shell
 import (
 	"path/filepath"
 
-	"github.com/mistakeknot/vauxpraudemonium/pkg/toolpane"
+	"github.com/mistakeknot/autarch/pkg/toolpane"
 )
 
 // Context holds shared state across the unified shell

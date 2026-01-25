@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/mistakeknot/vauxpraudemonium/internal/coldwine/epics"
+	"github.com/mistakeknot/autarch/internal/coldwine/epics"
 )
 
 type Input struct {

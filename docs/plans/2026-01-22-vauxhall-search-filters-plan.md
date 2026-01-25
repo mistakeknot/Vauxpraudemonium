@@ -2,7 +2,7 @@
 
 > **For Claude:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task.
 
-**Bead:** `Vauxpraudemonium-v2z` (Task reference)
+**Bead:** `Autarch-v2z` (Task reference)
 
 **Goal:** Add a search bar with status-token filtering for Sessions and Agents in the Vauxhall TUI.
 

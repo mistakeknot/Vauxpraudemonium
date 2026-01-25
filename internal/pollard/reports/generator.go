@@ -12,9 +12,9 @@ import (
 
 	"gopkg.in/yaml.v3"
 
-	"github.com/mistakeknot/vauxpraudemonium/internal/pollard/insights"
-	"github.com/mistakeknot/vauxpraudemonium/internal/pollard/patterns"
-	"github.com/mistakeknot/vauxpraudemonium/internal/pollard/sources"
+	"github.com/mistakeknot/autarch/internal/pollard/insights"
+	"github.com/mistakeknot/autarch/internal/pollard/patterns"
+	"github.com/mistakeknot/autarch/internal/pollard/sources"
 )
 
 // ReportType defines the type of report to generate.

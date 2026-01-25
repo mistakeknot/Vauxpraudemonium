@@ -9,8 +9,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/mistakeknot/vauxpraudemonium/internal/coldwine/project"
-	"github.com/mistakeknot/vauxpraudemonium/internal/coldwine/storage"
+	"github.com/mistakeknot/autarch/internal/coldwine/project"
+	"github.com/mistakeknot/autarch/internal/coldwine/storage"
 )
 
 func TestLockReserveAndRelease(t *testing.T) {

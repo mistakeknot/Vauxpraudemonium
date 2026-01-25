@@ -8,7 +8,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/mistakeknot/vauxpraudemonium/internal/gurgeh/suggestions"
+	"github.com/mistakeknot/autarch/internal/gurgeh/suggestions"
 )
 
 func TestSuggestionsReviewOutputsCounts(t *testing.T) {

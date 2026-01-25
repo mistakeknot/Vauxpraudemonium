@@ -2,7 +2,7 @@
 
 > **For Claude:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task.
 
-**Bead:** `Vauxpraudemonium-fuo` (Task reference)
+**Bead:** `Autarch-fuo` (Task reference)
 
 **Goal:** Add a web UI search bar with status-token filtering for Sessions and Agents, mirroring TUI behavior.
 
@@ -27,8 +27,8 @@ package web
 import (
 	"testing"
 
-	"github.com/mistakeknot/vauxpraudemonium/internal/vauxhall/aggregator"
-	"github.com/mistakeknot/vauxpraudemonium/internal/vauxhall/tmux"
+	"github.com/mistakeknot/autarch/internal/vauxhall/aggregator"
+	"github.com/mistakeknot/autarch/internal/vauxhall/tmux"
 )
 
 func TestParseFilterStatusTokens(t *testing.T) {
@@ -124,9 +124,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/mistakeknot/vauxpraudemonium/internal/vauxhall/aggregator"
-	"github.com/mistakeknot/vauxpraudemonium/internal/vauxhall/config"
-	"github.com/mistakeknot/vauxpraudemonium/internal/vauxhall/tmux"
+	"github.com/mistakeknot/autarch/internal/vauxhall/aggregator"
+	"github.com/mistakeknot/autarch/internal/vauxhall/config"
+	"github.com/mistakeknot/autarch/internal/vauxhall/tmux"
 )
 
 type fakeStatusClient struct {

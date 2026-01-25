@@ -6,8 +6,8 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/mistakeknot/vauxpraudemonium/internal/pollard/config"
-	"github.com/mistakeknot/vauxpraudemonium/internal/pollard/sources"
+	"github.com/mistakeknot/autarch/internal/pollard/config"
+	"github.com/mistakeknot/autarch/internal/pollard/sources"
 )
 
 var initCmd = &cobra.Command{
