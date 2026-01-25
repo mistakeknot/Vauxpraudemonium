@@ -61,9 +61,11 @@ autarch/
 │   ├── coldwine/     # Coldwine-specific code
 │   └── pollard/      # Pollard-specific code
 ├── pkg/
-│   ├── tui/          # Shared TUI components
+│   ├── contract/     # Cross-tool entity types
+│   ├── discovery/    # Project discovery
+│   ├── events/       # Event spine (SQLite)
 │   ├── shell/        # Shell integration
-│   └── discovery/    # Project discovery
+│   └── tui/          # Shared TUI components
 └── docs/             # Documentation
 ```
 
@@ -76,6 +78,18 @@ Each tool has its own config directory:
 - Pollard: `.pollard/`
 
 Global agent targets: `~/.config/autarch/agents.toml`
+
+## Intermute Integration
+
+Autarch modules will auto-register with Intermute when `INTERMUTE_URL` is set:
+
+```bash
+export INTERMUTE_URL="http://localhost:7338"
+export INTERMUTE_AGENT_NAME="my-agent"   # optional
+export INTERMUTE_PROJECT="my-project"    # optional
+```
+
+Bigend handles session I/O; Intermute provides coordination and messaging.
 
 ## Documentation
 
