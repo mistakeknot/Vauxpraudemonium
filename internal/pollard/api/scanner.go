@@ -19,6 +19,8 @@ import (
 	"strings"
 	"time"
 
+	ic "github.com/mistakeknot/intermute/client"
+
 	"github.com/mistakeknot/autarch/internal/pollard/config"
 	"github.com/mistakeknot/autarch/internal/pollard/hunters"
 	"github.com/mistakeknot/autarch/internal/pollard/insights"
@@ -34,6 +36,7 @@ type Scanner struct {
 	registry     *hunters.Registry
 	db           *state.DB
 	orchestrator *ResearchOrchestrator
+	intermuteCursor uint64
 }
 
 // ScanOptions configures a scan operation.
@@ -618,9 +621,21 @@ func InboxPath(projectPath string) string {
 	return filepath.Join(projectPath, ".pollard", "inbox")
 }
 
+func intermuteURL() string {
+	return strings.TrimSpace(os.Getenv("INTERMUTE_URL"))
+}
+
+func intermuteEnabled() bool {
+	return intermuteURL() != ""
+}
+
 // ProcessInbox processes pending messages in Pollard's inbox.
 // This is the Intermute-compatible message handling interface.
 func (s *Scanner) ProcessInbox(ctx context.Context) error {
+	if intermuteEnabled() {
+		return s.processIntermuteInbox(ctx)
+	}
+
 	inboxDir := InboxPath(s.projectPath)
 	if err := os.MkdirAll(inboxDir, 0755); err != nil {
 		return fmt.Errorf("failed to create inbox: %w", err)
@@ -669,28 +684,30 @@ func (s *Scanner) processMessage(ctx context.Context, msgPath string) error {
 		return err
 	}
 
-	// Process based on request type
-	var result *ScanResult
-	var scanErr error
+	result, scanErr := s.runResearch(ctx, msg.Payload)
+	s.applyResponse(&msg, result, scanErr)
+	return s.saveMessage(msgPath, &msg)
+}
 
-	switch msg.Payload.RequestType {
+func (s *Scanner) runResearch(ctx context.Context, payload ResearchPayload) (*ScanResult, error) {
+	switch payload.RequestType {
 	case "prd":
-		result, scanErr = s.ResearchForPRD(ctx, msg.Payload.Vision, msg.Payload.Problem, msg.Payload.Queries)
+		return s.ResearchForPRD(ctx, payload.Vision, payload.Problem, payload.Queries)
 	case "epic":
-		result, scanErr = s.ResearchForEpic(ctx, msg.Payload.Vision, msg.Payload.Problem)
+		return s.ResearchForEpic(ctx, payload.Vision, payload.Problem)
 	case "persona":
-		result, scanErr = s.ResearchUserPersonas(ctx, msg.Payload.Personas, msg.Payload.Painpoints)
+		return s.ResearchUserPersonas(ctx, payload.Personas, payload.Painpoints)
 	default:
-		// General scan with provided hunters/queries
-		result, scanErr = s.Scan(ctx, ScanOptions{
-			Hunters:    msg.Payload.Hunters,
-			Queries:    msg.Payload.Queries,
-			Targets:    msg.Payload.Targets,
-			MaxResults: msg.Payload.MaxResults,
+		return s.Scan(ctx, ScanOptions{
+			Hunters:    payload.Hunters,
+			Queries:    payload.Queries,
+			Targets:    payload.Targets,
+			MaxResults: payload.MaxResults,
 		})
 	}
+}
 
-	// Build response
+func (s *Scanner) applyResponse(msg *ResearchMessage, result *ScanResult, scanErr error) {
 	response := &ResearchResponse{
 		CompletedAt: time.Now().UTC().Format(time.RFC3339),
 	}
@@ -709,7 +726,6 @@ func (s *Scanner) processMessage(ctx context.Context, msgPath string) error {
 	}
 
 	msg.Response = response
-	return s.saveMessage(msgPath, &msg)
 }
 
 // saveMessage writes a message back to disk.
@@ -721,9 +737,80 @@ func (s *Scanner) saveMessage(path string, msg *ResearchMessage) error {
 	return os.WriteFile(path, data, 0644)
 }
 
+type intermuteResponse struct {
+	InReplyTo string           `json:"in_reply_to"`
+	Response  ResearchResponse `json:"response"`
+}
+
+func (s *Scanner) processIntermuteInbox(ctx context.Context) error {
+	client := ic.New(intermuteURL())
+	inbox, err := client.InboxSince(ctx, "pollard", s.intermuteCursor)
+	if err != nil {
+		return fmt.Errorf("intermute inbox: %w", err)
+	}
+	s.intermuteCursor = inbox.Cursor
+
+	for _, msg := range inbox.Messages {
+		var payload ResearchPayload
+		if err := json.Unmarshal([]byte(msg.Body), &payload); err != nil {
+			continue
+		}
+		req := ResearchMessage{
+			ID:        msg.ID,
+			Type:      TypeResearchRequest,
+			From:      msg.From,
+			To:        "pollard",
+			CreatedAt: time.Now().UTC(),
+			Status:    "processing",
+			Payload:   payload,
+		}
+
+		result, scanErr := s.runResearch(ctx, payload)
+		s.applyResponse(&req, result, scanErr)
+
+		body, _ := json.Marshal(intermuteResponse{
+			InReplyTo: msg.ID,
+			Response:  *req.Response,
+		})
+		_, _ = client.SendMessage(ctx, ic.Message{
+			From:     "pollard",
+			To:       []string{msg.From},
+			ThreadID: msg.ID,
+			Body:     string(body),
+		})
+	}
+
+	return nil
+}
+
 // SendResearchRequest creates a research request message for Pollard.
 // This is called by Praude/Tandemonium to request research.
 func SendResearchRequest(projectPath string, payload ResearchPayload, from string) (*ResearchMessage, error) {
+	if intermuteEnabled() {
+		client := ic.New(intermuteURL())
+		body, err := json.Marshal(payload)
+		if err != nil {
+			return nil, err
+		}
+		resp, err := client.SendMessage(context.Background(), ic.Message{
+			From: from,
+			To:   []string{"pollard"},
+			Body: string(body),
+		})
+		if err != nil {
+			return nil, err
+		}
+		return &ResearchMessage{
+			ID:        resp.MessageID,
+			Type:      TypeResearchRequest,
+			From:      from,
+			To:        "pollard",
+			CreatedAt: time.Now().UTC(),
+			Status:    "pending",
+			Payload:   payload,
+		}, nil
+	}
+
 	inboxDir := InboxPath(projectPath)
 	if err := os.MkdirAll(inboxDir, 0755); err != nil {
 		return nil, fmt.Errorf("failed to create inbox: %w", err)
@@ -757,6 +844,43 @@ func SendResearchRequest(projectPath string, payload ResearchPayload, from strin
 // WaitForResponse waits for a research request to complete.
 // This polls the message file until status changes from pending/processing.
 func WaitForResponse(projectPath, msgID string, timeout time.Duration) (*ResearchMessage, error) {
+	if intermuteEnabled() {
+		agent := strings.TrimSpace(os.Getenv("INTERMUTE_AGENT_NAME"))
+		if agent == "" {
+			return nil, fmt.Errorf("INTERMUTE_AGENT_NAME required for intermute response polling")
+		}
+		client := ic.New(intermuteURL())
+		deadline := time.Now().Add(timeout)
+		var cursor uint64
+		for time.Now().Before(deadline) {
+			inbox, err := client.InboxSince(context.Background(), agent, cursor)
+			if err != nil {
+				return nil, err
+			}
+			cursor = inbox.Cursor
+			for _, msg := range inbox.Messages {
+				if msg.ThreadID != msgID {
+					continue
+				}
+				var resp intermuteResponse
+				if err := json.Unmarshal([]byte(msg.Body), &resp); err != nil {
+					continue
+				}
+				return &ResearchMessage{
+					ID:        msgID,
+					Type:      TypeResearchComplete,
+					From:      "pollard",
+					To:        agent,
+					CreatedAt: time.Now().UTC(),
+					Status:    "complete",
+					Response:  &resp.Response,
+				}, nil
+			}
+			time.Sleep(250 * time.Millisecond)
+		}
+		return nil, fmt.Errorf("timeout waiting for response")
+	}
+
 	inboxDir := InboxPath(projectPath)
 	deadline := time.Now().Add(timeout)
 
