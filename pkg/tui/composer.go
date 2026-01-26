@@ -28,7 +28,8 @@ func NewComposer(contentHeight int) *Composer {
 	ta := textarea.New()
 	ta.Placeholder = "Type your response..."
 	ta.CharLimit = 2000
-	ta.SetWidth(60)
+	// Don't set a default width here - width will be set via SetSize()
+	// Setting a width now would cause it to persist even after SetSize() in some cases
 	ta.SetHeight(contentHeight)
 	ta.ShowLineNumbers = false
 
@@ -114,6 +115,17 @@ func (c *Composer) View() string {
 		width = 40 // Minimum reasonable width
 	}
 
+	// Calculate the inner width for content (accounting for border and padding)
+	// Border = 2 (left + right), Padding = 2 (1 on each side)
+	innerWidth := width - 4
+	if innerWidth < 10 {
+		innerWidth = 10
+	}
+
+	// Ensure textarea width matches the calculated inner width
+	// This handles the case where SetSize() hasn't been called yet
+	c.textarea.SetWidth(innerWidth)
+
 	// Build content sections
 	var content string
 
@@ -138,7 +150,8 @@ func (c *Composer) View() string {
 		Border(lipgloss.RoundedBorder()).
 		BorderForeground(borderColor).
 		Padding(0, 1).
-		Width(width - 2) // Account for border
+		Width(width - 2).    // Total width minus border
+		MaxWidth(width - 2)  // Hard constraint to prevent overflow
 
 	boxedContent := boxStyle.Render(content)
 
