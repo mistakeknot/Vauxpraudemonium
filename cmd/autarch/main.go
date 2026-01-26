@@ -25,7 +25,7 @@ import (
 	"github.com/mistakeknot/autarch/internal/bigend/web"
 	coldwineCli "github.com/mistakeknot/autarch/internal/coldwine/cli"
 	coldwineIntermute "github.com/mistakeknot/autarch/internal/coldwine/intermute"
-	"github.com/mistakeknot/autarch/internal/embedded"
+	"github.com/mistakeknot/autarch/internal/intermute"
 	"github.com/mistakeknot/autarch/internal/tui"
 	"github.com/mistakeknot/autarch/internal/tui/views"
 	gurgehCli "github.com/mistakeknot/autarch/internal/gurgeh/cli"
@@ -67,12 +67,12 @@ func tuiCmd() *cobra.Command {
 
 	cmd := &cobra.Command{
 		Use:   "tui",
-		Short: "Launch unified TUI with embedded Intermute",
+		Short: "Launch unified TUI with Intermute backend",
 		Long: `Launch the unified Autarch TUI with all tools accessible via tabs.
 
-The TUI starts an embedded Intermute server for shared state storage.
-All domain data (specs, epics, tasks, insights, sessions) is stored
-in a local SQLite database.
+The TUI connects to an existing Intermute server if one is running,
+or starts a standalone server automatically. All domain data (specs,
+epics, tasks, insights, sessions) is stored in a local SQLite database.
 
 Navigation:
   1-4       Switch between tabs (Bigend, Gurgeh, Coldwine, Pollard)
@@ -95,29 +95,24 @@ Navigation:
 				dataDir = filepath.Join(home, ".autarch")
 			}
 
-			// Ensure data directory exists
-			if err := os.MkdirAll(dataDir, 0755); err != nil {
-				return fmt.Errorf("failed to create data directory: %w", err)
-			}
-
-			// Start embedded Intermute server
-			dbPath := filepath.Join(dataDir, "data.db")
-			srv, err := embedded.New(embedded.Config{
-				Host:   "127.0.0.1",
-				Port:   port,
-				DBPath: dbPath,
+			// Create Intermute manager
+			mgr, err := intermute.NewManager(intermute.Config{
+				Port:    port,
+				DataDir: dataDir,
 			})
 			if err != nil {
-				return fmt.Errorf("failed to create embedded server: %w", err)
+				return fmt.Errorf("failed to create intermute manager: %w", err)
 			}
 
-			if err := srv.Start(); err != nil {
-				return fmt.Errorf("failed to start embedded server: %w", err)
+			// Ensure Intermute is running (detect existing or start new)
+			cleanup, err := mgr.EnsureRunning(context.Background())
+			if err != nil {
+				return fmt.Errorf("failed to ensure intermute running: %w", err)
 			}
-			defer srv.Stop()
+			defer cleanup()
 
-			// Create client connecting to embedded server
-			client := autarch.NewClient(srv.URL())
+			// Create client connecting to Intermute server
+			client := autarch.NewClient(mgr.URL())
 
 			// Create views
 			bigendView := views.NewBigendView(client)
@@ -135,7 +130,7 @@ Navigation:
 		},
 	}
 
-	cmd.Flags().IntVar(&port, "port", 7338, "Embedded Intermute server port")
+	cmd.Flags().IntVar(&port, "port", 7338, "Intermute server port")
 	cmd.Flags().StringVar(&dataDir, "data-dir", "", "Data directory (default: ~/.autarch)")
 
 	return cmd
