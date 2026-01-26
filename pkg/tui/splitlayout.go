@@ -4,7 +4,7 @@ import (
 	"strings"
 
 	"github.com/charmbracelet/lipgloss"
-	"github.com/muesli/reflow/ansi"
+	"github.com/mattn/go-runewidth"
 )
 
 // SplitLayout renders a 2/3 + 1/3 horizontal split layout.
@@ -170,89 +170,18 @@ func ensureSize(content string, width, height int) string {
 
 // padToWidth pads a line to exactly the specified width.
 // Truncates if too long, pads with spaces if too short.
-// Properly handles ANSI escape codes (they don't count toward display width).
+// Uses go-runewidth which properly handles ANSI escape codes and East Asian Width.
 func padToWidth(line string, width int) string {
-	// Use ansi.PrintableRuneWidth to get the actual display width
-	// This ignores ANSI escape codes which have zero display width
-	displayWidth := ansi.PrintableRuneWidth(line)
+	displayWidth := runewidth.StringWidth(line)
 
 	if displayWidth == width {
 		return line
 	}
 	if displayWidth > width {
-		// Truncate character by character while preserving ANSI sequences
-		return truncateToWidth(line, width)
+		return runewidth.Truncate(line, width, "")
 	}
 	// Pad with spaces
 	return line + strings.Repeat(" ", width-displayWidth)
-}
-
-// truncateToWidth truncates a string to exactly width display characters,
-// properly handling ANSI escape sequences.
-func truncateToWidth(s string, width int) string {
-	if width <= 0 {
-		return ""
-	}
-
-	var result strings.Builder
-	currentWidth := 0
-	inEscape := false
-
-	for _, r := range s {
-		// Track ANSI escape sequences (they have zero display width)
-		if r == '\x1b' {
-			inEscape = true
-			result.WriteRune(r)
-			continue
-		}
-		if inEscape {
-			result.WriteRune(r)
-			// ANSI sequences end with a letter
-			if (r >= 'A' && r <= 'Z') || (r >= 'a' && r <= 'z') {
-				inEscape = false
-			}
-			continue
-		}
-
-		// Check if adding this rune would exceed width
-		runeWidth := runeDisplayWidth(r)
-		if currentWidth+runeWidth > width {
-			break
-		}
-		result.WriteRune(r)
-		currentWidth += runeWidth
-	}
-
-	// Pad with spaces if we're short (shouldn't happen, but safety)
-	for currentWidth < width {
-		result.WriteRune(' ')
-		currentWidth++
-	}
-
-	return result.String()
-}
-
-// runeDisplayWidth returns the display width of a rune.
-// Most runes are width 1, but some (like CJK) are width 2.
-func runeDisplayWidth(r rune) int {
-	// Box-drawing characters are width 1
-	if r >= 0x2500 && r <= 0x257F {
-		return 1
-	}
-	// Simple approximation: ASCII and most Unicode is width 1
-	// CJK ideographs and some other characters are width 2
-	if r >= 0x1100 && (r <= 0x115F || // Hangul Jamo
-		r == 0x2329 || r == 0x232A || // Angle brackets
-		(r >= 0x2E80 && r <= 0xA4CF && r != 0x303F) || // CJK
-		(r >= 0xAC00 && r <= 0xD7A3) || // Hangul syllables
-		(r >= 0xF900 && r <= 0xFAFF) || // CJK compatibility
-		(r >= 0xFE10 && r <= 0xFE1F) || // Vertical forms
-		(r >= 0xFE30 && r <= 0xFE6F) || // CJK compatibility forms
-		(r >= 0xFF00 && r <= 0xFF60) || // Fullwidth forms
-		(r >= 0xFFE0 && r <= 0xFFE6)) { // Fullwidth signs
-		return 2
-	}
-	return 1
 }
 
 // RenderWithPanels is a convenience method that renders left and right

@@ -268,7 +268,7 @@ func (v *ColdwineView) Name() string {
 
 // ShortHelp implements View
 func (v *ColdwineView) ShortHelp() string {
-	return "j/k navigate  n new epic  r refresh"
+	return "j/k navigate  r refresh"
 }
 
 // Commands implements CommandProvider

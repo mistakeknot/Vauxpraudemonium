@@ -54,25 +54,27 @@ func (t *TabBar) View() string {
 
 	for i, name := range t.tabs {
 		// Add number prefix
-		tabText := "[" + string('1'+rune(i)) + ":" + name + "]"
+		numStyle := lipgloss.NewStyle().
+			Foreground(pkgtui.ColorMuted)
+		num := numStyle.Render(string('1' + rune(i)))
 
 		if i == t.active {
-			tabs = append(tabs, pkgtui.ActiveTabStyle.Render(tabText))
+			tabStyle := lipgloss.NewStyle().
+				Background(pkgtui.ColorPrimary).
+				Foreground(pkgtui.ColorBg).
+				Bold(true).
+				Padding(0, 2)
+			tabs = append(tabs, tabStyle.Render(num+" "+name))
 		} else {
-			tabs = append(tabs, pkgtui.TabStyle.Render(tabText))
+			tabStyle := lipgloss.NewStyle().
+				Foreground(pkgtui.ColorFgDim).
+				Padding(0, 2)
+			tabs = append(tabs, tabStyle.Render(num+" "+name))
 		}
 	}
 
-	row := strings.Join(tabs, " ")
-
-	// Create border
-	border := lipgloss.NewStyle().
-		BorderStyle(lipgloss.NormalBorder()).
-		BorderBottom(true).
-		BorderForeground(pkgtui.ColorMuted).
-		Width(t.width)
-
-	return border.Render(row)
+	row := strings.Join(tabs, "")
+	return row
 }
 
 // TabNames returns the list of tab names

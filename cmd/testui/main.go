@@ -135,6 +135,9 @@ func runEpicReview() error {
 			return tea.Printf("Accepted %d epics!", len(accepted))
 		},
 		nil,
+		func() tea.Cmd {
+			return tea.Println("Back pressed")
+		},
 	)
 	p := tea.NewProgram(wrap(view), tea.WithAltScreen())
 	_, err := p.Run()
@@ -186,6 +189,9 @@ func runTaskReview() error {
 	view := views.NewTaskReviewView(mockTasks)
 	view.SetAcceptCallback(func(accepted []tasks.TaskProposal) tea.Cmd {
 		return tea.Printf("Accepted %d tasks!", len(accepted))
+	})
+	view.SetBackCallback(func() tea.Cmd {
+		return tea.Println("Back pressed")
 	})
 	p := tea.NewProgram(wrap(view), tea.WithAltScreen())
 	_, err := p.Run()
@@ -242,6 +248,14 @@ func runFullFlow() error {
 			})
 			return v
 		},
+		// Interview view factory
+		func(questions []tui.InterviewQuestion, coord *research.Coordinator) tui.View {
+			return views.NewInterviewView(questions, coord)
+		},
+		// Spec summary view factory
+		func(spec *tui.SpecSummary, coord *research.Coordinator) tui.View {
+			return views.NewSpecSummaryView(spec, coord)
+		},
 		// Epic review view factory
 		func(proposals []epics.EpicProposal) tui.View {
 			v := views.NewEpicReviewView(proposals)
@@ -252,6 +266,11 @@ func runFullFlow() error {
 					}
 				},
 				nil,
+				func() tea.Cmd {
+					return func() tea.Msg {
+						return tui.NavigateBackMsg{}
+					}
+				},
 			)
 			return v
 		},
@@ -261,6 +280,11 @@ func runFullFlow() error {
 			v.SetAcceptCallback(func(accepted []tasks.TaskProposal) tea.Cmd {
 				return func() tea.Msg {
 					return tui.TasksAcceptedMsg{Tasks: accepted}
+				}
+			})
+			v.SetBackCallback(func() tea.Cmd {
+				return func() tea.Msg {
+					return tui.NavigateBackMsg{}
 				}
 			})
 			return v

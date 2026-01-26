@@ -238,7 +238,7 @@ func (v *GurgehView) Name() string {
 
 // ShortHelp implements View
 func (v *GurgehView) ShortHelp() string {
-	return "j/k navigate  n new  r refresh"
+	return "j/k navigate  r refresh"
 }
 
 // Commands implements CommandProvider

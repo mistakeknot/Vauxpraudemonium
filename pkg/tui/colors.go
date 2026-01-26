@@ -12,9 +12,12 @@ var (
 	ColorError     = lipgloss.Color("#f7768e") // Red
 	ColorMuted     = lipgloss.Color("#565f89") // Gray
 	ColorBg        = lipgloss.Color("#1a1b26") // Dark background
+	ColorBgDark    = lipgloss.Color("#16161e") // Even darker background
 	ColorBgLight   = lipgloss.Color("#24283b") // Lighter background
+	ColorBgLighter = lipgloss.Color("#292e42") // Even lighter for hover/selection
 	ColorFg        = lipgloss.Color("#c0caf5") // Foreground
 	ColorFgDim     = lipgloss.Color("#a9b1d6") // Dimmed foreground
+	ColorBorder    = lipgloss.Color("#3b4261") // Border color
 
 	// Agent-specific colors
 	ColorClaude = lipgloss.Color("#e07353") // Orange/coral for Claude

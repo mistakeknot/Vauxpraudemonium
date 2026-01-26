@@ -9,6 +9,46 @@ var (
 			Background(ColorBg).
 			Foreground(ColorFg)
 
+	// Full screen container - fills entire terminal with background
+	FullScreenStyle = lipgloss.NewStyle().
+				Background(ColorBg).
+				Foreground(ColorFg)
+
+	// Content container with padding
+	ContentStyle = lipgloss.NewStyle().
+			Background(ColorBg).
+			Foreground(ColorFg).
+			Padding(1, 3)
+
+	// Card/Panel style with border and background
+	CardStyle = lipgloss.NewStyle().
+			Background(ColorBgLight).
+			Foreground(ColorFg).
+			Border(lipgloss.RoundedBorder()).
+			BorderForeground(ColorMuted).
+			Padding(1, 2)
+
+	// Focused card
+	CardFocusedStyle = lipgloss.NewStyle().
+				Background(ColorBgLight).
+				Foreground(ColorFg).
+				Border(lipgloss.RoundedBorder()).
+				BorderForeground(ColorPrimary).
+				Padding(1, 2)
+
+	// Header bar style
+	HeaderStyle = lipgloss.NewStyle().
+			Background(ColorBgDark).
+			Foreground(ColorFg).
+			Padding(1, 3).
+			Bold(true)
+
+	// Footer bar style
+	FooterStyle = lipgloss.NewStyle().
+			Background(ColorBgDark).
+			Foreground(ColorMuted).
+			Padding(1, 3)
+
 	PanelStyle = lipgloss.NewStyle().
 			Border(lipgloss.RoundedBorder()).
 			BorderForeground(ColorMuted).

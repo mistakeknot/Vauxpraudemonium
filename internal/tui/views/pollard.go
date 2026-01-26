@@ -255,7 +255,7 @@ func (v *PollardView) Name() string {
 
 // ShortHelp implements View
 func (v *PollardView) ShortHelp() string {
-	return "j/k navigate  s scan  r refresh"
+	return "j/k navigate  r refresh"
 }
 
 // Commands implements CommandProvider

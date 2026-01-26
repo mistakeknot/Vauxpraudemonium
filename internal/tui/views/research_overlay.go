@@ -39,6 +39,16 @@ func NewResearchOverlay(coordinator *research.Coordinator) *ResearchOverlay {
 	si.Placeholder = "Search findings..."
 	si.CharLimit = 100
 
+	// Style the search input to match our theme
+	si.PromptStyle = lipgloss.NewStyle().Foreground(pkgtui.ColorPrimary)
+	si.TextStyle = lipgloss.NewStyle().Foreground(pkgtui.ColorFg)
+	si.PlaceholderStyle = lipgloss.NewStyle().Foreground(pkgtui.ColorMuted)
+	si.Cursor.Style = lipgloss.NewStyle().
+		Foreground(pkgtui.ColorBg).
+		Background(pkgtui.ColorPrimary)
+	si.Cursor.TextStyle = lipgloss.NewStyle().Foreground(pkgtui.ColorFg)
+	si.Prompt = ""
+
 	return &ResearchOverlay{
 		coordinator: coordinator,
 		expanded:    make(map[int]bool),

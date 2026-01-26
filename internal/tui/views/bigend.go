@@ -447,7 +447,7 @@ func (v *BigendView) Name() string {
 
 // ShortHelp implements View
 func (v *BigendView) ShortHelp() string {
-	return "j/k navigate  tab switch  enter select  n new session  r refresh"
+	return "j/k navigate  tab switch  enter select  r refresh"
 }
 
 // Commands implements CommandProvider
