@@ -138,9 +138,9 @@ func (w *Writer) EmitInitiativeUpdated(initiative *contract.Initiative) error {
 
 // EmitInitiativeClosed emits an initiative closed event
 func (w *Writer) EmitInitiativeClosed(initiativeID string, reason string) error {
-	return w.emit(EventInitiativeClosed, EntityInitiative, initiativeID, map[string]string{
-		"id":     initiativeID,
-		"reason": reason,
+	return w.emit(EventInitiativeClosed, EntityInitiative, initiativeID, InitiativeClosedPayload{
+		ID:     initiativeID,
+		Reason: reason,
 	})
 }
 
@@ -158,9 +158,9 @@ func (w *Writer) EmitEpicUpdated(epic *contract.Epic) error {
 
 // EmitEpicClosed emits an epic closed event
 func (w *Writer) EmitEpicClosed(epicID string, reason string) error {
-	return w.emit(EventEpicClosed, EntityEpic, epicID, map[string]string{
-		"id":     epicID,
-		"reason": reason,
+	return w.emit(EventEpicClosed, EntityEpic, epicID, EpicClosedPayload{
+		ID:     epicID,
+		Reason: reason,
 	})
 }
 
@@ -178,9 +178,9 @@ func (w *Writer) EmitStoryUpdated(story *contract.Story) error {
 
 // EmitStoryClosed emits a story closed event
 func (w *Writer) EmitStoryClosed(storyID string, reason string) error {
-	return w.emit(EventStoryClosed, EntityStory, storyID, map[string]string{
-		"id":     storyID,
-		"reason": reason,
+	return w.emit(EventStoryClosed, EntityStory, storyID, StoryClosedPayload{
+		ID:     storyID,
+		Reason: reason,
 	})
 }
 
@@ -193,31 +193,31 @@ func (w *Writer) EmitTaskCreated(task *contract.Task) error {
 
 // EmitTaskAssigned emits a task assigned event
 func (w *Writer) EmitTaskAssigned(taskID, assignee string) error {
-	return w.emit(EventTaskAssigned, EntityTask, taskID, map[string]string{
-		"task_id":  taskID,
-		"assignee": assignee,
+	return w.emit(EventTaskAssigned, EntityTask, taskID, TaskAssignedPayload{
+		TaskID:   taskID,
+		Assignee: assignee,
 	})
 }
 
 // EmitTaskStarted emits a task started event
 func (w *Writer) EmitTaskStarted(taskID string) error {
-	return w.emit(EventTaskStarted, EntityTask, taskID, map[string]string{
-		"task_id": taskID,
+	return w.emit(EventTaskStarted, EntityTask, taskID, TaskStartedPayload{
+		TaskID: taskID,
 	})
 }
 
 // EmitTaskBlocked emits a task blocked event
 func (w *Writer) EmitTaskBlocked(taskID, reason string) error {
-	return w.emit(EventTaskBlocked, EntityTask, taskID, map[string]string{
-		"task_id": taskID,
-		"reason":  reason,
+	return w.emit(EventTaskBlocked, EntityTask, taskID, TaskBlockedPayload{
+		TaskID: taskID,
+		Reason: reason,
 	})
 }
 
 // EmitTaskCompleted emits a task completed event
 func (w *Writer) EmitTaskCompleted(taskID string) error {
-	return w.emit(EventTaskCompleted, EntityTask, taskID, map[string]string{
-		"task_id": taskID,
+	return w.emit(EventTaskCompleted, EntityTask, taskID, TaskCompletedPayload{
+		TaskID: taskID,
 	})
 }
 
@@ -230,24 +230,24 @@ func (w *Writer) EmitRunStarted(run *contract.Run) error {
 
 // EmitRunWaiting emits a run waiting event
 func (w *Writer) EmitRunWaiting(runID, reason string) error {
-	return w.emit(EventRunWaiting, EntityRun, runID, map[string]string{
-		"run_id": runID,
-		"reason": reason,
+	return w.emit(EventRunWaiting, EntityRun, runID, RunWaitingPayload{
+		RunID:  runID,
+		Reason: reason,
 	})
 }
 
 // EmitRunCompleted emits a run completed event
 func (w *Writer) EmitRunCompleted(runID string) error {
-	return w.emit(EventRunCompleted, EntityRun, runID, map[string]string{
-		"run_id": runID,
+	return w.emit(EventRunCompleted, EntityRun, runID, RunCompletedPayload{
+		RunID: runID,
 	})
 }
 
 // EmitRunFailed emits a run failed event
 func (w *Writer) EmitRunFailed(runID, reason string) error {
-	return w.emit(EventRunFailed, EntityRun, runID, map[string]string{
-		"run_id": runID,
-		"reason": reason,
+	return w.emit(EventRunFailed, EntityRun, runID, RunFailedPayload{
+		RunID:  runID,
+		Reason: reason,
 	})
 }
 

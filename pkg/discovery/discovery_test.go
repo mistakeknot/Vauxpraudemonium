@@ -51,7 +51,7 @@ func TestFindProjectRoot(t *testing.T) {
 		t.Errorf("expected %s (fallback), got %s", subDir, root)
 	}
 
-	// Create .pollard in tmpDir
+	// Create .pollard in tmpDir (current tool name)
 	if err := os.MkdirAll(filepath.Join(tmpDir, ".pollard"), 0755); err != nil {
 		t.Fatal(err)
 	}
@@ -63,6 +63,23 @@ func TestFindProjectRoot(t *testing.T) {
 	}
 	if root != tmpDir {
 		t.Errorf("expected %s, got %s", tmpDir, root)
+	}
+
+	// Test with .gurgeh directory
+	tmpDir2 := t.TempDir()
+	subDir2 := filepath.Join(tmpDir2, "nested")
+	if err := os.MkdirAll(subDir2, 0755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.MkdirAll(filepath.Join(tmpDir2, ".gurgeh"), 0755); err != nil {
+		t.Fatal(err)
+	}
+	root, err = FindProjectRoot(subDir2)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if root != tmpDir2 {
+		t.Errorf("expected %s with .gurgeh, got %s", tmpDir2, root)
 	}
 }
 
@@ -120,8 +137,8 @@ func TestGurgSpecs(t *testing.T) {
 		t.Errorf("expected 0 specs, got %d", len(specs))
 	}
 
-	// Create specs directory with a file
-	specsDir := filepath.Join(tmpDir, ".praude", "specs")
+	// Create specs directory with a file (using current .gurgeh name)
+	specsDir := filepath.Join(tmpDir, ".gurgeh", "specs")
 	if err := os.MkdirAll(specsDir, 0755); err != nil {
 		t.Fatal(err)
 	}
@@ -161,8 +178,8 @@ func TestColdwineEpics(t *testing.T) {
 		t.Errorf("expected 0 epics, got %d", len(epics))
 	}
 
-	// Create specs directory with a file
-	specsDir := filepath.Join(tmpDir, ".tandemonium", "specs")
+	// Create specs directory with a file (using current .coldwine name)
+	specsDir := filepath.Join(tmpDir, ".coldwine", "specs")
 	if err := os.MkdirAll(specsDir, 0755); err != nil {
 		t.Fatal(err)
 	}

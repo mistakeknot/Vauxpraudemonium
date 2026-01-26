@@ -19,9 +19,9 @@ import (
 	"github.com/mistakeknot/autarch/internal/bigend/config"
 	"github.com/mistakeknot/autarch/internal/bigend/daemon"
 	"github.com/mistakeknot/autarch/internal/bigend/discovery"
-	"github.com/mistakeknot/autarch/internal/bigend/intermute"
 	"github.com/mistakeknot/autarch/internal/bigend/tui"
 	"github.com/mistakeknot/autarch/internal/bigend/web"
+	"github.com/mistakeknot/autarch/pkg/intermute"
 )
 
 func main() {
@@ -47,7 +47,7 @@ func main() {
 	}))
 	slog.SetDefault(logger)
 
-	if stop, err := intermute.Start(context.Background()); err != nil {
+	if stop, err := intermute.RegisterTool(context.Background(), "bigend"); err != nil {
 		slog.Warn("intermute registration failed", "error", err)
 	} else if stop != nil {
 		defer stop()

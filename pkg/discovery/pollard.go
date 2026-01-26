@@ -39,30 +39,37 @@ type PollardSource struct {
 
 // PollardInsights loads all insights from a project's .pollard/insights directory.
 // This recursively scans subdirectories (competitive/, trends/, etc.).
+// Parse errors are silently ignored. Use PollardInsightsWithErrors for error details.
 func PollardInsights(root string) ([]PollardInsight, error) {
-	insightsDir := filepath.Join(root, ".pollard", "insights")
-	return loadInsightsRecursive(insightsDir)
+	insights, _ := PollardInsightsWithErrors(root)
+	return insights, nil
 }
 
-func loadInsightsRecursive(dir string) ([]PollardInsight, error) {
+// PollardInsightsWithErrors loads all insights and returns both successfully parsed insights
+// and any parse errors encountered.
+func PollardInsightsWithErrors(root string) ([]PollardInsight, []ParseError) {
+	insightsDir := filepath.Join(root, ".pollard", "insights")
+	return loadInsightsRecursiveWithErrors(insightsDir)
+}
+
+func loadInsightsRecursiveWithErrors(dir string) ([]PollardInsight, []ParseError) {
 	entries, err := os.ReadDir(dir)
 	if err != nil {
 		if os.IsNotExist(err) {
 			return []PollardInsight{}, nil
 		}
-		return nil, err
+		return nil, []ParseError{{Path: dir, Err: err}}
 	}
 
 	var insights []PollardInsight
+	var errs []ParseError
 	for _, entry := range entries {
 		path := filepath.Join(dir, entry.Name())
 		if entry.IsDir() {
 			// Recurse into subdirectories (competitive/, trends/, etc.)
-			sub, err := loadInsightsRecursive(path)
-			if err != nil {
-				continue
-			}
+			sub, subErrs := loadInsightsRecursiveWithErrors(path)
 			insights = append(insights, sub...)
+			errs = append(errs, subErrs...)
 			continue
 		}
 		if filepath.Ext(entry.Name()) != ".yaml" {
@@ -70,42 +77,51 @@ func loadInsightsRecursive(dir string) ([]PollardInsight, error) {
 		}
 		data, err := os.ReadFile(path)
 		if err != nil {
+			errs = append(errs, ParseError{Path: path, Err: err})
 			continue
 		}
 		var insight PollardInsight
 		if err := yaml.Unmarshal(data, &insight); err != nil {
+			errs = append(errs, ParseError{Path: path, Err: err})
 			continue
 		}
 		insights = append(insights, insight)
 	}
-	return insights, nil
+	return insights, errs
 }
 
 // PollardSources loads source collections from .pollard/sources.
+// Parse errors are silently ignored. Use PollardSourcesWithErrors for error details.
 func PollardSources(root string) ([]PollardSource, error) {
-	sourcesDir := filepath.Join(root, ".pollard", "sources")
-	return loadSourcesRecursive(sourcesDir)
+	sources, _ := PollardSourcesWithErrors(root)
+	return sources, nil
 }
 
-func loadSourcesRecursive(dir string) ([]PollardSource, error) {
+// PollardSourcesWithErrors loads all sources and returns both successfully parsed sources
+// and any parse errors encountered.
+func PollardSourcesWithErrors(root string) ([]PollardSource, []ParseError) {
+	sourcesDir := filepath.Join(root, ".pollard", "sources")
+	return loadSourcesRecursiveWithErrors(sourcesDir)
+}
+
+func loadSourcesRecursiveWithErrors(dir string) ([]PollardSource, []ParseError) {
 	entries, err := os.ReadDir(dir)
 	if err != nil {
 		if os.IsNotExist(err) {
 			return []PollardSource{}, nil
 		}
-		return nil, err
+		return nil, []ParseError{{Path: dir, Err: err}}
 	}
 
 	var sources []PollardSource
+	var errs []ParseError
 	for _, entry := range entries {
 		path := filepath.Join(dir, entry.Name())
 		if entry.IsDir() {
 			// Recurse into subdirectories
-			sub, err := loadSourcesRecursive(path)
-			if err != nil {
-				continue
-			}
+			sub, subErrs := loadSourcesRecursiveWithErrors(path)
 			sources = append(sources, sub...)
+			errs = append(errs, subErrs...)
 			continue
 		}
 		if filepath.Ext(entry.Name()) != ".yaml" {
@@ -113,6 +129,7 @@ func loadSourcesRecursive(dir string) ([]PollardSource, error) {
 		}
 		data, err := os.ReadFile(path)
 		if err != nil {
+			errs = append(errs, ParseError{Path: path, Err: err})
 			continue
 		}
 		var raw struct {
@@ -127,6 +144,7 @@ func loadSourcesRecursive(dir string) ([]PollardSource, error) {
 			} `yaml:"trends"`
 		}
 		if err := yaml.Unmarshal(data, &raw); err != nil {
+			errs = append(errs, ParseError{Path: path, Err: err})
 			continue
 		}
 		sources = append(sources, PollardSource{
@@ -138,7 +156,7 @@ func loadSourcesRecursive(dir string) ([]PollardSource, error) {
 			TrendCount:  len(raw.Trends),
 		})
 	}
-	return sources, nil
+	return sources, errs
 }
 
 // CountPollardInsights returns the total number of insights available.
@@ -188,29 +206,36 @@ type PollardPattern struct {
 }
 
 // PollardPatterns loads all patterns from a project's .pollard/patterns directory.
+// Parse errors are silently ignored. Use PollardPatternsWithErrors for error details.
 func PollardPatterns(root string) ([]PollardPattern, error) {
-	patternsDir := filepath.Join(root, ".pollard", "patterns")
-	return loadPatternsRecursive(patternsDir)
+	patterns, _ := PollardPatternsWithErrors(root)
+	return patterns, nil
 }
 
-func loadPatternsRecursive(dir string) ([]PollardPattern, error) {
+// PollardPatternsWithErrors loads all patterns and returns both successfully parsed patterns
+// and any parse errors encountered.
+func PollardPatternsWithErrors(root string) ([]PollardPattern, []ParseError) {
+	patternsDir := filepath.Join(root, ".pollard", "patterns")
+	return loadPatternsRecursiveWithErrors(patternsDir)
+}
+
+func loadPatternsRecursiveWithErrors(dir string) ([]PollardPattern, []ParseError) {
 	entries, err := os.ReadDir(dir)
 	if err != nil {
 		if os.IsNotExist(err) {
 			return []PollardPattern{}, nil
 		}
-		return nil, err
+		return nil, []ParseError{{Path: dir, Err: err}}
 	}
 
 	var patterns []PollardPattern
+	var errs []ParseError
 	for _, entry := range entries {
 		path := filepath.Join(dir, entry.Name())
 		if entry.IsDir() {
-			sub, err := loadPatternsRecursive(path)
-			if err != nil {
-				continue
-			}
+			sub, subErrs := loadPatternsRecursiveWithErrors(path)
 			patterns = append(patterns, sub...)
+			errs = append(errs, subErrs...)
 			continue
 		}
 		if filepath.Ext(entry.Name()) != ".yaml" {
@@ -218,15 +243,17 @@ func loadPatternsRecursive(dir string) ([]PollardPattern, error) {
 		}
 		data, err := os.ReadFile(path)
 		if err != nil {
+			errs = append(errs, ParseError{Path: path, Err: err})
 			continue
 		}
 		var pattern PollardPattern
 		if err := yaml.Unmarshal(data, &pattern); err != nil {
+			errs = append(errs, ParseError{Path: path, Err: err})
 			continue
 		}
 		patterns = append(patterns, pattern)
 	}
-	return patterns, nil
+	return patterns, errs
 }
 
 // CountPollardPatterns returns the total number of patterns available.

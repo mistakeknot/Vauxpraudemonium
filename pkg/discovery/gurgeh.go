@@ -10,22 +10,6 @@ import (
 // GurgDir is the config directory for gurgeh
 const GurgDir = ".gurgeh"
 
-// LegacyPraudeDir is the legacy config directory for backward compatibility
-const LegacyPraudeDir = ".praude"
-
-// gurgRootDir returns the specs directory, checking .gurgeh first then .praude
-func gurgRootDir(root string) string {
-	gurgPath := filepath.Join(root, GurgDir)
-	if _, err := os.Stat(gurgPath); err == nil {
-		return gurgPath
-	}
-	praudePath := filepath.Join(root, LegacyPraudeDir)
-	if _, err := os.Stat(praudePath); err == nil {
-		return praudePath
-	}
-	return gurgPath // default to new path
-}
-
 // GurgSpec represents a PRD spec from Gurgeh.
 type GurgSpec struct {
 	ID           string   `yaml:"id"`
@@ -64,18 +48,28 @@ type GurgPRD struct {
 	} `yaml:"features"`
 }
 
-// GurgSpecs loads all specs from a project's .gurgeh/specs directory (or .praude for legacy).
+// GurgSpecs loads all specs from a project's .gurgeh/specs directory.
+// Parse errors are silently ignored. Use GurgSpecsWithErrors for error details.
 func GurgSpecs(root string) ([]GurgSpec, error) {
-	specsDir := filepath.Join(gurgRootDir(root), "specs")
+	specs, _ := GurgSpecsWithErrors(root)
+	return specs, nil
+}
+
+// GurgSpecsWithErrors loads all specs and returns both successfully parsed specs
+// and any parse errors encountered. This allows callers to handle partial results
+// gracefully while still being informed about malformed files.
+func GurgSpecsWithErrors(root string) ([]GurgSpec, []ParseError) {
+	specsDir := filepath.Join(root, GurgDir, "specs")
 	entries, err := os.ReadDir(specsDir)
 	if err != nil {
 		if os.IsNotExist(err) {
 			return []GurgSpec{}, nil
 		}
-		return nil, err
+		return nil, []ParseError{{Path: specsDir, Err: err}}
 	}
 
 	var specs []GurgSpec
+	var errs []ParseError
 	for _, entry := range entries {
 		if entry.IsDir() || filepath.Ext(entry.Name()) != ".yaml" {
 			continue
@@ -83,10 +77,12 @@ func GurgSpecs(root string) ([]GurgSpec, error) {
 		path := filepath.Join(specsDir, entry.Name())
 		data, err := os.ReadFile(path)
 		if err != nil {
+			errs = append(errs, ParseError{Path: path, Err: err})
 			continue
 		}
 		var spec GurgSpec
 		if err := yaml.Unmarshal(data, &spec); err != nil {
+			errs = append(errs, ParseError{Path: path, Err: err})
 			continue
 		}
 		// Skip if it looks like a PRD (has version field)
@@ -98,21 +94,30 @@ func GurgSpecs(root string) ([]GurgSpec, error) {
 			specs = append(specs, spec)
 		}
 	}
-	return specs, nil
+	return specs, errs
 }
 
-// GurgPRDs loads all PRDs from a project's .gurgeh/specs directory (or .praude for legacy).
+// GurgPRDs loads all PRDs from a project's .gurgeh/specs directory.
+// Parse errors are silently ignored. Use GurgPRDsWithErrors for error details.
 func GurgPRDs(root string) ([]GurgPRD, error) {
-	specsDir := filepath.Join(gurgRootDir(root), "specs")
+	prds, _ := GurgPRDsWithErrors(root)
+	return prds, nil
+}
+
+// GurgPRDsWithErrors loads all PRDs and returns both successfully parsed PRDs
+// and any parse errors encountered.
+func GurgPRDsWithErrors(root string) ([]GurgPRD, []ParseError) {
+	specsDir := filepath.Join(root, GurgDir, "specs")
 	entries, err := os.ReadDir(specsDir)
 	if err != nil {
 		if os.IsNotExist(err) {
 			return []GurgPRD{}, nil
 		}
-		return nil, err
+		return nil, []ParseError{{Path: specsDir, Err: err}}
 	}
 
 	var prds []GurgPRD
+	var errs []ParseError
 	for _, entry := range entries {
 		if entry.IsDir() || filepath.Ext(entry.Name()) != ".yaml" {
 			continue
@@ -120,10 +125,12 @@ func GurgPRDs(root string) ([]GurgPRD, error) {
 		path := filepath.Join(specsDir, entry.Name())
 		data, err := os.ReadFile(path)
 		if err != nil {
+			errs = append(errs, ParseError{Path: path, Err: err})
 			continue
 		}
 		var prd GurgPRD
 		if err := yaml.Unmarshal(data, &prd); err != nil {
+			errs = append(errs, ParseError{Path: path, Err: err})
 			continue
 		}
 		// Only include files with the PRD structure (has Version field)
@@ -131,7 +138,7 @@ func GurgPRDs(root string) ([]GurgPRD, error) {
 			prds = append(prds, prd)
 		}
 	}
-	return prds, nil
+	return prds, errs
 }
 
 // FindPRD finds a PRD by ID or version name.

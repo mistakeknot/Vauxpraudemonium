@@ -5,6 +5,8 @@ package events
 import (
 	"encoding/json"
 	"time"
+
+	"github.com/mistakeknot/autarch/pkg/contract"
 )
 
 // EventType identifies the type of event
@@ -59,14 +61,15 @@ const (
 	EntityInsight    EntityType = "insight"
 )
 
-// SourceTool identifies which tool emitted the event
-type SourceTool string
+// SourceTool is an alias to contract.SourceTool for backward compatibility
+type SourceTool = contract.SourceTool
 
+// Re-export source tool constants from contract package
 const (
-	SourceGurgeh  SourceTool = "gurgeh"
-	SourceColdwine SourceTool = "coldwine"
-	SourcePollard  SourceTool = "pollard"
-	SourceBigend   SourceTool = "bigend"
+	SourceGurgeh   = contract.SourceGurgeh
+	SourceColdwine = contract.SourceColdwine
+	SourcePollard  = contract.SourcePollard
+	SourceBigend   = contract.SourceBigend
 )
 
 // Event represents a single event in the event log

@@ -7,20 +7,8 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-const coldwineDir = ".coldwine"
-const legacyTandemoniumDir = ".tandemonium"
-
-func coldwineRootDir(root string) string {
-	path := filepath.Join(root, coldwineDir)
-	if _, err := os.Stat(path); err == nil {
-		return path
-	}
-	legacyPath := filepath.Join(root, legacyTandemoniumDir)
-	if _, err := os.Stat(legacyPath); err == nil {
-		return legacyPath
-	}
-	return path
-}
+// ColdwineDir is the config directory for coldwine
+const ColdwineDir = ".coldwine"
 
 // ColdwineEpic represents an epic from Coldwine.
 type ColdwineEpic struct {
@@ -39,18 +27,27 @@ type ColdwineEpic struct {
 	} `yaml:"stories"`
 }
 
-// ColdwineEpics loads all epics from a project's .coldwine/specs directory (or .tandemonium for legacy).
+// ColdwineEpics loads all epics from a project's .coldwine/specs directory.
+// Parse errors are silently ignored. Use ColdwineEpicsWithErrors for error details.
 func ColdwineEpics(root string) ([]ColdwineEpic, error) {
-	specsDir := filepath.Join(coldwineRootDir(root), "specs")
+	epics, _ := ColdwineEpicsWithErrors(root)
+	return epics, nil
+}
+
+// ColdwineEpicsWithErrors loads all epics and returns both successfully parsed epics
+// and any parse errors encountered.
+func ColdwineEpicsWithErrors(root string) ([]ColdwineEpic, []ParseError) {
+	specsDir := filepath.Join(root, ColdwineDir, "specs")
 	entries, err := os.ReadDir(specsDir)
 	if err != nil {
 		if os.IsNotExist(err) {
 			return []ColdwineEpic{}, nil
 		}
-		return nil, err
+		return nil, []ParseError{{Path: specsDir, Err: err}}
 	}
 
 	var epics []ColdwineEpic
+	var errs []ParseError
 	for _, entry := range entries {
 		if entry.IsDir() || filepath.Ext(entry.Name()) != ".yaml" {
 			continue
@@ -58,17 +55,19 @@ func ColdwineEpics(root string) ([]ColdwineEpic, error) {
 		path := filepath.Join(specsDir, entry.Name())
 		data, err := os.ReadFile(path)
 		if err != nil {
+			errs = append(errs, ParseError{Path: path, Err: err})
 			continue
 		}
 		var epic ColdwineEpic
 		if err := yaml.Unmarshal(data, &epic); err != nil {
+			errs = append(errs, ParseError{Path: path, Err: err})
 			continue
 		}
 		if epic.ID != "" {
 			epics = append(epics, epic)
 		}
 	}
-	return epics, nil
+	return epics, errs
 }
 
 // FindEpic finds an epic by ID.

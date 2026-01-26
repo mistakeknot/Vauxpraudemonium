@@ -1,3 +1,5 @@
+// Package intermute provides a unified registration API for Autarch tools
+// connecting to the Intermute coordination server.
 package intermute
 
 import (
@@ -10,16 +12,18 @@ import (
 	ic "github.com/mistakeknot/intermute/client"
 )
 
+// Options configures agent registration with Intermute
 type Options struct {
-	Name         string
-	Project      string
-	Capabilities []string
-	Metadata     map[string]string
-	Status       string
+	Name         string            // Agent name (e.g., "bigend", "gurgeh")
+	Project      string            // Optional project scope
+	Capabilities []string          // Capabilities the agent provides
+	Metadata     map[string]string // Additional metadata
+	Status       string            // Initial status
 }
 
+// Test hooks for mocking in tests
 var (
-	newClient    = ic.New
+	newClient     = ic.New
 	registerAgent = func(ctx context.Context, c *ic.Client, agent ic.Agent) (ic.Agent, error) {
 		return c.RegisterAgent(ctx, agent)
 	}
@@ -28,25 +32,36 @@ var (
 	}
 )
 
-// Start registers an agent with Intermute and starts heartbeat goroutine.
-// Deprecated: Use pkg/intermute.Register() or pkg/intermute.RegisterTool() instead.
-func Start(ctx context.Context, opts Options) (func(), error) {
+// Register connects an agent to the Intermute server and returns a cleanup function.
+// The agent will send periodic heartbeats until the cleanup function is called.
+//
+// Environment variables:
+//   - INTERMUTE_URL: Required. The Intermute server URL.
+//   - INTERMUTE_AGENT_NAME: Optional. Overrides opts.Name.
+//   - INTERMUTE_PROJECT: Optional. Sets the project scope.
+//   - INTERMUTE_API_KEY: Optional. API key for authentication.
+//   - INTERMUTE_HEARTBEAT_INTERVAL: Optional. Heartbeat interval (default: 30s).
+func Register(ctx context.Context, opts Options) (func(), error) {
 	url := strings.TrimSpace(os.Getenv("INTERMUTE_URL"))
 	if url == "" {
 		return nil, fmt.Errorf("INTERMUTE_URL required: set environment variable to Intermute server URL")
 	}
+
 	name := opts.Name
 	if env := strings.TrimSpace(os.Getenv("INTERMUTE_AGENT_NAME")); env != "" {
 		name = env
 	}
+
 	project := opts.Project
 	if project == "" {
 		project = strings.TrimSpace(os.Getenv("INTERMUTE_PROJECT"))
 	}
+
 	apiKey := strings.TrimSpace(os.Getenv("INTERMUTE_API_KEY"))
 	if apiKey != "" && project == "" {
 		return nil, fmt.Errorf("INTERMUTE_PROJECT required when INTERMUTE_API_KEY is set")
 	}
+
 	var clientOpts []ic.Option
 	if apiKey != "" {
 		clientOpts = append(clientOpts, ic.WithAPIKey(apiKey))
@@ -54,6 +69,7 @@ func Start(ctx context.Context, opts Options) (func(), error) {
 	if project != "" {
 		clientOpts = append(clientOpts, ic.WithProject(project))
 	}
+
 	client := newClient(url, clientOpts...)
 	agent, err := registerAgent(ctx, client, ic.Agent{
 		Name:         name,
@@ -63,7 +79,7 @@ func Start(ctx context.Context, opts Options) (func(), error) {
 		Status:       opts.Status,
 	})
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("register agent %q: %w", name, err)
 	}
 
 	// Parse heartbeat interval from environment
@@ -89,4 +105,13 @@ func Start(ctx context.Context, opts Options) (func(), error) {
 	}()
 
 	return func() { close(stop) }, nil
+}
+
+// RegisterTool is a convenience function that registers a tool with default capabilities.
+// The capabilities list defaults to []string{toolName}.
+func RegisterTool(ctx context.Context, toolName string) (func(), error) {
+	return Register(ctx, Options{
+		Name:         toolName,
+		Capabilities: []string{toolName},
+	})
 }

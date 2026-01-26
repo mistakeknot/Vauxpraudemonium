@@ -21,22 +21,19 @@ import (
 	"github.com/mistakeknot/autarch/internal/bigend/config"
 	"github.com/mistakeknot/autarch/internal/bigend/daemon"
 	"github.com/mistakeknot/autarch/internal/bigend/discovery"
-	bigendIntermute "github.com/mistakeknot/autarch/internal/bigend/intermute"
 	bigendTui "github.com/mistakeknot/autarch/internal/bigend/tui"
 	"github.com/mistakeknot/autarch/internal/bigend/web"
 	coldwineCli "github.com/mistakeknot/autarch/internal/coldwine/cli"
 	"github.com/mistakeknot/autarch/internal/coldwine/epics"
-	coldwineIntermute "github.com/mistakeknot/autarch/internal/coldwine/intermute"
 	"github.com/mistakeknot/autarch/internal/coldwine/tasks"
-	"github.com/mistakeknot/autarch/internal/intermute"
+	internalIntermute "github.com/mistakeknot/autarch/internal/intermute"
 	"github.com/mistakeknot/autarch/internal/pollard/research"
 	"github.com/mistakeknot/autarch/internal/tui"
 	"github.com/mistakeknot/autarch/internal/tui/views"
 	gurgehCli "github.com/mistakeknot/autarch/internal/gurgeh/cli"
-	gurgehIntermute "github.com/mistakeknot/autarch/internal/gurgeh/intermute"
 	"github.com/mistakeknot/autarch/pkg/autarch"
+	"github.com/mistakeknot/autarch/pkg/intermute"
 	pollardCli "github.com/mistakeknot/autarch/internal/pollard/cli"
-	pollardIntermute "github.com/mistakeknot/autarch/internal/pollard/intermute"
 )
 
 func main() {
@@ -115,7 +112,7 @@ Navigation:
 			}
 
 			// Create Intermute manager
-			mgr, err := intermute.NewManager(intermute.Config{
+			mgr, err := internalIntermute.NewManager(internalIntermute.Config{
 				Port:    port,
 				DataDir: dataDir,
 			})
@@ -283,7 +280,7 @@ func bigendCmd() *cobra.Command {
 			}))
 			slog.SetDefault(logger)
 
-			if stop, err := bigendIntermute.Start(context.Background()); err != nil {
+			if stop, err := intermute.RegisterTool(context.Background(), "bigend"); err != nil {
 				slog.Warn("intermute registration failed", "error", err)
 			} else if stop != nil {
 				defer stop()
@@ -451,7 +448,7 @@ func gurgehCmd() *cobra.Command {
 	// Wrap to add intermute
 	originalRunE := cmd.RunE
 	cmd.RunE = func(c *cobra.Command, args []string) error {
-		if stop, err := gurgehIntermute.Start(context.Background()); err != nil {
+		if stop, err := intermute.RegisterTool(context.Background(), "gurgeh"); err != nil {
 			// Log but don't fail
 		} else if stop != nil {
 			defer stop()
@@ -473,7 +470,7 @@ func coldwineCmd() *cobra.Command {
 	// Wrap to add intermute
 	originalRunE := cmd.RunE
 	cmd.RunE = func(c *cobra.Command, args []string) error {
-		if stop, err := coldwineIntermute.Start(context.Background()); err != nil {
+		if stop, err := intermute.RegisterTool(context.Background(), "coldwine"); err != nil {
 			// Log but don't fail
 		} else if stop != nil {
 			defer stop()
@@ -494,7 +491,7 @@ func pollardCmd() *cobra.Command {
 	// Wrap to add intermute
 	originalRunE := cmd.RunE
 	cmd.RunE = func(c *cobra.Command, args []string) error {
-		if stop, err := pollardIntermute.Start(context.Background()); err != nil {
+		if stop, err := intermute.RegisterTool(context.Background(), "pollard"); err != nil {
 			// Log but don't fail
 		} else if stop != nil {
 			defer stop()

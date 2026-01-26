@@ -3,9 +3,28 @@
 package discovery
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 )
+
+// ParseError represents a failure to parse a single file during discovery.
+// Discovery functions that return ParseError slices continue processing
+// other files, allowing partial results even when some files are malformed.
+type ParseError struct {
+	Path string // Absolute path to the file that failed
+	Err  error  // The underlying parse error
+}
+
+// Error implements the error interface
+func (e ParseError) Error() string {
+	return fmt.Sprintf("parse %s: %v", e.Path, e.Err)
+}
+
+// Unwrap returns the underlying error for errors.Is/As support
+func (e ParseError) Unwrap() error {
+	return e.Err
+}
 
 // ToolDir returns the data directory for a tool.
 func ToolDir(root, tool string) string {
@@ -19,12 +38,12 @@ func ToolExists(root, tool string) bool {
 }
 
 // FindProjectRoot walks up from the given path to find a project root.
-// A project root contains at least one of: .praude, .pollard, .tandemonium
+// A project root contains at least one of: .gurgeh, .pollard, .coldwine
 func FindProjectRoot(startPath string) (string, error) {
 	path := startPath
 	for {
-		// Check for any tool directory
-		for _, tool := range []string{"praude", "pollard", "tandemonium"} {
+		// Check for any tool directory (current names)
+		for _, tool := range []string{"gurgeh", "pollard", "coldwine"} {
 			if ToolExists(path, tool) {
 				return path, nil
 			}

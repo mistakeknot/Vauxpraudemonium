@@ -1,51 +1,21 @@
 package tui
 
-import tea "github.com/charmbracelet/bubbletea"
+import (
+	pkgtui "github.com/mistakeknot/autarch/pkg/tui"
+)
 
-// View represents a tool view in the unified TUI
-type View interface {
-	// Init initializes the view
-	Init() tea.Cmd
+// View is an alias to pkg/tui.View for backward compatibility.
+// New code should import from pkg/tui directly.
+type View = pkgtui.View
 
-	// Update handles messages
-	Update(msg tea.Msg) (View, tea.Cmd)
+// HelpBinding is an alias to pkg/tui.HelpBinding for backward compatibility.
+type HelpBinding = pkgtui.HelpBinding
 
-	// View renders the view
-	View() string
+// FullHelpProvider is an alias to pkg/tui.FullHelpProvider for backward compatibility.
+type FullHelpProvider = pkgtui.FullHelpProvider
 
-	// Focus is called when this view becomes active
-	Focus() tea.Cmd
+// Command is an alias to pkg/tui.Command for backward compatibility.
+type Command = pkgtui.Command
 
-	// Blur is called when this view becomes inactive
-	Blur()
-
-	// Name returns the view name for the tab bar
-	Name() string
-
-	// ShortHelp returns keybinding hints for the footer
-	ShortHelp() string
-}
-
-// HelpBinding represents a single keybinding for the help overlay
-type HelpBinding struct {
-	Key         string // The key(s) to press (e.g., "j/k", "enter", "A")
-	Description string // What the key does
-}
-
-// FullHelpProvider can provide complete keybinding documentation
-type FullHelpProvider interface {
-	// FullHelp returns all available keybindings for the help overlay
-	FullHelp() []HelpBinding
-}
-
-// Command represents an action that can be invoked from the command palette
-type Command struct {
-	Name        string
-	Description string
-	Action      func() tea.Cmd
-}
-
-// CommandProvider can provide commands for the palette
-type CommandProvider interface {
-	Commands() []Command
-}
+// CommandProvider is an alias to pkg/tui.CommandProvider for backward compatibility.
+type CommandProvider = pkgtui.CommandProvider

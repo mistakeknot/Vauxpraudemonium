@@ -6,11 +6,11 @@ import (
 	"os"
 
 	"github.com/mistakeknot/autarch/internal/coldwine/cli"
-	"github.com/mistakeknot/autarch/internal/coldwine/intermute"
+	"github.com/mistakeknot/autarch/pkg/intermute"
 )
 
 func main() {
-	if stop, err := intermute.Start(context.Background()); err != nil {
+	if stop, err := intermute.RegisterTool(context.Background(), "coldwine"); err != nil {
 		log.Printf("intermute registration failed: %v", err)
 	} else if stop != nil {
 		defer stop()
