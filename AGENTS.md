@@ -28,7 +28,7 @@ Unified monorepo for AI agent development tools: Bigend, Gurgeh, Coldwine, and P
 | [docs/WORKFLOWS.md](docs/WORKFLOWS.md) | End-user task guides |
 | [docs/QUICK_REFERENCE.md](docs/QUICK_REFERENCE.md) | Command cheat sheet |
 | [docs/plans/INDEX.md](docs/plans/INDEX.md) | Planning documents index |
-| [docs/learnings/](docs/learnings/) | Bug fixes and gotchas (check before debugging!) |
+| [docs/solutions/](docs/solutions/) | Bug fixes and gotchas (check before debugging!) |
 
 ## Related Repositories
 
@@ -206,21 +206,19 @@ See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for details.
 
 ### Debugging
 
-**Before debugging, check learnings:**
+**Before debugging, check solutions:**
 ```bash
-ls docs/learnings/
+ls docs/solutions/
+grep -r "keyword" docs/solutions/
 ```
 
-The `docs/learnings/` directory contains documented solutions to past bugs. Each file describes:
-- The problem and symptoms
+The `docs/solutions/` directory contains documented solutions to past bugs (managed by compound-engineering plugin). Each file has YAML frontmatter for searchability.
+
+**After fixing a bug**, run `/compound` to capture:
+- Problem symptoms and error messages
 - Root cause analysis
 - The fix applied
 - Prevention tips
-
-**After fixing a bug**, add a learning doc if:
-- The bug took significant time to diagnose
-- The root cause was non-obvious
-- Others might encounter the same issue
 
 ---
 
