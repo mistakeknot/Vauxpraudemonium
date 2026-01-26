@@ -110,8 +110,8 @@ func (c *Composer) Update(msg tea.Msg) (*Composer, tea.Cmd) {
 // View renders the composer with border, title, and hint.
 func (c *Composer) View() string {
 	width := c.width
-	if width < 20 {
-		width = 60
+	if width < 10 {
+		width = 40 // Minimum reasonable width
 	}
 
 	// Build content sections

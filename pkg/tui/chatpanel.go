@@ -93,19 +93,30 @@ func (p *ChatPanel) View() string {
 	// Render history
 	historyView := p.renderHistory(historyHeight)
 
-	// Separator
+	// Separator - use panel width minus some padding
+	sepWidth := p.width - 2
+	if sepWidth < 1 {
+		sepWidth = 1
+	}
 	separatorStyle := lipgloss.NewStyle().
 		Foreground(ColorMuted)
-	separator := separatorStyle.Render(strings.Repeat("─", p.width-2))
+	separator := separatorStyle.Render(strings.Repeat("─", sepWidth))
 
 	// Render composer
 	composerView := p.composer.View()
 
-	return lipgloss.JoinVertical(lipgloss.Left,
+	// Join and constrain to panel width
+	content := lipgloss.JoinVertical(lipgloss.Left,
 		historyView,
 		separator,
 		composerView,
 	)
+
+	// Constrain output to panel width using lipgloss
+	return lipgloss.NewStyle().
+		Width(p.width).
+		MaxWidth(p.width).
+		Render(content)
 }
 
 // renderHistory renders the chat history area.
