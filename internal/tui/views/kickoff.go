@@ -325,16 +325,6 @@ func (v *KickoffView) Update(msg tea.Msg) (tui.View, tea.Cmd) {
 
 		// Pass most keys to input if focused
 		if v.focusInput {
-			// Check for alt+enter (submit) - must check before switch because Alt is a modifier
-			if msg.Type == tea.KeyEnter && msg.Alt {
-				if strings.TrimSpace(v.input.Value()) != "" {
-					v.loading = true
-					v.loadingMsg = "Creating project..."
-					return v, v.createProject(v.input.Value())
-				}
-				return v, nil
-			}
-
 			switch msg.String() {
 			case "tab":
 				// Toggle focus to recents
@@ -344,8 +334,8 @@ func (v *KickoffView) Update(msg tea.Msg) (tui.View, tea.Cmd) {
 				}
 				return v, nil
 
-			case "ctrl+d":
-				// Submit the project description (ctrl+d = "done")
+			case "ctrl+g":
+				// Submit the project description (ctrl+g = "go")
 				if strings.TrimSpace(v.input.Value()) != "" {
 					v.loading = true
 					v.loadingMsg = "Creating project..."
@@ -651,7 +641,7 @@ func (v *KickoffView) View() string {
 	submitHint := lipgloss.NewStyle().
 		Foreground(pkgtui.ColorMuted).
 		Italic(true)
-	sections = append(sections, submitHint.Render("Press Alt+Enter or Ctrl+D to create project"))
+	sections = append(sections, submitHint.Render("Press Ctrl+G to create project"))
 
 	// Scan hint
 	if v.onScanCodebase != nil {
@@ -791,9 +781,9 @@ func (v *KickoffView) Name() string {
 func (v *KickoffView) ShortHelp() string {
 	if v.focusInput {
 		if v.onScanCodebase != nil {
-			return "alt+enter create  ctrl+s scan  tab switch"
+			return "ctrl+g create  ctrl+s scan  tab switch"
 		}
-		return "alt+enter create  tab switch"
+		return "ctrl+g create  tab switch"
 	}
 	// Recents list focused
 	return "enter open  d delete  tab switch"
@@ -802,7 +792,7 @@ func (v *KickoffView) ShortHelp() string {
 // FullHelp implements FullHelpProvider
 func (v *KickoffView) FullHelp() []tui.HelpBinding {
 	return []tui.HelpBinding{
-		{Key: "alt+enter / ctrl+d", Description: "Create new project from description"},
+		{Key: "ctrl+g", Description: "Create new project from description"},
 		{Key: "ctrl+s", Description: "Scan current directory for existing project"},
 		{Key: "tab", Description: "Switch between input and recent projects"},
 		{Key: "j/k", Description: "Navigate recent projects list"},
