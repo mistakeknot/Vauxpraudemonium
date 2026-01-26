@@ -28,6 +28,7 @@ Unified monorepo for AI agent development tools: Bigend, Gurgeh, Coldwine, and P
 | [docs/WORKFLOWS.md](docs/WORKFLOWS.md) | End-user task guides |
 | [docs/QUICK_REFERENCE.md](docs/QUICK_REFERENCE.md) | Command cheat sheet |
 | [docs/plans/INDEX.md](docs/plans/INDEX.md) | Planning documents index |
+| [docs/learnings/](docs/learnings/) | Bug fixes and gotchas (check before debugging!) |
 
 ## Related Repositories
 
@@ -202,6 +203,24 @@ See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for details.
 - TDD for behavior changes
 - Small unit tests over broad integration tests
 - Run targeted tests: `go test ./internal/<pkg> -v`
+
+### Debugging
+
+**Before debugging, check learnings:**
+```bash
+ls docs/learnings/
+```
+
+The `docs/learnings/` directory contains documented solutions to past bugs. Each file describes:
+- The problem and symptoms
+- Root cause analysis
+- The fix applied
+- Prevention tips
+
+**After fixing a bug**, add a learning doc if:
+- The bug took significant time to diagnose
+- The root cause was non-obvious
+- Others might encounter the same issue
 
 ---
 
