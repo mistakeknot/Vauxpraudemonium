@@ -20,6 +20,58 @@ const (
 	OnboardingComplete
 )
 
+// AllOnboardingStates returns all onboarding states in order.
+func AllOnboardingStates() []OnboardingState {
+	return []OnboardingState{
+		OnboardingKickoff,
+		OnboardingInterview,
+		OnboardingSpecSummary,
+		OnboardingEpicReview,
+		OnboardingTaskReview,
+		OnboardingComplete,
+	}
+}
+
+// ID returns a stable identifier for the state.
+func (s OnboardingState) ID() string {
+	switch s {
+	case OnboardingKickoff:
+		return "kickoff"
+	case OnboardingInterview:
+		return "interview"
+	case OnboardingSpecSummary:
+		return "spec"
+	case OnboardingEpicReview:
+		return "epics"
+	case OnboardingTaskReview:
+		return "tasks"
+	case OnboardingComplete:
+		return "dashboard"
+	default:
+		return "unknown"
+	}
+}
+
+// Label returns the display label for the state.
+func (s OnboardingState) Label() string {
+	switch s {
+	case OnboardingKickoff:
+		return "Project"
+	case OnboardingInterview:
+		return "Interview"
+	case OnboardingSpecSummary:
+		return "Spec"
+	case OnboardingEpicReview:
+		return "Epics"
+	case OnboardingTaskReview:
+		return "Tasks"
+	case OnboardingComplete:
+		return "Dashboard"
+	default:
+		return "Unknown"
+	}
+}
+
 // OnboardingOrchestrator manages the new project onboarding flow
 type OnboardingOrchestrator struct {
 	state       OnboardingState

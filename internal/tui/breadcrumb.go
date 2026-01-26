@@ -26,15 +26,20 @@ type Breadcrumb struct {
 
 // NewBreadcrumb creates a new breadcrumb with the onboarding steps
 func NewBreadcrumb() *Breadcrumb {
+	// Derive steps from OnboardingState enum - single source of truth
+	states := AllOnboardingStates()
+	steps := make([]BreadcrumbStep, len(states))
+	for i, state := range states {
+		steps[i] = BreadcrumbStep{
+			ID:       state.ID(),
+			Label:    state.Label(),
+			State:    state,
+			Unlocked: i == 0, // Only first step unlocked initially
+		}
+	}
+
 	return &Breadcrumb{
-		steps: []BreadcrumbStep{
-			{ID: "kickoff", Label: "Project", State: OnboardingKickoff, Unlocked: true},
-			{ID: "interview", Label: "Interview", State: OnboardingInterview, Unlocked: false},
-			{ID: "spec", Label: "Spec", State: OnboardingSpecSummary, Unlocked: false},
-			{ID: "epics", Label: "Epics", State: OnboardingEpicReview, Unlocked: false},
-			{ID: "tasks", Label: "Tasks", State: OnboardingTaskReview, Unlocked: false},
-			{ID: "dashboard", Label: "Dashboard", State: OnboardingComplete, Unlocked: false},
-		},
+		steps:    steps,
 		current:  0,
 		selected: -1,
 	}
