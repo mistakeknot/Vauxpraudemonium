@@ -24,8 +24,11 @@ import (
 	bigendTui "github.com/mistakeknot/autarch/internal/bigend/tui"
 	"github.com/mistakeknot/autarch/internal/bigend/web"
 	coldwineCli "github.com/mistakeknot/autarch/internal/coldwine/cli"
+	"github.com/mistakeknot/autarch/internal/coldwine/epics"
 	coldwineIntermute "github.com/mistakeknot/autarch/internal/coldwine/intermute"
+	"github.com/mistakeknot/autarch/internal/coldwine/tasks"
 	"github.com/mistakeknot/autarch/internal/intermute"
+	"github.com/mistakeknot/autarch/internal/pollard/research"
 	"github.com/mistakeknot/autarch/internal/tui"
 	"github.com/mistakeknot/autarch/internal/tui/views"
 	gurgehCli "github.com/mistakeknot/autarch/internal/gurgeh/cli"
@@ -61,8 +64,9 @@ Available tools:
 
 func tuiCmd() *cobra.Command {
 	var (
-		port    int
-		dataDir string
+		port      int
+		dataDir   string
+		skipOnboard bool
 	)
 
 	cmd := &cobra.Command{
@@ -73,6 +77,9 @@ func tuiCmd() *cobra.Command {
 The TUI connects to an existing Intermute server if one is running,
 or starts a standalone server automatically. All domain data (specs,
 epics, tasks, insights, sessions) is stored in a local SQLite database.
+
+New users start with the onboarding flow to create their first project.
+Use --skip-onboard to go directly to the dashboard.
 
 Navigation:
   1-4       Switch between tabs (Bigend, Gurgeh, Coldwine, Pollard)
@@ -114,24 +121,102 @@ Navigation:
 			// Create client connecting to Intermute server
 			client := autarch.NewClient(mgr.URL())
 
-			// Create views
-			bigendView := views.NewBigendView(client)
-			gurgehView := views.NewGurgehView(client)
-			coldwineView := views.NewColdwineView(client)
-			pollardView := views.NewPollardView(client)
+			if skipOnboard {
+				// Skip onboarding, go directly to dashboard
+				bigendView := views.NewBigendView(client)
+				gurgehView := views.NewGurgehView(client)
+				coldwineView := views.NewColdwineView(client)
+				pollardView := views.NewPollardView(client)
 
-			// Run unified TUI
-			return tui.Run(client,
-				bigendView,
-				gurgehView,
-				coldwineView,
-				pollardView,
+				return tui.Run(client,
+					bigendView,
+					gurgehView,
+					coldwineView,
+					pollardView,
+				)
+			}
+
+			// Create unified app with onboarding flow
+			app := tui.NewUnifiedApp(client)
+
+			// Set up view factories for state transitions
+			app.SetViewFactories(
+				// Kickoff view factory
+				func() tui.View {
+					v := views.NewKickoffView()
+					v.SetProjectStartCallback(func(project *views.Project) tea.Cmd {
+						return func() tea.Msg {
+							return tui.ProjectCreatedMsg{
+								ProjectID:   project.ID,
+								ProjectName: project.Name,
+								Description: project.Description,
+							}
+						}
+					})
+					return v
+				},
+				// Epic review view factory
+				func(proposals []epics.EpicProposal) tui.View {
+					v := views.NewEpicReviewView(proposals)
+					v.SetCallbacks(
+						func(accepted []epics.EpicProposal) tea.Cmd {
+							return func() tea.Msg {
+								return tui.EpicsAcceptedMsg{Epics: accepted}
+							}
+						},
+						nil, // regenerate callback
+					)
+					return v
+				},
+				// Task review view factory
+				func(taskList []tasks.TaskProposal) tui.View {
+					v := views.NewTaskReviewView(taskList)
+					v.SetAcceptCallback(func(accepted []tasks.TaskProposal) tea.Cmd {
+						return func() tea.Msg {
+							return tui.TasksAcceptedMsg{Tasks: accepted}
+						}
+					})
+					return v
+				},
+				// Task detail view factory
+				func(task tasks.TaskProposal, coord *research.Coordinator) tui.View {
+					v := views.NewTaskDetailView(task, coord)
+					v.SetCallbacks(
+						func(t tasks.TaskProposal, agent views.AgentType, worktree bool) tea.Cmd {
+							return func() tea.Msg {
+								return tui.StartAgentMsg{
+									Task:     t,
+									Agent:    string(agent),
+									Worktree: worktree,
+								}
+							}
+						},
+						func() tea.Cmd {
+							return func() tea.Msg {
+								return tui.NavigateBackMsg{}
+							}
+						},
+					)
+					return v
+				},
+				// Dashboard views factory
+				func(c *autarch.Client) []tui.View {
+					return []tui.View{
+						views.NewBigendView(c),
+						views.NewGurgehView(c),
+						views.NewColdwineView(c),
+						views.NewPollardView(c),
+					}
+				},
 			)
+
+			return tui.RunUnified(client, app)
 		},
 	}
 
 	cmd.Flags().IntVar(&port, "port", 7338, "Intermute server port")
 	cmd.Flags().StringVar(&dataDir, "data-dir", "", "Data directory (default: ~/.autarch)")
+	cmd.Flags().BoolVar(&skipOnboard, "skip-onboard", false, "Skip onboarding and go directly to dashboard")
 
 	return cmd
 }

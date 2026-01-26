@@ -309,3 +309,107 @@ func EstimateTotalTasks(proposals []EpicProposal) int {
 	}
 	return total
 }
+
+// GenerateFromDescription creates epics from a simple project description.
+// This is used during onboarding when we only have a description, not a full spec.
+func (g *Generator) GenerateFromDescription(description string) []EpicProposal {
+	// Parse the description to extract potential requirements
+	requirements := g.extractRequirementsFromDescription(description)
+
+	if len(requirements) == 0 {
+		// Create a single default epic from the description
+		return []EpicProposal{
+			{
+				ID:          "EPIC-001",
+				Title:       "Core Implementation",
+				Description: description,
+				Size:        SizeMedium,
+				Priority:    PriorityP1,
+				TaskCount:   5,
+			},
+		}
+	}
+
+	input := GeneratorInput{
+		Vision:       description,
+		Requirements: requirements,
+	}
+
+	proposals, err := g.Generate(input)
+	if err != nil || len(proposals) == 0 {
+		// Fallback to single epic
+		return []EpicProposal{
+			{
+				ID:          "EPIC-001",
+				Title:       "Core Implementation",
+				Description: description,
+				Size:        SizeMedium,
+				Priority:    PriorityP1,
+				TaskCount:   5,
+			},
+		}
+	}
+
+	return proposals
+}
+
+// extractRequirementsFromDescription parses a description for requirements.
+func (g *Generator) extractRequirementsFromDescription(description string) []string {
+	var requirements []string
+
+	// Look for bullet points, numbered lists, or "and" conjunctions
+	lines := strings.Split(description, "\n")
+	for _, line := range lines {
+		line = strings.TrimSpace(line)
+		if line == "" {
+			continue
+		}
+
+		// Check for bullet points
+		if strings.HasPrefix(line, "-") || strings.HasPrefix(line, "*") || strings.HasPrefix(line, "•") {
+			req := strings.TrimPrefix(line, "-")
+			req = strings.TrimPrefix(req, "*")
+			req = strings.TrimPrefix(req, "•")
+			req = strings.TrimSpace(req)
+			if req != "" {
+				requirements = append(requirements, req)
+			}
+			continue
+		}
+
+		// Check for numbered lists
+		for i := 1; i <= 9; i++ {
+			prefixes := []string{
+				fmt.Sprintf("%d.", i),
+				fmt.Sprintf("%d)", i),
+				fmt.Sprintf("%d:", i),
+			}
+			for _, prefix := range prefixes {
+				if strings.HasPrefix(line, prefix) {
+					req := strings.TrimPrefix(line, prefix)
+					req = strings.TrimSpace(req)
+					if req != "" {
+						requirements = append(requirements, req)
+					}
+					break
+				}
+			}
+		}
+	}
+
+	// If no structured requirements found, try splitting by "and" or commas
+	if len(requirements) == 0 && len(description) > 20 {
+		// Split on common conjunctions
+		parts := strings.Split(description, " and ")
+		if len(parts) > 1 {
+			for _, part := range parts {
+				part = strings.TrimSpace(part)
+				if len(part) > 5 {
+					requirements = append(requirements, part)
+				}
+			}
+		}
+	}
+
+	return requirements
+}
