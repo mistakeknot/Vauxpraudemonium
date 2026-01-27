@@ -124,6 +124,21 @@ var (
 			Underline(true)
 )
 
+// Status badge styles for PRD/spec status indicators
+var (
+	StatusDraftBadge = lipgloss.NewStyle().
+				Foreground(ColorWarning)
+
+	StatusActiveBadge = lipgloss.NewStyle().
+				Foreground(ColorPrimary)
+
+	StatusDoneBadge = lipgloss.NewStyle().
+			Foreground(ColorSuccess)
+
+	StatusArchivedBadge = lipgloss.NewStyle().
+				Foreground(ColorMuted)
+)
+
 // Agent badge styles
 var (
 	BadgeClaudeStyle = lipgloss.NewStyle().

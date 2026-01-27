@@ -8,6 +8,22 @@ import (
 	sharedtui "github.com/mistakeknot/autarch/pkg/tui"
 )
 
+// statusIndicator returns a colored dot for the PRD status.
+func statusIndicator(status string) string {
+	switch strings.ToLower(status) {
+	case "draft":
+		return sharedtui.StatusDraftBadge.Render("●")
+	case "active", "in_progress", "review":
+		return sharedtui.StatusActiveBadge.Render("●")
+	case "done", "complete", "approved":
+		return sharedtui.StatusDoneBadge.Render("●")
+	case "archived":
+		return sharedtui.StatusArchivedBadge.Render("○")
+	default:
+		return sharedtui.StatusDraftBadge.Render("●")
+	}
+}
+
 type ListScreen struct{}
 
 func (s *ListScreen) Update(msg tea.Msg, state *SharedState) (Screen, Intent) {
@@ -105,6 +121,7 @@ func renderGroupListItem(item Item, selected bool) string {
 		connector = "└─"
 	}
 	id := sharedtui.LabelStyle.Render(item.Summary.ID)
-	line := fmt.Sprintf("%s %s %s %s", prefix, sharedtui.LabelStyle.Render(connector), id, item.Summary.Title)
+	status := statusIndicator(item.Summary.Status)
+	line := fmt.Sprintf("%s %s %s %s %s", prefix, sharedtui.LabelStyle.Render(connector), status, id, item.Summary.Title)
 	return rowStyle.Render(line)
 }

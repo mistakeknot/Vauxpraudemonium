@@ -6,7 +6,6 @@ import (
 	"strings"
 
 	tea "github.com/charmbracelet/bubbletea"
-	"github.com/charmbracelet/lipgloss"
 	"github.com/mistakeknot/autarch/internal/gurgeh/arbiter"
 	"github.com/mistakeknot/autarch/internal/gurgeh/specs"
 	pollardquick "github.com/mistakeknot/autarch/internal/pollard/quick"
@@ -59,7 +58,9 @@ func NewArbiterView(projectPath string, coordinator *research.Coordinator) *Arbi
 	orch.SetScanner(pollardquick.NewScanner())
 
 	chatPanel := pkgtui.NewChatPanel()
-	chatPanel.SetComposerHint("enter: send  a: accept  e: edit  1-3: alternatives")
+	chatPanel.SetComposerTitle("Chat")
+	chatPanel.SetComposerHint("enter send · a accept · e edit · 1-3 alternatives")
+	chatPanel.SetComposerPlaceholder("Type to revise the draft...")
 
 	docPanel := pkgtui.NewDocPanel()
 
@@ -146,6 +147,7 @@ func (v *ArbiterView) Update(msg tea.Msg) (pkgtui.View, tea.Cmd) {
 		if msg.Height > 0 {
 			v.height = msg.Height
 		}
+		v.resizePanels()
 		return v, nil
 
 	case tea.KeyMsg:
@@ -231,6 +233,7 @@ func (v *ArbiterView) handleHandoffKey(key string) (pkgtui.View, tea.Cmd) {
 }
 
 func (v *ArbiterView) acceptDraft() (pkgtui.View, tea.Cmd) {
+	v.chatPanel.AddMessage("user", fmt.Sprintf("✓ Accepted %s", v.state.Phase.String()))
 	v.orchestrator.AcceptDraft(v.state)
 
 	// Check if this is the last phase
@@ -239,6 +242,7 @@ func (v *ArbiterView) acceptDraft() (pkgtui.View, tea.Cmd) {
 
 	if isLast {
 		v.handoffMode = true
+		v.chatPanel.AddMessage("system", "Sprint complete — choose a handoff option")
 		v.updateDocPanel()
 		return v, nil
 	}
@@ -253,6 +257,7 @@ func (v *ArbiterView) acceptDraft() (pkgtui.View, tea.Cmd) {
 	}
 	v.state = newState
 	v.optionIndex = 0
+	v.chatPanel.AddMessage("agent", fmt.Sprintf("Proposing %s draft...", v.state.Phase.String()))
 	v.updateDocPanel()
 	return v, nil
 }
@@ -365,31 +370,21 @@ func (v *ArbiterView) updateDocPanel() {
 	}
 }
 
+// resizePanels updates panel dimensions from the split layout.
+func (v *ArbiterView) resizePanels() {
+	v.splitLayout.SetSize(v.width, v.height)
+	v.docPanel.SetSize(v.splitLayout.LeftWidth(), v.splitLayout.LeftHeight())
+	v.chatPanel.SetSize(v.splitLayout.RightWidth(), v.splitLayout.RightHeight())
+}
+
 // View implements pkgtui.View.
 func (v *ArbiterView) View() string {
 	if v.state == nil {
 		return "Initializing sprint..."
 	}
 
-	left := v.docPanel.View()
-	right := v.chatPanel.View()
-
-	stacked := v.width < 100
-	if stacked {
-		return lipgloss.JoinVertical(lipgloss.Left, left, "", right)
-	}
-
-	leftWidth := v.width * 2 / 3
-	rightWidth := v.width - leftWidth - 1
-
-	leftStyle := lipgloss.NewStyle().Width(leftWidth)
-	rightStyle := lipgloss.NewStyle().Width(rightWidth)
-
-	return lipgloss.JoinHorizontal(lipgloss.Top,
-		leftStyle.Render(left),
-		" ",
-		rightStyle.Render(right),
-	)
+	v.resizePanels()
+	return v.splitLayout.Render(v.docPanel.View(), v.chatPanel.View())
 }
 
 // Focus implements pkgtui.View.
