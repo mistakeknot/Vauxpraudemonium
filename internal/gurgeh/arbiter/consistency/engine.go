@@ -23,11 +23,18 @@ type Conflict struct {
 }
 
 // Engine checks for consistency conflicts between PRD sections.
-type Engine struct{}
+type Engine struct {
+	vision *VisionInfo
+}
 
 // NewEngine creates a new consistency Engine.
 func NewEngine() *Engine {
 	return &Engine{}
+}
+
+// SetVision configures the engine with vision context for vertical checks.
+func (e *Engine) SetVision(vision *VisionInfo) {
+	e.vision = vision
 }
 
 // Check analyzes sections for conflicts.
@@ -40,6 +47,11 @@ func (e *Engine) Check(sections map[int]*SectionInfo) []Conflict {
 	if problem != nil && features != nil &&
 		problem.Accepted && features.Accepted {
 		conflicts = append(conflicts, e.checkUserFeatureAlignment(problem, features)...)
+	}
+
+	// Vertical checks against vision spec (if loaded)
+	if e.vision != nil {
+		conflicts = append(conflicts, CheckVisionAlignment(e.vision, sections)...)
 	}
 
 	return conflicts

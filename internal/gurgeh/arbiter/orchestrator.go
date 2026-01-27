@@ -320,6 +320,16 @@ func (o *Orchestrator) checkConsistency(state *SprintState) []Conflict {
 		}
 	}
 
+	// Pass vision context to consistency engine for vertical checks
+	if state.VisionContext != nil {
+		o.consistency.SetVision(&consistency.VisionInfo{
+			Goals:       state.VisionContext.Goals,
+			Assumptions: state.VisionContext.Assumptions,
+		})
+	} else {
+		o.consistency.SetVision(nil)
+	}
+
 	cConflicts := o.consistency.Check(sections)
 	var conflicts []Conflict
 	for _, cc := range cConflicts {
