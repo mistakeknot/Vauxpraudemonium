@@ -12,6 +12,7 @@ import (
 )
 
 // EpicReviewView displays proposed epics for review and editing.
+// Uses the unified shell layout with chat for Q&A during review (no sidebar).
 type EpicReviewView struct {
 	proposals []epics.EpicProposal
 	selected  int
@@ -20,6 +21,9 @@ type EpicReviewView struct {
 	height    int
 	editing   bool // In inline edit mode
 	editField string
+
+	// Shell layout for unified 3-pane layout (chat only, no sidebar)
+	shell *pkgtui.ShellLayout
 
 	// Callbacks
 	onAccept     func(proposals []epics.EpicProposal) tea.Cmd
@@ -32,6 +36,7 @@ func NewEpicReviewView(proposals []epics.EpicProposal) *EpicReviewView {
 	return &EpicReviewView{
 		proposals: proposals,
 		expanded:  make(map[int]bool),
+		shell:     pkgtui.NewShellLayout(),
 	}
 }
 
@@ -53,13 +58,22 @@ func (v *EpicReviewView) Init() tea.Cmd {
 
 // Update implements View
 func (v *EpicReviewView) Update(msg tea.Msg) (tui.View, tea.Cmd) {
+	var cmd tea.Cmd
+
 	switch msg := msg.(type) {
 	case tea.WindowSizeMsg:
 		v.width = msg.Width
 		v.height = msg.Height - 4
+		v.shell.SetSize(v.width, v.height)
 		return v, nil
 
 	case tea.KeyMsg:
+		// Let shell handle global keys first (Tab for focus cycling)
+		v.shell, cmd = v.shell.Update(msg)
+		if cmd != nil {
+			return v, cmd
+		}
+
 		switch msg.String() {
 		case "enter":
 			// Toggle expand selected (same as space for consistency)
@@ -177,6 +191,15 @@ func (v *EpicReviewView) hasEdits() bool {
 
 // View implements View
 func (v *EpicReviewView) View() string {
+	// Render using shell layout (without sidebar for review views)
+	document := v.renderDocument()
+	chat := v.renderChat()
+
+	return v.shell.RenderWithoutSidebar(document, chat)
+}
+
+// renderDocument renders the main document pane (epic list).
+func (v *EpicReviewView) renderDocument() string {
 	if len(v.proposals) == 0 {
 		emptyStyle := lipgloss.NewStyle().
 			Foreground(pkgtui.ColorMuted).
@@ -212,14 +235,44 @@ func (v *EpicReviewView) View() string {
 	}
 
 	epicsContent := strings.Join(epicLines, "\n")
+	listWidth := v.shell.LeftWidth()
+	if listWidth <= 0 {
+		listWidth = v.width / 2
+	}
 	listStyle := lipgloss.NewStyle().
 		Background(pkgtui.ColorBgLight).
 		Padding(1, 2).
-		Width(v.width - 8)
+		Width(listWidth - 4)
 
 	sections = append(sections, listStyle.Render(epicsContent))
 
 	return lipgloss.JoinVertical(lipgloss.Left, sections...)
+}
+
+// renderChat renders the chat pane.
+func (v *EpicReviewView) renderChat() string {
+	var lines []string
+
+	chatTitle := lipgloss.NewStyle().
+		Foreground(pkgtui.ColorPrimary).
+		Bold(true)
+
+	lines = append(lines, chatTitle.Render("Epic Review Chat"))
+	lines = append(lines, "")
+
+	mutedStyle := lipgloss.NewStyle().
+		Foreground(pkgtui.ColorMuted).
+		Italic(true)
+
+	lines = append(lines, mutedStyle.Render("Ask questions about the epics..."))
+	lines = append(lines, "")
+
+	hintStyle := lipgloss.NewStyle().
+		Foreground(pkgtui.ColorMuted)
+
+	lines = append(lines, hintStyle.Render("Tab to focus chat"))
+
+	return strings.Join(lines, "\n")
 }
 
 func (v *EpicReviewView) renderEpic(p epics.EpicProposal, selected, expanded bool) string {
@@ -374,7 +427,7 @@ func (v *EpicReviewView) Name() string {
 
 // ShortHelp implements View
 func (v *EpicReviewView) ShortHelp() string {
-	return "A accept  b back  d delete  +/- priority  space expand"
+	return "A accept  b back  d delete  +/- priority  space expand  Tab focus"
 }
 
 // FullHelp implements FullHelpProvider

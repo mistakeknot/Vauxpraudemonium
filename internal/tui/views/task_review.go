@@ -12,6 +12,7 @@ import (
 )
 
 // TaskReviewView displays proposed tasks for review and editing.
+// Uses the unified shell layout with chat for Q&A during review (no sidebar).
 type TaskReviewView struct {
 	tasks       []tasks.TaskProposal
 	groupedView bool // Group by epic
@@ -20,6 +21,9 @@ type TaskReviewView struct {
 	width       int
 	height      int
 	scrollOffset int
+
+	// Shell layout for unified 3-pane layout (chat only, no sidebar)
+	shell *pkgtui.ShellLayout
 
 	// Callbacks
 	onAccept func(tasks []tasks.TaskProposal) tea.Cmd
@@ -35,6 +39,7 @@ func NewTaskReviewView(taskList []tasks.TaskProposal) *TaskReviewView {
 		tasks:       taskList,
 		groupedView: true,
 		expanded:    make(map[int]bool),
+		shell:       pkgtui.NewShellLayout(),
 	}
 }
 
@@ -55,13 +60,21 @@ func (v *TaskReviewView) Init() tea.Cmd {
 
 // Update implements View
 func (v *TaskReviewView) Update(msg tea.Msg) (tui.View, tea.Cmd) {
+	var cmd tea.Cmd
+
 	switch msg := msg.(type) {
 	case tea.WindowSizeMsg:
 		v.width = msg.Width
 		v.height = msg.Height - 4
+		v.shell.SetSize(v.width, v.height)
 		return v, nil
 
 	case tea.KeyMsg:
+		// Let shell handle global keys first (Tab for focus cycling)
+		v.shell, cmd = v.shell.Update(msg)
+		if cmd != nil {
+			return v, cmd
+		}
 		switch msg.String() {
 		case "enter":
 			// Toggle expand selected (same as space for consistency)
@@ -159,6 +172,15 @@ func (v *TaskReviewView) ensureVisible() {
 
 // View implements View
 func (v *TaskReviewView) View() string {
+	// Render using shell layout (without sidebar for review views)
+	document := v.renderDocument()
+	chat := v.renderChat()
+
+	return v.shell.RenderWithoutSidebar(document, chat)
+}
+
+// renderDocument renders the main document pane (task list).
+func (v *TaskReviewView) renderDocument() string {
 	if len(v.tasks) == 0 {
 		emptyStyle := lipgloss.NewStyle().
 			Foreground(pkgtui.ColorMuted).
@@ -202,14 +224,44 @@ func (v *TaskReviewView) View() string {
 	}
 
 	tasksContent := strings.Join(taskLines, "\n")
+	listWidth := v.shell.LeftWidth()
+	if listWidth <= 0 {
+		listWidth = v.width / 2
+	}
 	listStyle := lipgloss.NewStyle().
 		Background(pkgtui.ColorBgLight).
 		Padding(1, 2).
-		Width(v.width - 8)
+		Width(listWidth - 4)
 
 	sections = append(sections, listStyle.Render(tasksContent))
 
 	return lipgloss.JoinVertical(lipgloss.Left, sections...)
+}
+
+// renderChat renders the chat pane.
+func (v *TaskReviewView) renderChat() string {
+	var lines []string
+
+	chatTitle := lipgloss.NewStyle().
+		Foreground(pkgtui.ColorPrimary).
+		Bold(true)
+
+	lines = append(lines, chatTitle.Render("Task Review Chat"))
+	lines = append(lines, "")
+
+	mutedStyle := lipgloss.NewStyle().
+		Foreground(pkgtui.ColorMuted).
+		Italic(true)
+
+	lines = append(lines, mutedStyle.Render("Ask questions about the tasks..."))
+	lines = append(lines, "")
+
+	hintStyle := lipgloss.NewStyle().
+		Foreground(pkgtui.ColorMuted)
+
+	lines = append(lines, hintStyle.Render("Tab to focus chat"))
+
+	return strings.Join(lines, "\n")
 }
 
 func (v *TaskReviewView) renderGroupedTasks() []string {
@@ -406,7 +458,7 @@ func (v *TaskReviewView) Name() string {
 
 // ShortHelp implements View
 func (v *TaskReviewView) ShortHelp() string {
-	return "A accept  b back  d delete  g group  tab type"
+	return "A accept  b back  d delete  g group  Tab focus"
 }
 
 // FullHelp implements FullHelpProvider

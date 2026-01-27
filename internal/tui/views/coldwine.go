@@ -11,7 +11,7 @@ import (
 	pkgtui "github.com/mistakeknot/autarch/pkg/tui"
 )
 
-// ColdwineView displays epics, stories, and tasks
+// ColdwineView displays epics, stories, and tasks with the unified shell layout.
 type ColdwineView struct {
 	client   *autarch.Client
 	epics    []autarch.Epic
@@ -22,14 +22,21 @@ type ColdwineView struct {
 	height   int
 	loading  bool
 	err      error
+
+	// Shell layout for unified 3-pane layout
+	shell *pkgtui.ShellLayout
 }
 
 // NewColdwineView creates a new Coldwine view
 func NewColdwineView(client *autarch.Client) *ColdwineView {
 	return &ColdwineView{
 		client: client,
+		shell:  pkgtui.NewShellLayout(),
 	}
 }
+
+// Compile-time interface assertion for SidebarProvider
+var _ pkgtui.SidebarProvider = (*ColdwineView)(nil)
 
 type epicsLoadedMsg struct {
 	epics   []autarch.Epic
@@ -63,10 +70,13 @@ func (v *ColdwineView) loadData() tea.Cmd {
 
 // Update implements View
 func (v *ColdwineView) Update(msg tea.Msg) (tui.View, tea.Cmd) {
+	var cmd tea.Cmd
+
 	switch msg := msg.(type) {
 	case tea.WindowSizeMsg:
 		v.width = msg.Width
 		v.height = msg.Height - 4
+		v.shell.SetSize(v.width, v.height)
 		return v, nil
 
 	case epicsLoadedMsg:
@@ -80,19 +90,43 @@ func (v *ColdwineView) Update(msg tea.Msg) (tui.View, tea.Cmd) {
 		}
 		return v, nil
 
+	case pkgtui.SidebarSelectMsg:
+		// Find epic by ID and select it
+		for i, epic := range v.epics {
+			if epic.ID == msg.ItemID {
+				v.selected = i
+				break
+			}
+		}
+		return v, nil
+
 	case tea.KeyMsg:
-		switch msg.String() {
-		case "j", "down":
-			if v.selected < len(v.epics)-1 {
-				v.selected++
+		// Let shell handle global keys first
+		v.shell, cmd = v.shell.Update(msg)
+		if cmd != nil {
+			return v, cmd
+		}
+
+		// Handle view-specific keys based on focus
+		switch v.shell.Focus() {
+		case pkgtui.FocusSidebar:
+			// Navigation handled by shell/sidebar
+		case pkgtui.FocusDocument:
+			switch msg.String() {
+			case "j", "down":
+				if v.selected < len(v.epics)-1 {
+					v.selected++
+				}
+			case "k", "up":
+				if v.selected > 0 {
+					v.selected--
+				}
+			case "r":
+				v.loading = true
+				return v, v.loadData()
 			}
-		case "k", "up":
-			if v.selected > 0 {
-				v.selected--
-			}
-		case "r":
-			v.loading = true
-			return v, v.loadData()
+		case pkgtui.FocusChat:
+			// Chat input handled by chat panel (future)
 		}
 	}
 
@@ -109,100 +143,72 @@ func (v *ColdwineView) View() string {
 		return tui.ErrorView(v.err)
 	}
 
+	// Render using shell layout
+	sidebarItems := v.SidebarItems()
+	document := v.renderDocument()
+	chat := v.renderChat()
+
+	return v.shell.Render(sidebarItems, document, chat)
+}
+
+// SidebarItems implements SidebarProvider.
+func (v *ColdwineView) SidebarItems() []pkgtui.SidebarItem {
 	if len(v.epics) == 0 {
-		return v.renderEmptyState()
+		return nil
 	}
 
-	return v.renderSplitView()
+	items := make([]pkgtui.SidebarItem, len(v.epics))
+	for i, epic := range v.epics {
+		title := epic.Title
+		if title == "" && len(epic.ID) >= 8 {
+			title = epic.ID[:8]
+		}
+
+		items[i] = pkgtui.SidebarItem{
+			ID:    epic.ID,
+			Label: title,
+			Icon:  epicStatusIcon(epic.Status),
+		}
+	}
+	return items
 }
 
-func (v *ColdwineView) renderEmptyState() string {
-	return lipgloss.JoinVertical(lipgloss.Left,
-		"",
-		pkgtui.TitleStyle.Render("Epics & Tasks"),
-		"",
-		pkgtui.LabelStyle.Render("No epics found"),
-		"",
-		pkgtui.LabelStyle.Render("Create an epic to break down a spec into implementable work."),
-	)
+// epicStatusIcon returns a plain icon for the epic status (no styling).
+func epicStatusIcon(status autarch.EpicStatus) string {
+	switch status {
+	case autarch.EpicStatusOpen:
+		return "○"
+	case autarch.EpicStatusInProgress:
+		return "●"
+	case autarch.EpicStatusDone:
+		return "✓"
+	default:
+		return "?"
+	}
 }
 
-func (v *ColdwineView) renderSplitView() string {
-	listWidth := v.width / 3
-	detailWidth := v.width - listWidth - 3
-
-	list := v.renderList(listWidth)
-	detail := v.renderDetail(detailWidth)
-
-	listStyle := lipgloss.NewStyle().
-		Width(listWidth).
-		Height(v.height)
-
-	detailStyle := lipgloss.NewStyle().
-		Width(detailWidth).
-		Height(v.height).
-		BorderLeft(true).
-		BorderStyle(lipgloss.NormalBorder()).
-		BorderForeground(pkgtui.ColorMuted).
-		PaddingLeft(1)
-
-	return lipgloss.JoinHorizontal(lipgloss.Top,
-		listStyle.Render(list),
-		detailStyle.Render(detail),
-	)
-}
-
-func (v *ColdwineView) renderList(width int) string {
+// renderDocument renders the main document pane (epic details with stories).
+func (v *ColdwineView) renderDocument() string {
 	var lines []string
 
-	lines = append(lines, pkgtui.TitleStyle.Render("Epics"))
+	lines = append(lines, pkgtui.TitleStyle.Render("Epic Details"))
 	lines = append(lines, "")
 
-	for i, e := range v.epics {
-		// Count stories for this epic
-		storyCount := 0
-		doneCount := 0
-		for _, s := range v.stories {
-			if s.EpicID == e.ID {
-				storyCount++
-				if s.Status == autarch.StoryStatusDone {
-					doneCount++
-				}
-			}
-		}
-
-		icon := v.statusIcon(e.Status)
-		title := e.Title
-		if title == "" {
-			title = e.ID[:8]
-		}
-
-		line := fmt.Sprintf("%s %s (%d/%d)", icon, title, doneCount, storyCount)
-		if i == v.selected {
-			line = pkgtui.SelectedStyle.Render(line)
-		} else {
-			line = pkgtui.UnselectedStyle.Render(line)
-		}
-		lines = append(lines, line)
+	if len(v.epics) == 0 {
+		lines = append(lines, pkgtui.LabelStyle.Render("No epics found"))
+		lines = append(lines, "")
+		lines = append(lines, pkgtui.LabelStyle.Render("Create an epic to break down a spec into implementable work."))
+		return strings.Join(lines, "\n")
 	}
 
-	return strings.Join(lines, "\n")
-}
-
-func (v *ColdwineView) renderDetail(width int) string {
-	var lines []string
-
-	lines = append(lines, pkgtui.TitleStyle.Render("Stories"))
-	lines = append(lines, "")
-
-	if len(v.epics) == 0 || v.selected >= len(v.epics) {
+	if v.selected >= len(v.epics) {
 		lines = append(lines, pkgtui.LabelStyle.Render("No epic selected"))
 		return strings.Join(lines, "\n")
 	}
 
 	e := v.epics[v.selected]
 
-	lines = append(lines, fmt.Sprintf("Epic: %s", e.Title))
+	lines = append(lines, fmt.Sprintf("Title: %s", e.Title))
 	lines = append(lines, fmt.Sprintf("Status: %s", e.Status))
 	lines = append(lines, "")
 
@@ -219,24 +225,38 @@ func (v *ColdwineView) renderDetail(width int) string {
 	}
 
 	if !foundStories {
-		lines = append(lines, pkgtui.LabelStyle.Render("  No stories"))
+		lines = append(lines, pkgtui.LabelStyle.Render("  No stories yet"))
 	}
 
 	return strings.Join(lines, "\n")
 }
 
-func (v *ColdwineView) statusIcon(status autarch.EpicStatus) string {
-	switch status {
-	case autarch.EpicStatusOpen:
-		return pkgtui.StatusIdle.Render("○")
-	case autarch.EpicStatusInProgress:
-		return pkgtui.StatusRunning.Render("●")
-	case autarch.EpicStatusDone:
-		return pkgtui.StatusRunning.Render("✓")
-	default:
-		return pkgtui.StatusIdle.Render("?")
-	}
+// renderChat renders the chat pane.
+func (v *ColdwineView) renderChat() string {
+	var lines []string
+
+	chatTitle := lipgloss.NewStyle().
+		Foreground(pkgtui.ColorPrimary).
+		Bold(true)
+
+	lines = append(lines, chatTitle.Render("Task Chat"))
+	lines = append(lines, "")
+
+	mutedStyle := lipgloss.NewStyle().
+		Foreground(pkgtui.ColorMuted).
+		Italic(true)
+
+	lines = append(lines, mutedStyle.Render("Ask questions about this epic..."))
+	lines = append(lines, "")
+
+	hintStyle := lipgloss.NewStyle().
+		Foreground(pkgtui.ColorMuted)
+
+	lines = append(lines, hintStyle.Render("Tab to focus • Ctrl+B toggle sidebar"))
+
+	return strings.Join(lines, "\n")
 }
+
 
 func (v *ColdwineView) storyStatusIcon(status autarch.StoryStatus) string {
 	switch status {
@@ -268,7 +288,7 @@ func (v *ColdwineView) Name() string {
 
 // ShortHelp implements View
 func (v *ColdwineView) ShortHelp() string {
-	return "j/k navigate  r refresh"
+	return "j/k navigate  r refresh  Tab focus  Ctrl+B sidebar"
 }
 
 // Commands implements CommandProvider

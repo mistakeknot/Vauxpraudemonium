@@ -11,7 +11,7 @@ import (
 	pkgtui "github.com/mistakeknot/autarch/pkg/tui"
 )
 
-// PollardView displays research insights
+// PollardView displays research insights with the unified shell layout.
 type PollardView struct {
 	client   *autarch.Client
 	insights []autarch.Insight
@@ -20,14 +20,21 @@ type PollardView struct {
 	height   int
 	loading  bool
 	err      error
+
+	// Shell layout for unified 3-pane layout
+	shell *pkgtui.ShellLayout
 }
 
 // NewPollardView creates a new Pollard view
 func NewPollardView(client *autarch.Client) *PollardView {
 	return &PollardView{
 		client: client,
+		shell:  pkgtui.NewShellLayout(),
 	}
 }
+
+// Compile-time interface assertion for SidebarProvider
+var _ pkgtui.SidebarProvider = (*PollardView)(nil)
 
 type insightsLoadedMsg struct {
 	insights []autarch.Insight
@@ -48,10 +55,13 @@ func (v *PollardView) loadInsights() tea.Cmd {
 
 // Update implements View
 func (v *PollardView) Update(msg tea.Msg) (tui.View, tea.Cmd) {
+	var cmd tea.Cmd
+
 	switch msg := msg.(type) {
 	case tea.WindowSizeMsg:
 		v.width = msg.Width
 		v.height = msg.Height - 4
+		v.shell.SetSize(v.width, v.height)
 		return v, nil
 
 	case insightsLoadedMsg:
@@ -63,19 +73,43 @@ func (v *PollardView) Update(msg tea.Msg) (tui.View, tea.Cmd) {
 		}
 		return v, nil
 
+	case pkgtui.SidebarSelectMsg:
+		// Find insight by ID and select it
+		for i, insight := range v.insights {
+			if insight.ID == msg.ItemID {
+				v.selected = i
+				break
+			}
+		}
+		return v, nil
+
 	case tea.KeyMsg:
-		switch msg.String() {
-		case "j", "down":
-			if v.selected < len(v.insights)-1 {
-				v.selected++
+		// Let shell handle global keys first
+		v.shell, cmd = v.shell.Update(msg)
+		if cmd != nil {
+			return v, cmd
+		}
+
+		// Handle view-specific keys based on focus
+		switch v.shell.Focus() {
+		case pkgtui.FocusSidebar:
+			// Navigation handled by shell/sidebar
+		case pkgtui.FocusDocument:
+			switch msg.String() {
+			case "j", "down":
+				if v.selected < len(v.insights)-1 {
+					v.selected++
+				}
+			case "k", "up":
+				if v.selected > 0 {
+					v.selected--
+				}
+			case "r":
+				v.loading = true
+				return v, v.loadInsights()
 			}
-		case "k", "up":
-			if v.selected > 0 {
-				v.selected--
-			}
-		case "r":
-			v.loading = true
-			return v, v.loadInsights()
+		case pkgtui.FocusChat:
+			// Chat input handled by chat panel (future)
 		}
 	}
 
@@ -92,94 +126,72 @@ func (v *PollardView) View() string {
 		return tui.ErrorView(v.err)
 	}
 
+	// Render using shell layout
+	sidebarItems := v.SidebarItems()
+	document := v.renderDocument()
+	chat := v.renderChat()
+
+	return v.shell.Render(sidebarItems, document, chat)
+}
+
+// SidebarItems implements SidebarProvider.
+func (v *PollardView) SidebarItems() []pkgtui.SidebarItem {
 	if len(v.insights) == 0 {
-		return v.renderEmptyState()
+		return nil
 	}
 
-	return v.renderSplitView()
-}
+	items := make([]pkgtui.SidebarItem, len(v.insights))
+	for i, insight := range v.insights {
+		title := insight.Title
+		if title == "" && len(insight.ID) >= 8 {
+			title = insight.ID[:8]
+		}
 
-func (v *PollardView) renderEmptyState() string {
-	return lipgloss.JoinVertical(lipgloss.Left,
-		"",
-		pkgtui.TitleStyle.Render("Research Insights"),
-		"",
-		pkgtui.LabelStyle.Render("No insights found"),
-		"",
-		pkgtui.LabelStyle.Render("Run Pollard hunters to gather research insights."),
-	)
-}
-
-func (v *PollardView) renderSplitView() string {
-	listWidth := v.width / 3
-	detailWidth := v.width - listWidth - 3
-
-	list := v.renderList(listWidth)
-	detail := v.renderDetail(detailWidth)
-
-	listStyle := lipgloss.NewStyle().
-		Width(listWidth).
-		Height(v.height)
-
-	detailStyle := lipgloss.NewStyle().
-		Width(detailWidth).
-		Height(v.height).
-		BorderLeft(true).
-		BorderStyle(lipgloss.NormalBorder()).
-		BorderForeground(pkgtui.ColorMuted).
-		PaddingLeft(1)
-
-	return lipgloss.JoinHorizontal(lipgloss.Top,
-		listStyle.Render(list),
-		detailStyle.Render(detail),
-	)
-}
-
-func (v *PollardView) renderList(width int) string {
-	var lines []string
-
-	// Group by category
-	grouped := map[string][]autarch.Insight{}
-	for _, i := range v.insights {
-		grouped[i.Category] = append(grouped[i.Category], i)
-	}
-
-	lines = append(lines, pkgtui.TitleStyle.Render("Insights"))
-	lines = append(lines, "")
-
-	idx := 0
-	for category, insights := range grouped {
-		// Category header
-		header := fmt.Sprintf("▾ %s (%d)", category, len(insights))
-		lines = append(lines, pkgtui.SubtitleStyle.Render(header))
-
-		for _, i := range insights {
-			title := i.Title
-			if len(title) > 30 {
-				title = title[:27] + "..."
-			}
-
-			line := "  " + title
-			if idx == v.selected {
-				line = pkgtui.SelectedStyle.Render(line)
-			} else {
-				line = pkgtui.UnselectedStyle.Render(line)
-			}
-			lines = append(lines, line)
-			idx++
+		items[i] = pkgtui.SidebarItem{
+			ID:    insight.ID,
+			Label: title,
+			Icon:  categoryIcon(insight.Category),
 		}
 	}
-
-	return strings.Join(lines, "\n")
+	return items
 }
 
-func (v *PollardView) renderDetail(width int) string {
+// categoryIcon returns an icon for the insight category.
+func categoryIcon(category string) string {
+	switch category {
+	case "competitor":
+		return "⚔"
+	case "technology":
+		return "⚙"
+	case "market":
+		return "📊"
+	case "user":
+		return "👤"
+	default:
+		return "•"
+	}
+}
+
+// renderDocument renders the main document pane (insight details).
+func (v *PollardView) renderDocument() string {
+	width := v.shell.LeftWidth()
+	if width <= 0 {
+		width = v.width / 2
+	}
+
 	var lines []string
 
-	lines = append(lines, pkgtui.TitleStyle.Render("Details"))
+	lines = append(lines, pkgtui.TitleStyle.Render("Insight Details"))
 	lines = append(lines, "")
 
-	if len(v.insights) == 0 || v.selected >= len(v.insights) {
+	if len(v.insights) == 0 {
+		lines = append(lines, pkgtui.LabelStyle.Render("No insights found"))
+		lines = append(lines, "")
+		lines = append(lines, pkgtui.LabelStyle.Render("Run Pollard hunters to gather research insights."))
+		return strings.Join(lines, "\n")
+	}
+
+	if v.selected >= len(v.insights) {
 		lines = append(lines, pkgtui.LabelStyle.Render("No insight selected"))
 		return strings.Join(lines, "\n")
 	}
@@ -194,7 +206,6 @@ func (v *PollardView) renderDetail(width int) string {
 
 	if i.Body != "" {
 		lines = append(lines, pkgtui.SubtitleStyle.Render("Summary"))
-		// Wrap body text
 		wrapped := wordWrap(i.Body, width-4)
 		lines = append(lines, wrapped...)
 		lines = append(lines, "")
@@ -207,6 +218,32 @@ func (v *PollardView) renderDetail(width int) string {
 	if i.SpecID != "" {
 		lines = append(lines, fmt.Sprintf("Linked Spec: %s", i.SpecID))
 	}
+
+	return strings.Join(lines, "\n")
+}
+
+// renderChat renders the chat pane.
+func (v *PollardView) renderChat() string {
+	var lines []string
+
+	chatTitle := lipgloss.NewStyle().
+		Foreground(pkgtui.ColorPrimary).
+		Bold(true)
+
+	lines = append(lines, chatTitle.Render("Research Chat"))
+	lines = append(lines, "")
+
+	mutedStyle := lipgloss.NewStyle().
+		Foreground(pkgtui.ColorMuted).
+		Italic(true)
+
+	lines = append(lines, mutedStyle.Render("Ask questions about this insight..."))
+	lines = append(lines, "")
+
+	hintStyle := lipgloss.NewStyle().
+		Foreground(pkgtui.ColorMuted)
+
+	lines = append(lines, hintStyle.Render("Tab to focus • Ctrl+B toggle sidebar"))
 
 	return strings.Join(lines, "\n")
 }
@@ -255,7 +292,7 @@ func (v *PollardView) Name() string {
 
 // ShortHelp implements View
 func (v *PollardView) ShortHelp() string {
-	return "j/k navigate  r refresh"
+	return "j/k navigate  r refresh  Tab focus  Ctrl+B sidebar"
 }
 
 // Commands implements CommandProvider

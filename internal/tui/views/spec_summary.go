@@ -16,6 +16,7 @@ type SpecSummary = tui.SpecSummary
 type SpecDecision = tui.SpecDecision
 
 // SpecSummaryView displays a completed spec with key decisions and research attributions.
+// Uses the unified shell layout with chat for Q&A during review (no sidebar).
 type SpecSummaryView struct {
 	spec        *SpecSummary
 	coordinator *research.Coordinator
@@ -23,6 +24,9 @@ type SpecSummaryView struct {
 	height      int
 	selected    int
 	expanded    map[int]bool
+
+	// Shell layout for unified 3-pane layout (chat only, no sidebar)
+	shell *pkgtui.ShellLayout
 
 	// Research state
 	researchComplete bool
@@ -40,6 +44,7 @@ func NewSpecSummaryView(spec *SpecSummary, coordinator *research.Coordinator) *S
 		spec:        spec,
 		coordinator: coordinator,
 		expanded:    make(map[int]bool),
+		shell:       pkgtui.NewShellLayout(),
 	}
 }
 
@@ -69,10 +74,13 @@ type specResearchCheckMsg struct{}
 
 // Update implements View
 func (v *SpecSummaryView) Update(msg tea.Msg) (tui.View, tea.Cmd) {
+	var cmd tea.Cmd
+
 	switch msg := msg.(type) {
 	case tea.WindowSizeMsg:
 		v.width = msg.Width
 		v.height = msg.Height - 4
+		v.shell.SetSize(v.width, v.height)
 		return v, nil
 
 	case specResearchCheckMsg:
@@ -89,6 +97,12 @@ func (v *SpecSummaryView) Update(msg tea.Msg) (tui.View, tea.Cmd) {
 		return v, nil
 
 	case tea.KeyMsg:
+		// Let shell handle global keys first (Tab for focus cycling)
+		v.shell, cmd = v.shell.Update(msg)
+		if cmd != nil {
+			return v, cmd
+		}
+
 		switch msg.String() {
 		case "enter":
 			// Generate epics
@@ -160,6 +174,15 @@ func (v *SpecSummaryView) updateResearchStatus() {
 
 // View implements View
 func (v *SpecSummaryView) View() string {
+	// Render using shell layout (without sidebar for review views)
+	document := v.renderDocument()
+	chat := v.renderChat()
+
+	return v.shell.RenderWithoutSidebar(document, chat)
+}
+
+// renderDocument renders the main document pane (spec summary).
+func (v *SpecSummaryView) renderDocument() string {
 	if v.spec == nil {
 		return pkgtui.LabelStyle.Render("No spec to display")
 	}
@@ -205,6 +228,32 @@ func (v *SpecSummaryView) View() string {
 	sections = append(sections, v.renderActions())
 
 	return lipgloss.JoinVertical(lipgloss.Left, sections...)
+}
+
+// renderChat renders the chat pane.
+func (v *SpecSummaryView) renderChat() string {
+	var lines []string
+
+	chatTitle := lipgloss.NewStyle().
+		Foreground(pkgtui.ColorPrimary).
+		Bold(true)
+
+	lines = append(lines, chatTitle.Render("Spec Chat"))
+	lines = append(lines, "")
+
+	mutedStyle := lipgloss.NewStyle().
+		Foreground(pkgtui.ColorMuted).
+		Italic(true)
+
+	lines = append(lines, mutedStyle.Render("Ask questions about the spec..."))
+	lines = append(lines, "")
+
+	hintStyle := lipgloss.NewStyle().
+		Foreground(pkgtui.ColorMuted)
+
+	lines = append(lines, hintStyle.Render("Tab to focus chat"))
+
+	return strings.Join(lines, "\n")
 }
 
 func (v *SpecSummaryView) renderField(label, value string) string {
@@ -313,7 +362,7 @@ func (v *SpecSummaryView) Name() string {
 
 // ShortHelp implements View
 func (v *SpecSummaryView) ShortHelp() string {
-	return "enter generate  e edit  r refresh  space expand"
+	return "enter generate  e edit  r refresh  Tab focus"
 }
 
 // FullHelp implements FullHelpProvider

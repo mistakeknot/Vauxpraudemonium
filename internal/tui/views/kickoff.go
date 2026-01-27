@@ -81,8 +81,8 @@ func NewKickoffView() *KickoffView {
 	docPanel.SetTitle("What do you want to build?")
 	docPanel.SetSubtitle("Describe your project vision and goals")
 
-	splitLayout := pkgtui.NewSplitLayout(0.40) // 40% left (doc), 60% right (chat)
-	splitLayout.SetMinWidth(80)
+	splitLayout := pkgtui.NewSplitLayout(0.66) // 2/3 left (doc), 1/3 right (chat) - Cursor style
+	splitLayout.SetMinWidth(100)
 
 	v := &KickoffView{
 		chatPanel:   chatPanel,
@@ -563,23 +563,28 @@ func slugify(s string) string {
 
 // View implements View
 func (v *KickoffView) View() string {
-	if v.loading {
-		return v.renderLoadingView()
-	}
-
 	if v.err != nil {
 		return tui.ErrorView(v.err)
 	}
 
-	// Use split layout: left = doc panel, right = chat panel + recents
+	// Cursor-style split layout:
+	// Left pane (2/3): Main document view - shows scan progress and results
+	// Right pane (1/3): Chat panel for conversation/input
 	leftContent := v.docPanel.View()
 	rightContent := v.renderRightPane()
+
+	if v.loading {
+		// During loading, show progress in the LEFT (main document) pane
+		// The right chat pane remains available for the user
+		leftContent = v.renderScanProgressPane()
+	}
 
 	return v.splitLayout.Render(leftContent, rightContent)
 }
 
-// renderLoadingView renders the loading/scanning state.
-func (v *KickoffView) renderLoadingView() string {
+// renderScanProgressPane renders the left (main document) pane during scanning.
+// Shows scan progress, files found, and agent output in the main view area.
+func (v *KickoffView) renderScanProgressPane() string {
 	var sections []string
 
 	spinnerStyle := lipgloss.NewStyle().

@@ -23,11 +23,15 @@ const (
 )
 
 // TaskDetailView shows full task context and start options.
+// Uses the unified shell layout with chat for Q&A during review (no sidebar).
 type TaskDetailView struct {
 	task         tasks.TaskProposal
 	coordinator  *research.Coordinator
 	width        int
 	height       int
+
+	// Shell layout for unified 3-pane layout (chat only, no sidebar)
+	shell *pkgtui.ShellLayout
 
 	// Agent selection
 	agents       []AgentType
@@ -45,11 +49,12 @@ type TaskDetailView struct {
 // NewTaskDetailView creates a new task detail view.
 func NewTaskDetailView(task tasks.TaskProposal, coordinator *research.Coordinator) *TaskDetailView {
 	return &TaskDetailView{
-		task:        task,
-		coordinator: coordinator,
-		agents:      []AgentType{AgentClaude, AgentCodex, AgentAider, AgentManual},
+		task:          task,
+		coordinator:   coordinator,
+		shell:         pkgtui.NewShellLayout(),
+		agents:        []AgentType{AgentClaude, AgentCodex, AgentAider, AgentManual},
 		selectedAgent: 0,
-		useWorktree: false,
+		useWorktree:   false,
 	}
 }
 
@@ -77,10 +82,13 @@ type taskResearchLoadedMsg struct{}
 
 // Update implements View
 func (v *TaskDetailView) Update(msg tea.Msg) (tui.View, tea.Cmd) {
+	var cmd tea.Cmd
+
 	switch msg := msg.(type) {
 	case tea.WindowSizeMsg:
 		v.width = msg.Width
 		v.height = msg.Height - 4
+		v.shell.SetSize(v.width, v.height)
 		return v, nil
 
 	case taskResearchLoadedMsg:
@@ -88,6 +96,12 @@ func (v *TaskDetailView) Update(msg tea.Msg) (tui.View, tea.Cmd) {
 		return v, nil
 
 	case tea.KeyMsg:
+		// Let shell handle global keys first (Tab for focus cycling)
+		v.shell, cmd = v.shell.Update(msg)
+		if cmd != nil {
+			return v, cmd
+		}
+
 		switch msg.String() {
 		case "esc", "b", "backspace":
 			if v.onBack != nil {
@@ -142,6 +156,15 @@ func (v *TaskDetailView) loadResearchFindings() {
 
 // View implements View
 func (v *TaskDetailView) View() string {
+	// Render using shell layout (without sidebar for review views)
+	document := v.renderDocument()
+	chat := v.renderChat()
+
+	return v.shell.RenderWithoutSidebar(document, chat)
+}
+
+// renderDocument renders the main document pane (task details).
+func (v *TaskDetailView) renderDocument() string {
 	var sections []string
 
 	// Header
@@ -173,6 +196,32 @@ func (v *TaskDetailView) View() string {
 	sections = append(sections, v.renderActions())
 
 	return lipgloss.JoinVertical(lipgloss.Left, sections...)
+}
+
+// renderChat renders the chat pane.
+func (v *TaskDetailView) renderChat() string {
+	var lines []string
+
+	chatTitle := lipgloss.NewStyle().
+		Foreground(pkgtui.ColorPrimary).
+		Bold(true)
+
+	lines = append(lines, chatTitle.Render("Task Chat"))
+	lines = append(lines, "")
+
+	mutedStyle := lipgloss.NewStyle().
+		Foreground(pkgtui.ColorMuted).
+		Italic(true)
+
+	lines = append(lines, mutedStyle.Render("Ask questions about this task..."))
+	lines = append(lines, "")
+
+	hintStyle := lipgloss.NewStyle().
+		Foreground(pkgtui.ColorMuted)
+
+	lines = append(lines, hintStyle.Render("Tab to focus chat"))
+
+	return strings.Join(lines, "\n")
 }
 
 func (v *TaskDetailView) renderTaskInfo() string {
@@ -366,7 +415,7 @@ func (v *TaskDetailView) Name() string {
 
 // ShortHelp implements View
 func (v *TaskDetailView) ShortHelp() string {
-	return "enter start  ←→ agent  w worktree  esc back"
+	return "enter start  ←→ agent  w worktree  Tab focus"
 }
 
 // FullHelp implements FullHelpProvider
