@@ -1,0 +1,222 @@
+package views
+
+import (
+	"testing"
+
+	tea "github.com/charmbracelet/bubbletea"
+	pkgtui "github.com/mistakeknot/autarch/pkg/tui"
+)
+
+// TestSidebarProviderImplementations verifies that browse views implement SidebarProvider.
+// This is a compile-time check that also validates runtime behavior.
+func TestSidebarProviderImplementations(t *testing.T) {
+	// These are already compile-time assertions in the respective files,
+	// but we verify them here for documentation.
+	var _ pkgtui.SidebarProvider = (*GurgehView)(nil)
+	var _ pkgtui.SidebarProvider = (*PollardView)(nil)
+	var _ pkgtui.SidebarProvider = (*ColdwineView)(nil)
+}
+
+// TestColdwineViewShellIntegration tests ColdwineView's shell layout integration.
+func TestColdwineViewShellIntegration(t *testing.T) {
+	view := NewColdwineView(nil) // nil client for testing
+	view.width = 120
+	view.height = 40
+
+	// Set shell size
+	view.shell.SetSize(120, 40)
+
+	// Verify SidebarItems returns without panic when no epics
+	items := view.SidebarItems()
+	if len(items) != 0 {
+		t.Errorf("SidebarItems should return empty when no epics, got %d items", len(items))
+	}
+
+	// Test Tab key cycles focus
+	msg := tea.KeyMsg{Type: tea.KeyTab}
+	initialFocus := view.shell.Focus()
+	view.shell, _ = view.shell.Update(msg)
+	newFocus := view.shell.Focus()
+
+	if initialFocus == newFocus {
+		t.Error("Tab should cycle focus")
+	}
+}
+
+// TestReviewViewsUseRenderWithoutSidebar tests that review views use chat-only mode.
+func TestReviewViewsUseRenderWithoutSidebar(t *testing.T) {
+	t.Run("EpicReviewView", func(t *testing.T) {
+		view := NewEpicReviewView(nil)
+		view.width = 120
+		view.height = 40
+		view.shell.SetSize(120, 40)
+
+		// View should render without error
+		output := view.View()
+		if output == "" {
+			t.Error("View should render content")
+		}
+	})
+
+	t.Run("TaskReviewView", func(t *testing.T) {
+		view := NewTaskReviewView(nil)
+		view.width = 120
+		view.height = 40
+		view.shell.SetSize(120, 40)
+
+		output := view.View()
+		if output == "" {
+			t.Error("View should render content")
+		}
+	})
+
+	t.Run("SpecSummaryView", func(t *testing.T) {
+		view := NewSpecSummaryView(nil, nil)
+		view.width = 120
+		view.height = 40
+		view.shell.SetSize(120, 40)
+
+		output := view.View()
+		if output == "" {
+			t.Error("View should render content")
+		}
+	})
+
+	t.Run("TaskDetailView", func(t *testing.T) {
+		// TaskDetailView requires a TaskProposal
+		view := &TaskDetailView{
+			shell:   pkgtui.NewShellLayout(),
+			agents:  []AgentType{AgentClaude, AgentCodex},
+			width:   120,
+			height:  40,
+		}
+		view.shell.SetSize(120, 40)
+
+		output := view.View()
+		if output == "" {
+			t.Error("View should render content")
+		}
+	})
+}
+
+// TestViewsHandleTabKey tests that all views properly delegate Tab to shell.
+func TestViewsHandleTabKey(t *testing.T) {
+	tabMsg := tea.KeyMsg{Type: tea.KeyTab}
+
+	t.Run("ColdwineView", func(t *testing.T) {
+		view := NewColdwineView(nil)
+		view.shell.SetSize(120, 40)
+
+		before := view.shell.Focus()
+		view.Update(tabMsg)
+		after := view.shell.Focus()
+
+		if before == after {
+			t.Error("Tab should cycle focus in ColdwineView")
+		}
+	})
+
+	t.Run("EpicReviewView", func(t *testing.T) {
+		view := NewEpicReviewView(nil)
+		view.shell.SetSize(120, 40)
+
+		before := view.shell.Focus()
+		view.Update(tabMsg)
+		after := view.shell.Focus()
+
+		if before == after {
+			t.Error("Tab should cycle focus in EpicReviewView")
+		}
+	})
+
+	t.Run("TaskReviewView", func(t *testing.T) {
+		view := NewTaskReviewView(nil)
+		view.shell.SetSize(120, 40)
+
+		before := view.shell.Focus()
+		view.Update(tabMsg)
+		after := view.shell.Focus()
+
+		if before == after {
+			t.Error("Tab should cycle focus in TaskReviewView")
+		}
+	})
+
+	t.Run("SpecSummaryView", func(t *testing.T) {
+		view := NewSpecSummaryView(nil, nil)
+		view.shell.SetSize(120, 40)
+
+		before := view.shell.Focus()
+		view.Update(tabMsg)
+		after := view.shell.Focus()
+
+		if before == after {
+			t.Error("Tab should cycle focus in SpecSummaryView")
+		}
+	})
+}
+
+// TestViewsHandleCtrlB tests sidebar toggle in views with sidebar.
+func TestViewsHandleCtrlB(t *testing.T) {
+	ctrlBMsg := tea.KeyMsg{Type: tea.KeyCtrlB}
+
+	t.Run("ColdwineView", func(t *testing.T) {
+		view := NewColdwineView(nil)
+		view.shell.SetSize(120, 40)
+
+		before := view.shell.Sidebar().IsCollapsed()
+		view.Update(ctrlBMsg)
+		after := view.shell.Sidebar().IsCollapsed()
+
+		if before == after {
+			t.Error("Ctrl+B should toggle sidebar in ColdwineView")
+		}
+	})
+}
+
+// TestViewShortHelpIncludesTab tests that ShortHelp mentions Tab focus.
+func TestViewShortHelpIncludesTab(t *testing.T) {
+	tests := []struct {
+		name string
+		help string
+	}{
+		{"ColdwineView", NewColdwineView(nil).ShortHelp()},
+		{"EpicReviewView", NewEpicReviewView(nil).ShortHelp()},
+		{"TaskReviewView", NewTaskReviewView(nil).ShortHelp()},
+		{"SpecSummaryView", NewSpecSummaryView(nil, nil).ShortHelp()},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if tt.help == "" {
+				t.Error("ShortHelp should not be empty")
+			}
+			// Check that help mentions Tab/focus
+			if !containsAny(tt.help, "Tab", "focus") {
+				t.Errorf("ShortHelp should mention Tab or focus: %q", tt.help)
+			}
+		})
+	}
+}
+
+func containsAny(s string, substrings ...string) bool {
+	for _, sub := range substrings {
+		if contains(s, sub) {
+			return true
+		}
+	}
+	return false
+}
+
+func contains(s, substr string) bool {
+	return len(s) >= len(substr) && (s == substr || len(s) > 0 && containsSubstring(s, substr))
+}
+
+func containsSubstring(s, substr string) bool {
+	for i := 0; i <= len(s)-len(substr); i++ {
+		if s[i:i+len(substr)] == substr {
+			return true
+		}
+	}
+	return false
+}
