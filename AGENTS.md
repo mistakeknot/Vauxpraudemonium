@@ -25,8 +25,10 @@ Unified monorepo for AI agent development tools: Bigend, Gurgeh, Coldwine, and P
 |----------|---------|
 | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | System overview and data flow |
 | [docs/INTEGRATION.md](docs/INTEGRATION.md) | Cross-tool + Intermute integration |
+| [docs/COMPOUND_INTEGRATION.md](docs/COMPOUND_INTEGRATION.md) | Compound Engineering patterns |
 | [docs/WORKFLOWS.md](docs/WORKFLOWS.md) | End-user task guides |
 | [docs/QUICK_REFERENCE.md](docs/QUICK_REFERENCE.md) | Command cheat sheet |
+| [docs/tui/SHORTCUTS.md](docs/tui/SHORTCUTS.md) | TUI keyboard shortcut conventions |
 | [docs/plans/INDEX.md](docs/plans/INDEX.md) | Planning documents index |
 | [docs/solutions/](docs/solutions/) | Bug fixes and gotchas (check before debugging!) |
 
@@ -59,13 +61,15 @@ go mod tidy
 - Pollard hunters (tech + general-purpose)
 - Pollard report generation and API
 - Intermute bridges for all tools
+- Unified shell layout (Sidebar + ShellLayout) in `pkg/tui`
+- 9 views migrated to Cursor-style 3-pane layout
+- Gurgeh Arbiter subsystem (sprint state, consistency, confidence)
 
 ### In Progress
 - Bigend TUI mode
 - Intermute messaging (file-based → HTTP)
 
 ### TODO
-- Migrate TUI components to `pkg/tui`
 - Remote host support for Bigend
 - Pollard integration into Bigend daemon
 
@@ -147,6 +151,16 @@ See tool-specific AGENTS.md files for tool configuration.
 
 ## TUI Keybindings
 
+When adding or editing shortcuts, review
+[docs/tui/SHORTCUTS.md](docs/tui/SHORTCUTS.md).
+
+### Shell Layout Keys (All Views)
+
+| Key | Action |
+|-----|--------|
+| `Tab` | Cycle focus: sidebar → document → chat |
+| `Ctrl+B` | Toggle sidebar |
+
 ### Universal Keys
 
 | Key | Action |
@@ -183,7 +197,7 @@ See tool-specific AGENTS.md files for tool configuration.
 | `contract` | Cross-tool entity types (Initiative, Epic, Story, Task, Run, Outcome) |
 | `events` | Event spine for communication (SQLite at `~/.autarch/events.db`) |
 | `intermute` | Intermute client wrapper (agents, messages, reservations) |
-| `tui` | Shared TUI styles (Tokyo Night palette) |
+| `tui` | Shared TUI styles + unified shell layout (Sidebar, ShellLayout, SplitLayout) |
 | `agenttargets` | Run-target registry/resolver |
 | `discovery` | Project discovery |
 
@@ -271,6 +285,58 @@ See [docs/QUICK_REFERENCE.md](docs/QUICK_REFERENCE.md) for complete list.
 - Intermute: Cross-tool messaging and coordination
 
 See [docs/INTEGRATION.md](docs/INTEGRATION.md) for details.
+
+---
+
+## Compound Engineering Integration
+
+Autarch adopts patterns from the Compound Engineering Claude Code plugin:
+
+### Multi-Agent Review
+
+PRDs and research are validated by parallel review agents:
+
+```bash
+# PRD review with multi-agent validation
+gurgeh review PRD-001 --gaps
+
+# Reviewers: Completeness, CUJ Consistency, Acceptance Criteria, Scope Creep
+```
+
+### Knowledge Compounding
+
+Solved problems are captured in `docs/solutions/` for future reference:
+
+```bash
+# Before debugging
+grep -r "error message" docs/solutions/
+
+# After fixing (run /compound to capture)
+```
+
+### SpecFlow Gap Analysis
+
+Detect specification gaps before implementation:
+
+```go
+analyzer := spec.NewSpecFlowAnalyzer()
+result := analyzer.Analyze(spec)
+// Gaps: missing_flow, unclear_criteria, edge_case, error_handling, etc.
+```
+
+### Claude Code Plugin
+
+The `autarch-plugin/` directory provides Claude Code integration:
+
+| Component | Purpose |
+|-----------|---------|
+| `/autarch:prd` | Create PRD with interview framework |
+| `/autarch:research` | Run Pollard research |
+| `/autarch:tasks` | Generate epics from PRD |
+| `/autarch:status` | Show project status |
+| `autarch-mcp` | MCP server for AI agents |
+
+See [docs/COMPOUND_INTEGRATION.md](docs/COMPOUND_INTEGRATION.md) for full details.
 
 ---
 

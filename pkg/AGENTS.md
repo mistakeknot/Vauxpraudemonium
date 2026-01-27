@@ -228,7 +228,7 @@ writer.AttachBridge(bridge)
 
 ## tui
 
-Shared TUI styles using Tokyo Night color palette.
+Shared TUI styles and layout components using Tokyo Night color palette.
 
 **Import:** `github.com/mistakeknot/autarch/pkg/tui`
 
@@ -260,6 +260,56 @@ tui.AgentBadge("codex")   // Teal badge
 tui.PriorityBadge(0)  // "P0" (red)
 tui.PriorityBadge(1)  // "P1" (yellow)
 ```
+
+### Unified Shell Layout
+
+Cursor/VS Code-style 3-pane layout used by all views.
+
+**Key Files:**
+
+| File | Purpose |
+|------|---------|
+| `sidebar.go` | Collapsible 20-char navigation pane |
+| `shelllayout.go` | Composes Sidebar + SplitLayout with focus management |
+| `splitlayout.go` | Configurable left/right split (doc + chat) |
+| `interfaces.go` | `SidebarProvider` interface for views with sidebar |
+
+**Architecture:**
+
+```
+ShellLayout
+├── Sidebar (20 chars, toggleable via Ctrl+B)
+│   └── []SidebarItem{ID, Label, Icon}
+└── SplitLayout (remaining width, 2:1 ratio)
+    ├── Document pane (left, 2/3)
+    └── Chat pane (right, 1/3)
+```
+
+**Types:**
+
+| Type | Description |
+|------|-------------|
+| `Sidebar` | Collapsible navigation list (j/k nav, Enter select) |
+| `SidebarItem` | Navigation entry: `{ID, Label, Icon}` |
+| `ShellLayout` | 3-pane compositor with focus cycling |
+| `FocusTarget` | Enum: `FocusSidebar`, `FocusDocument`, `FocusChat` |
+| `SidebarProvider` | Interface: `SidebarItems() []SidebarItem` |
+| `SidebarSelectMsg` | Message emitted when sidebar item selected |
+
+**Usage patterns:**
+
+```go
+// Views WITH sidebar (Gurgeh, Pollard, Coldwine):
+shell.Render(sidebarItems, docContent, chatContent)
+var _ pkgtui.SidebarProvider = (*GurgehView)(nil)
+
+// Views WITHOUT sidebar (reviews, onboarding):
+shell.RenderWithoutSidebar(docContent, chatContent)
+```
+
+**Focus cycling:** Tab cycles sidebar → doc → chat (skips collapsed sidebar). Ctrl+B toggles sidebar; if sidebar was focused when collapsed, focus recovers to document.
+
+**Minimum width:** 100 chars (`MinShellWidth`). Shows error if terminal is smaller.
 
 ---
 

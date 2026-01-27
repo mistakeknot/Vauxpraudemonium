@@ -80,6 +80,63 @@ specs as YAML files in `.praude/specs/`.
 - Add package-level tests before wiring multi-package behavior.
 - Prefer small unit tests over broad integration tests.
 
+## Arbiter Subsystem
+
+The Arbiter manages guided PRD creation through sprint state, consistency checking, and confidence scoring.
+
+### Key Packages
+
+| Package | Path | Purpose |
+|---------|------|---------|
+| `arbiter` | `internal/gurgeh/arbiter/` | Sprint state machine and persistence |
+| `consistency` | `internal/gurgeh/consistency/` | Conflict detection between PRD sections |
+| `confidence` | `internal/gurgeh/confidence/` | Quality scoring (5 weighted dimensions) |
+
+### Sprint State Machine
+
+```
+Phase flow: Discovery → Definition → Validation → Refinement → Review → Complete
+```
+
+| Type | Description |
+|------|-------------|
+| `SprintState` | Active sprint with phase, sections, drafts |
+| `Phase` | 6-stage enum (Discovery → Complete) |
+| `DraftStatus` | Section completion: Empty, Draft, Review, Final |
+| `SectionDraft` | Content + status + confidence for each PRD section |
+
+**Persistence:** YAML files in `.gurgeh/sprints/`. Auto-saves on state transitions.
+
+### Consistency Engine
+
+Pluggable `Checker` interface detects conflicts between PRD sections:
+
+```go
+type Checker interface {
+    Check(state *SprintState) []Conflict
+}
+```
+
+| ConflictType | Example |
+|--------------|---------|
+| `Contradiction` | Requirements conflict with constraints |
+| `MissingDependency` | Section references undefined terms |
+| `ScopeCreep` | Feature exceeds stated boundaries |
+
+### Confidence Scoring
+
+5 weighted dimensions produce a 0–100 score:
+
+| Dimension | Weight | Measures |
+|-----------|--------|----------|
+| Completeness | 0.25 | All required sections filled |
+| Consistency | 0.25 | No contradictions between sections |
+| Specificity | 0.20 | Concrete vs vague language |
+| Feasibility | 0.15 | Technical viability signals |
+| Testability | 0.15 | Acceptance criteria quality |
+
+---
+
 ## Landing the Plane (Session Completion)
 
 **When ending a work session**, you MUST complete ALL steps below. Work is NOT complete until `git push` succeeds.
