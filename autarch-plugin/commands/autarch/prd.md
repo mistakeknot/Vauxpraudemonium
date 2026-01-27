@@ -1,12 +1,12 @@
 ---
 name: autarch:prd
-description: Generate a PRD using Gurgeh's interview framework
+description: Create a PRD using Arbiter's Spec Sprint workflow
 argument-hint: "[feature description or PRD-ID]"
 ---
 
 # Generate or Edit PRD
 
-Create or edit a Product Requirements Document using Gurgeh's structured interview framework.
+Create or edit a Product Requirements Document using Arbiter's Spec Sprint workflow—a propose-first approach where Arbiter generates draft sections and you provide feedback.
 
 ## Usage
 
@@ -21,49 +21,73 @@ Create or edit a Product Requirements Document using Gurgeh's structured intervi
 /autarch:prd PRD-001
 ```
 
-## New PRD Workflow
+## Spec Sprint Workflow
 
-When creating a new PRD, use the prd-interview skill to guide the conversation:
+Arbiter's Spec Sprint workflow uses a propose-first approach with 6 core sections:
 
-### Phase 1: Context (2-3 questions)
-- **Vision**: "What outcome are you trying to achieve?"
-- **Problem**: "What problem does this solve?"
-- **Beneficiary**: "Who benefits from this?"
+### Section 1: Problem
+- **What**: Clear problem statement
+- **Why**: Impact and urgency
+- **Who**: Affected users/systems
+- **Quick Scan** (after Problem): Automated scan for conflicting requirements and feasibility gaps
 
-### Phase 2: Requirements (3-5 questions)
-- **Must-haves**: "What are the non-negotiables?"
-- **Constraints**: "What are the technical/business limits?"
-- **Integration**: "What existing systems are involved?"
+### Section 2: Solution Direction
+- **Approach**: High-level solution architecture
+- **Key Components**: Major pieces involved
+- **Out of Scope**: Explicit boundaries
 
-### Phase 3: Success Criteria (2-3 questions)
-- **Metrics**: "How will you measure success?"
-- **Failure modes**: "What does failure look like?"
+### Section 3: Success Criteria
+- **Measurable Metrics**: How success is measured
+- **User Outcomes**: What users experience
+- **Business Impact**: Revenue, retention, efficiency gains
 
-### Phase 4: Goals & Non-Goals
-- **Goals**: Measurable outcomes with metrics and targets
-- **Non-Goals**: Explicit scope boundaries
-- **Assumptions**: Foundational beliefs the PRD relies on
+### Section 4: Technical Requirements
+- **Must-Have Features**: Non-negotiable functionality
+- **Integration Points**: Systems to connect with
+- **Constraints**: Technical and business limits
+
+### Section 5: User Journey
+- **Critical Paths**: Main user flows
+- **Edge Cases**: Exception handling
+- **Dependencies**: External systems involved
+
+### Section 6: Assumptions & Risks
+- **Key Assumptions**: Foundational beliefs
+- **Risk Factors**: What could go wrong
+- **Mitigation Strategies**: How to address risks
+
+## Interaction Model
+
+Arbiter proposes draft content for each section. You review and provide feedback:
+- **Accept**: Content is good, move to next section
+- **Refine**: Provide specific feedback for improvements
+- **Reject**: Request complete rewrite with different approach
+
+Arbiter iterates based on your reactions until all sections meet your approval.
 
 ## Steps
 
-1. Check for existing brainstorm in `docs/brainstorms/`
-2. If creating new PRD:
-   - Run arbiter agent to gather requirements
-   - Validate against Gurgeh schema
-   - Write to `.gurgeh/specs/PRD-{id}.yaml`
-3. If editing existing PRD:
-   - Open in editor or present current content
-   - Collect changes through conversation
-   - Update and validate
-4. Run multi-agent review to identify gaps
-5. Auto-commit the PRD
-6. Suggest next steps: `/autarch:research` or `/autarch:tasks`
+1. **Initialize**: Provide feature description or PRD-ID
+2. **Invoke spec-sprint skill**: Start Arbiter's Spec Sprint workflow
+3. **Section Loop** (for each of 6 sections):
+   - Arbiter proposes draft content
+   - You review and react (accept/refine/reject)
+   - Arbiter iterates until approved
+4. **Quick Scan** (after Problem section):
+   - Automated scan for requirement conflicts
+   - Feasibility assessment
+   - Integration point validation
+5. **Persist State**: Sprint progress and reactions saved
+6. **Finalize**: Compile approved sections into PRD
+7. **Next Steps**: Suggest `/autarch:research` for validation or `/autarch:tasks` for implementation planning
 
 ## Output
 
 PRD is saved to `.gurgeh/specs/PRD-{id}.yaml` with:
 - Title and summary
-- Goals, non-goals, assumptions
-- Requirements and acceptance criteria
-- Critical User Journeys
-- Research references (if available)
+- All 6 approved Spec Sprint sections
+- Problem statement with quick scan results
+- Solution direction and technical requirements
+- Success criteria and user journeys
+- Assumptions, risks, and mitigation strategies
+- Sprint state and interaction history persisted for future refinement
