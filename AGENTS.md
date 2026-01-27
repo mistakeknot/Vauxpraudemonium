@@ -67,7 +67,7 @@ go mod tidy
 
 ### In Progress
 - Bigend TUI mode
-- Intermute messaging (file-based → HTTP)
+- Intermute messaging (REST + WebSocket + embedded in-process; domain entities: Spec, Insight, CUJ, Epic, Session)
 
 ### TODO
 - Remote host support for Bigend

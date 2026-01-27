@@ -55,5 +55,5 @@ go test ./...
 - tmux integration via CLI commands
 - Pollard tech hunters use free API tiers (no auth required)
 - Pollard general-purpose hunters: some require API keys (USDA, CourtListener)
-- Intermute for cross-tool messaging (file-based until HTTP API built)
+- Intermute for cross-tool coordination (REST + WebSocket + embedded in-process; first-class Spec, Insight, CUJ entities)
 - Legacy tool names (Vauxhall/Praude/Tandemonium) still work via aliases
