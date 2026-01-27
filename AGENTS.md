@@ -288,6 +288,108 @@ See [docs/INTEGRATION.md](docs/INTEGRATION.md) for details.
 
 ---
 
+## Arbiter Spec Sprint (NEW)
+
+**Primary workflow for PRD creation:** Propose-first 6-section flow with integrated research and confidence scoring.
+
+### Quick Start
+
+In Gurgeh TUI, press `n` (new sprint) to begin:
+
+```
+Section 1: Problem
+  ├─ Arbiter proposes problem statement
+  ├─ You accept / edit / propose alternative
+  ├─ Consistency check (passes → continue)
+  └─ ✓ Quick Ranger scan triggers automatically
+
+Section 2: Users
+  ├─ Arbiter proposes user personas
+  ├─ (Ranger scan results inform proposals)
+  └─ You accept / edit
+
+Section 3: Features + Goals
+  ├─ Arbiter proposes feature list
+  └─ You accept / edit
+
+Section 4: Scope + Assumptions
+  ├─ Arbiter sets boundaries
+  └─ You accept / edit
+
+Section 5: Critical User Journeys
+  ├─ Arbiter generates CUJ flows
+  └─ You accept / edit
+
+Section 6: Acceptance Criteria
+  ├─ Arbiter generates AC for each CUJ
+  └─ You finalize
+
+▼ PRD Complete (Consistency checked, Confidence scored)
+
+Handoff Options:
+  ├─ Press R: Run full research (Pollard scan)
+  ├─ Press T: Generate tasks (Coldwine)
+  └─ Press E: Export (markdown/JSON)
+```
+
+### Workflow Details
+
+**Consistency Engine:**
+- Problem ↔ Users: Do users align with problem?
+- Users ↔ Features: Do features address user needs?
+- Features ↔ CUJs: Do CUJs demonstrate features?
+- CUJs ↔ AC: Does AC validate each journey?
+- AC ↔ Scope: Do AC respect boundaries?
+
+**Confidence Scoring (0.0–1.0):**
+- Clarity: Proposal text unambiguous
+- Completeness: All required fields populated
+- Coherence: Aligns with prior sections
+- Feasibility: Technically achievable
+
+Low-confidence proposals show warnings but don't block. Users can refine or accept.
+
+**Quick Scan (Auto):**
+- Triggers after Problem is accepted
+- Ranger queries tech landscape + similar projects
+- Results feed into Users/Features/Scope proposals
+
+### Key Files
+
+| Path | Purpose |
+|------|---------|
+| `internal/gurgeh/arbiter/sprint.go` | State machine + orchestration |
+| `internal/gurgeh/arbiter/proposer.go` | AI proposal generation |
+| `internal/gurgeh/consistency/validator.go` | Cross-section validation |
+| `internal/gurgeh/confidence/scorer.go` | 0.0-1.0 scoring |
+| `internal/gurgeh/arbiter/quick_scan.go` | Ranger integration |
+
+### CLI Commands
+
+```bash
+# Start new sprint (TUI)
+gurgeh sprint new
+
+# From existing research
+gurgeh sprint new --from-research insights.json
+
+# Export completed PRD
+gurgeh sprint export PRD-001 --format markdown
+gurgeh sprint export PRD-001 --format json
+```
+
+### Typical Timing
+
+20–40 minutes depending on domain complexity:
+- Problem + Quick Scan: 7–15 min
+- Users: 5–10 min
+- Features+Goals: 3–5 min
+- Scope+Assumptions: 2–3 min
+- CUJs: 3–5 min
+- Acceptance Criteria: 5–10 min
+
+---
+
 ## Compound Engineering Integration
 
 Autarch adopts patterns from the Compound Engineering Claude Code plugin:
@@ -330,7 +432,7 @@ The `autarch-plugin/` directory provides Claude Code integration:
 
 | Component | Purpose |
 |-----------|---------|
-| `/autarch:prd` | Create PRD with interview framework |
+| `/autarch:prd` | Create PRD (now uses Spec Sprint) |
 | `/autarch:research` | Run Pollard research |
 | `/autarch:tasks` | Generate epics from PRD |
 | `/autarch:status` | Show project status |

@@ -442,3 +442,237 @@ go build ./cmd/...
 1. Check directory exists: `ls docs/solutions/`
 2. Verify YAML frontmatter format
 3. Search with grep: `grep -r "keyword" docs/solutions/`
+
+---
+
+## Arbiter Spec Sprint
+
+**New in Release:** Propose-first PRD creation workflow with integrated research scanning and confidence-driven refinement.
+
+The Arbiter Spec Sprint is Gurgeh's new default mode for creating specifications. Instead of the interview-based approach, users now get AI-generated proposals that they can accept, edit, or replace.
+
+### 6-Section Propose-First Flow
+
+Press `n` (new sprint) in the Gurgeh TUI to start:
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                  ARBITER SPEC SPRINT                            │
+│                   Propose-First PRD                             │
+├─────────────────────────────────────────────────────────────────┤
+│ 1. Problem          ────► AI drafts problem statement           │
+│    (Propose)              User accepts / edits / proposes       │
+│                                                                  │
+│ 2. Users           ────► Ranger scans tech landscape            │
+│    (Propose)              AI identifies user personas           │
+│                           User reviews + edits                  │
+│                                                                  │
+│ 3. Features+Goals  ────► AI generates feature list             │
+│    (Propose)              User reviews + edits                  │
+│                                                                  │
+│ 4. Scope+Assumptions ──► AI scopes boundaries                  │
+│    (Propose)              User reviews + edits                  │
+│                                                                  │
+│ 5. CUJs            ────► AI generates critical user journeys   │
+│    (Propose)              User reviews + edits                  │
+│                                                                  │
+│ 6. Acceptance Criteria  ► AI generates AC for each CUJ         │
+│    (Propose)              User reviews + edits + finalizes      │
+│                                                                  │
+│                           ▼                                      │
+│                    PRD COMPLETE                                 │
+│            (Consistency checked, confidence scored)            │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+### Integration with Ranger (Quick Scan)
+
+After the **Problem section** is accepted, the workflow automatically triggers a quick Ranger scan:
+
+```
+Problem Section ──► Consistency check pass?
+    │
+    ├─ No ──► Return to Problem editing
+    │
+    └─ Yes ──► [QUICK SCAN TRIGGERS]
+
+               Ranger scans for:
+               - Similar projects / patterns
+               - Existing solutions in space
+               - Tech landscape shifts
+               - Relevant research / case studies
+
+               ▼
+
+               Insights feed into:
+               - User Personas (section 2)
+               - Feature generation (section 3)
+               - Risk/assumption discovery (section 4)
+```
+
+**Key:** The quick scan runs automatically after Problem validation. No manual trigger needed.
+
+### Consistency Engine and Confidence Scoring
+
+At each proposal step, Arbiter validates and scores:
+
+#### Consistency Checks
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│ CONSISTENCY ENGINE (internal/gurgeh/consistency/)               │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                  │
+│ Problem-to-Users       Users align with problem scope?          │
+│ Users-to-Features      Features address user needs?             │
+│ Features-to-CUJs       CUJs demonstrate features?               │
+│ CUJs-to-AC             AC validates each CUJ end-to-end?        │
+│ AC-to-Scope            AC respects scope boundaries?            │
+│                                                                  │
+│ Result: Pass/Fail + reason                                      │
+│ Failure blocks progression to next section                      │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+**Example Flow:**
+```
+1. User accepts Problem: "Unified task dashboard for distributed teams"
+2. Arbiter proposes Users: Scrum master, dev, manager, observer
+3. Consistency check: "Users align with problem scope?"
+   └─ YES → continue to Features
+   └─ NO  → highlight misalignment, suggest edits
+
+4. User accepts Users
+5. Arbiter proposes Features: [task creation, sprint view, reporting, notifications]
+6. Consistency check: "Features address all user needs?"
+   └─ YES → continue to Scope
+   └─ NO  → suggest missing features
+```
+
+#### Confidence Scoring
+
+Each proposal gets a 0.0–1.0 confidence score:
+
+```go
+// internal/gurgeh/confidence/scorer.go
+Factors:
+- Clarity: Proposal text is unambiguous (0.0-1.0)
+- Completeness: All required fields populated (0.0-1.0)
+- Coherence: Aligns with prior sections (0.0-1.0)
+- Feasibility: Technically achievable, realistic scope (0.0-1.0)
+
+Score = Average(Clarity, Completeness, Coherence, Feasibility)
+```
+
+**Display:**
+```
+Proposal: "Unified task dashboard for distributed teams"
+Confidence: 0.87 (HIGH)
+  ├─ Clarity: 0.92
+  ├─ Completeness: 0.85
+  ├─ Coherence: 0.83
+  └─ Feasibility: 0.88
+```
+
+Low-confidence proposals get a warning but don't block progression. Users can accept, edit, or propose alternatives.
+
+### Handoff Options
+
+After the PRD is complete (all 6 sections finalized), users choose a next action:
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                    PRD COMPLETE                                 │
+│                  (Confidence: 0.84)                             │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                  │
+│ Option 1: RESEARCH                                              │
+│           ├─ Full Pollard scan on problem domain               │
+│           ├─ Generate landscape report                          │
+│           └─ Feed insights back into PRD refinement             │
+│                                                                  │
+│ Option 2: TASKS                                                 │
+│           ├─ Generate epics + stories in Coldwine              │
+│           ├─ Map CUJs to acceptance criteria                    │
+│           └─ Assign to agents / teams                           │
+│                                                                  │
+│ Option 3: EXPORT                                                │
+│           ├─ Export as markdown                                 │
+│           ├─ Export as JSON/YAML spec                           │
+│           └─ Ready for external sharing                         │
+│                                                                  │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+**TUI Navigation:**
+```
+After section 6 accepted:
+├─ Press 'R' to trigger Research (full Pollard scan)
+├─ Press 'T' to generate Tasks (Coldwine integration)
+├─ Press 'E' to Export (markdown / JSON)
+└─ Press 'S' to Save & close
+```
+
+### Key Implementation Files
+
+| File | Purpose |
+|------|---------|
+| `internal/gurgeh/arbiter/sprint.go` | Sprint state machine and orchestration |
+| `internal/gurgeh/arbiter/proposer.go` | AI proposal generation for each section |
+| `internal/gurgeh/consistency/validator.go` | Cross-section consistency checks |
+| `internal/gurgeh/confidence/scorer.go` | Proposal confidence scoring (0.0-1.0) |
+| `internal/gurgeh/arbiter/quick_scan.go` | Post-Problem Ranger integration |
+| `internal/gurgeh/views/sprint_view.go` | TUI rendering of spec sprint |
+
+### CLI Usage
+
+```bash
+# Start a new spec sprint (interactive TUI)
+gurgeh sprint new
+
+# Create from existing research
+gurgeh sprint new --from-research insights.json
+
+# Get sprint status
+gurgeh sprint status PRD-001
+
+# Export completed PRD
+gurgeh sprint export PRD-001 --format markdown
+gurgeh sprint export PRD-001 --format json
+```
+
+### Workflow Timing
+
+Typical spec sprint duration:
+
+| Section | Typical Time | Notes |
+|---------|--------------|-------|
+| Problem | 2-5 min | Refine AI proposal |
+| Users (+ quick scan) | 5-10 min | Ranger runs in background |
+| Features+Goals | 3-5 min | User adds / removes |
+| Scope+Assumptions | 2-3 min | Boundary setting |
+| CUJs | 3-5 min | Critical journeys |
+| Acceptance Criteria | 5-10 min | Detailed validation |
+| **Total** | **20-40 min** | Depends on domain complexity |
+
+---
+
+### Integration with Compound Patterns
+
+**Arbiter Spec Sprint integrates with Compound Engineering via:**
+
+1. **Multi-Agent Review** (post-sprint):
+   ```bash
+   gurgeh review PRD-001 --gaps  # Includes SpecFlow analysis
+   ```
+   Runs: Completeness, CUJ Consistency, Acceptance Criteria, Scope Creep reviewers
+
+2. **Knowledge Compounding**:
+   - Proposals and user edits are logged to improve future models
+   - Low-confidence sections tracked for pattern analysis
+
+3. **Agent-Native Architecture**:
+   - All TUI actions available as CLI commands
+   - MCP server exposes `autarch_create_prd_sprint` and related tools
+
+---
