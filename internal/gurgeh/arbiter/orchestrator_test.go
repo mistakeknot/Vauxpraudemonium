@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/mistakeknot/autarch/internal/gurgeh/arbiter"
+	"github.com/mistakeknot/autarch/internal/gurgeh/specs"
 )
 
 func TestOrchestratorStartsSprint(t *testing.T) {
@@ -157,6 +158,10 @@ func (p *testResearchProvider) CheckDeepScan(_ context.Context, scanID string) (
 	return true, nil
 }
 
+func (p *testResearchProvider) RunTargetedScan(_ context.Context, _ string, _ []string, _ string, _ string) error {
+	return nil
+}
+
 func TestOrchestratorWithResearch_CreatesSpec(t *testing.T) {
 	provider := &testResearchProvider{specID: "spec-abc"}
 	o := arbiter.NewOrchestratorWithResearch("/tmp/test-project", provider)
@@ -211,6 +216,86 @@ func TestStartWithResearch_PublishesFindings(t *testing.T) {
 	}
 	if state.Findings[0].Title != "Competitor A" {
 		t.Errorf("unexpected first finding: %q", state.Findings[0].Title)
+	}
+}
+
+func TestStartReview_SeedsFromSpec(t *testing.T) {
+	o := arbiter.NewOrchestrator("/tmp/test-project")
+
+	spec := &specs.Spec{
+		ID:      "VIS-1",
+		Type:    "vision",
+		Summary: "A unified platform for AI agent development",
+		Goals: []specs.Goal{
+			{ID: "G1", Description: "Enable seamless agent coordination"},
+		},
+		Assumptions: []specs.Assumption{
+			{ID: "A1", Description: "Users prefer TUI over web"},
+		},
+	}
+
+	state, err := o.StartReview(context.Background(), spec, nil)
+	if err != nil {
+		t.Fatalf("StartReview failed: %v", err)
+	}
+	if !state.IsReview {
+		t.Error("expected IsReview=true")
+	}
+	if state.ReviewingSpecID != "VIS-1" {
+		t.Errorf("expected ReviewingSpecID=VIS-1, got %q", state.ReviewingSpecID)
+	}
+
+	// Vision section should have summary content
+	vision := state.Sections[arbiter.PhaseVision]
+	if vision.Content != "A unified platform for AI agent development" {
+		t.Errorf("unexpected vision content: %q", vision.Content)
+	}
+
+	// All sections should be auto-accepted when no signals
+	for _, phase := range arbiter.AllPhases() {
+		s := state.Sections[phase]
+		if !s.AutoAccept {
+			t.Errorf("phase %v should be auto-accepted with no signals", phase)
+		}
+		if s.Status != arbiter.DraftAccepted {
+			t.Errorf("phase %v should be DraftAccepted, got %v", phase, s.Status)
+		}
+	}
+}
+
+func TestStartReview_SignalsFlagSections(t *testing.T) {
+	o := arbiter.NewOrchestrator("/tmp/test-project")
+
+	spec := &specs.Spec{
+		ID:   "VIS-1",
+		Type: "vision",
+		Assumptions: []specs.Assumption{
+			{ID: "A1", Description: "Users prefer TUI"},
+		},
+	}
+
+	signals := []string{"sig-1", "sig-2"}
+	state, err := o.StartReview(context.Background(), spec, signals)
+	if err != nil {
+		t.Fatalf("StartReview failed: %v", err)
+	}
+
+	// ScopeAssumptions should be flagged (that's where signals route)
+	assumptions := state.Sections[arbiter.PhaseScopeAssumptions]
+	if assumptions.AutoAccept {
+		t.Error("assumptions should NOT be auto-accepted with active signals")
+	}
+	if assumptions.Status != arbiter.DraftPending {
+		t.Errorf("expected DraftPending, got %v", assumptions.Status)
+	}
+	if len(assumptions.ActiveSignals) != 2 {
+		t.Errorf("expected 2 active signals, got %d", len(assumptions.ActiveSignals))
+	}
+
+	// Other sections should still be auto-accepted
+	vision := state.Sections[arbiter.PhaseVision]
+	if !vision.AutoAccept {
+		t.Error("vision should be auto-accepted")
 	}
 }
 

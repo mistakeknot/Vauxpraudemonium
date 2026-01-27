@@ -251,6 +251,102 @@ func (o *Orchestrator) StartVision(ctx context.Context, userInput string) (*Spri
 	return state, nil
 }
 
+// StartReview loads an existing vision spec into a new sprint for review.
+// Sections without active signals are pre-accepted (AutoAccept=true).
+// Sections with signals are left pending for human review.
+func (o *Orchestrator) StartReview(ctx context.Context, spec *specs.Spec, activeSignalIDs []string) (*SprintState, error) {
+	state := NewSprintState(o.projectPath)
+	state.IsReview = true
+	state.ReviewingSpecID = spec.ID
+
+	// Build a set of affected fields from signal IDs for quick lookup
+	signalFields := make(map[string][]string) // phase-field → signal IDs
+	for _, sid := range activeSignalIDs {
+		// Signal IDs carry no phase info; we'll match by field name below
+		signalFields[sid] = nil
+	}
+
+	for _, phase := range AllPhases() {
+		draft := extractSectionFromSpec(spec, phase)
+		draft.Status = DraftAccepted
+		draft.AutoAccept = true
+
+		// Check if any active signals target fields mapped to this phase
+		phaseSignals := signalsForPhase(phase, activeSignalIDs)
+		if len(phaseSignals) > 0 {
+			draft.Status = DraftPending
+			draft.AutoAccept = false
+			draft.ActiveSignals = phaseSignals
+		}
+		state.Sections[phase] = draft
+	}
+
+	state.VisionContext = o.LoadVisionContext()
+	return state, nil
+}
+
+// extractSectionFromSpec pulls content from a Spec for the given phase.
+func extractSectionFromSpec(spec *specs.Spec, phase Phase) *SectionDraft {
+	var content string
+	switch phase {
+	case PhaseVision:
+		content = spec.Summary
+	case PhaseProblem:
+		content = spec.UserStory.Text
+	case PhaseUsers:
+		content = spec.UserStory.Text
+	case PhaseFeaturesGoals:
+		var parts []string
+		for _, g := range spec.Goals {
+			parts = append(parts, g.Description)
+		}
+		content = strings.Join(parts, "\n")
+	case PhaseRequirements:
+		content = strings.Join(spec.Requirements, "\n")
+	case PhaseScopeAssumptions:
+		var parts []string
+		for _, a := range spec.Assumptions {
+			parts = append(parts, a.Description)
+		}
+		content = strings.Join(parts, "\n")
+	case PhaseCUJs:
+		var parts []string
+		for _, c := range spec.CriticalUserJourneys {
+			parts = append(parts, c.Title)
+		}
+		content = strings.Join(parts, "\n")
+	case PhaseAcceptanceCriteria:
+		var parts []string
+		for _, ac := range spec.Acceptance {
+			parts = append(parts, ac.Description)
+		}
+		content = strings.Join(parts, "\n")
+	}
+	return &SectionDraft{
+		Content:   content,
+		Status:    DraftPending,
+		UpdatedAt: time.Now(),
+	}
+}
+
+// signalsForPhase returns signal IDs that are relevant to a given phase.
+// Mapping is based on the signal's affected_field convention:
+//
+//	"goals", "scope" → PhaseFeaturesGoals
+//	"assumptions" → PhaseScopeAssumptions
+//	"hypotheses" → PhaseRequirements
+//	"health" → PhaseVision
+func signalsForPhase(phase Phase, signalIDs []string) []string {
+	// Without the actual signal objects (just IDs), we can't filter by field.
+	// In a review sprint, all active signals are shown on PhaseScopeAssumptions
+	// (assumptions phase) as the primary review surface. Individual phase
+	// routing requires the store to be passed — deferred to TUI layer.
+	if phase == PhaseScopeAssumptions && len(signalIDs) > 0 {
+		return signalIDs
+	}
+	return nil
+}
+
 // LoadVisionContext scans .gurgeh/specs/ for a type=vision spec and loads it
 // as VisionContext for vertical consistency checks. Returns nil if no vision spec exists.
 func (o *Orchestrator) LoadVisionContext() *VisionContext {
