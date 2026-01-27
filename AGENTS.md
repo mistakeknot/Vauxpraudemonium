@@ -358,11 +358,14 @@ Low-confidence proposals show warnings but don't block. Users can refine or acce
 
 | Path | Purpose |
 |------|---------|
-| `internal/gurgeh/arbiter/sprint.go` | State machine + orchestration |
-| `internal/gurgeh/arbiter/proposer.go` | AI proposal generation |
-| `internal/gurgeh/consistency/validator.go` | Cross-section validation |
-| `internal/gurgeh/confidence/scorer.go` | 0.0-1.0 scoring |
-| `internal/gurgeh/arbiter/quick_scan.go` | Ranger integration |
+| `internal/gurgeh/arbiter/orchestrator.go` | Sprint flow: Start → Advance → Accept → Revise → Handoff |
+| `internal/gurgeh/arbiter/generator.go` | AI draft generation (propose-first) |
+| `internal/gurgeh/arbiter/types.go` | Phase, SprintState, ConfidenceScore, Conflict types |
+| `internal/gurgeh/arbiter/migrate.go` | Legacy Spec → SprintState migration |
+| `internal/gurgeh/arbiter/consistency/` | Local adapter for cross-section validation |
+| `internal/gurgeh/arbiter/confidence/` | Local adapter for 0.0-1.0 scoring |
+| `internal/gurgeh/arbiter/quick/` | Local adapter for Ranger quick scan |
+| `internal/gurgeh/tui/sprint.go` | Bubble Tea sprint TUI view |
 
 ### CLI Commands
 
