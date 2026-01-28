@@ -624,6 +624,11 @@ func (c *Client) CheckDeepScan(ctx context.Context, scanID string) (bool, error)
 
 // CreateSession creates a new agent session in Intermute
 func (c *Client) CreateSession(ctx context.Context, session Session) (Session, error) {
+	if c.offline {
+		return Session{}, ErrOffline
+	}
+	ctx, cancel := c.withTimeout(ctx)
+	defer cancel()
 	created, err := c.base.CreateSession(ctx, toIntermuteSession(session))
 	if err != nil {
 		return Session{}, err
@@ -633,6 +638,11 @@ func (c *Client) CreateSession(ctx context.Context, session Session) (Session, e
 
 // GetSession retrieves a session by ID
 func (c *Client) GetSession(ctx context.Context, id string) (Session, error) {
+	if c.offline {
+		return Session{}, ErrOffline
+	}
+	ctx, cancel := c.withTimeout(ctx)
+	defer cancel()
 	session, err := c.base.GetSession(ctx, id)
 	if err != nil {
 		return Session{}, err
@@ -642,6 +652,11 @@ func (c *Client) GetSession(ctx context.Context, id string) (Session, error) {
 
 // ListSessions lists sessions with optional status filter
 func (c *Client) ListSessions(ctx context.Context, status string) ([]Session, error) {
+	if c.offline {
+		return nil, ErrOffline
+	}
+	ctx, cancel := c.withTimeout(ctx)
+	defer cancel()
 	sessions, err := c.base.ListSessions(ctx, status)
 	if err != nil {
 		return nil, err
@@ -655,6 +670,11 @@ func (c *Client) ListSessions(ctx context.Context, status string) ([]Session, er
 
 // UpdateSession updates a session
 func (c *Client) UpdateSession(ctx context.Context, session Session) (Session, error) {
+	if c.offline {
+		return Session{}, ErrOffline
+	}
+	ctx, cancel := c.withTimeout(ctx)
+	defer cancel()
 	updated, err := c.base.UpdateSession(ctx, toIntermuteSession(session))
 	if err != nil {
 		return Session{}, err
@@ -664,6 +684,11 @@ func (c *Client) UpdateSession(ctx context.Context, session Session) (Session, e
 
 // DeleteSession deletes a session
 func (c *Client) DeleteSession(ctx context.Context, id string) error {
+	if c.offline {
+		return ErrOffline
+	}
+	ctx, cancel := c.withTimeout(ctx)
+	defer cancel()
 	return c.base.DeleteSession(ctx, id)
 }
 
@@ -671,6 +696,11 @@ func (c *Client) DeleteSession(ctx context.Context, id string) error {
 
 // CreateCUJ creates a new Critical User Journey in Intermute
 func (c *Client) CreateCUJ(ctx context.Context, cuj CriticalUserJourney) (CriticalUserJourney, error) {
+	if c.offline {
+		return CriticalUserJourney{}, ErrOffline
+	}
+	ctx, cancel := c.withTimeout(ctx)
+	defer cancel()
 	created, err := c.base.CreateCUJ(ctx, toIntermuteCUJ(cuj))
 	if err != nil {
 		return CriticalUserJourney{}, err
@@ -680,6 +710,11 @@ func (c *Client) CreateCUJ(ctx context.Context, cuj CriticalUserJourney) (Critic
 
 // GetCUJ retrieves a CUJ by ID
 func (c *Client) GetCUJ(ctx context.Context, id string) (CriticalUserJourney, error) {
+	if c.offline {
+		return CriticalUserJourney{}, ErrOffline
+	}
+	ctx, cancel := c.withTimeout(ctx)
+	defer cancel()
 	cuj, err := c.base.GetCUJ(ctx, id)
 	if err != nil {
 		return CriticalUserJourney{}, err
@@ -689,6 +724,11 @@ func (c *Client) GetCUJ(ctx context.Context, id string) (CriticalUserJourney, er
 
 // ListCUJs lists CUJs with optional spec filter
 func (c *Client) ListCUJs(ctx context.Context, specID string) ([]CriticalUserJourney, error) {
+	if c.offline {
+		return nil, ErrOffline
+	}
+	ctx, cancel := c.withTimeout(ctx)
+	defer cancel()
 	cujs, err := c.base.ListCUJs(ctx, specID)
 	if err != nil {
 		return nil, err
@@ -702,6 +742,11 @@ func (c *Client) ListCUJs(ctx context.Context, specID string) ([]CriticalUserJou
 
 // UpdateCUJ updates a CUJ
 func (c *Client) UpdateCUJ(ctx context.Context, cuj CriticalUserJourney) (CriticalUserJourney, error) {
+	if c.offline {
+		return CriticalUserJourney{}, ErrOffline
+	}
+	ctx, cancel := c.withTimeout(ctx)
+	defer cancel()
 	updated, err := c.base.UpdateCUJ(ctx, toIntermuteCUJ(cuj))
 	if err != nil {
 		return CriticalUserJourney{}, err
@@ -711,21 +756,41 @@ func (c *Client) UpdateCUJ(ctx context.Context, cuj CriticalUserJourney) (Critic
 
 // DeleteCUJ deletes a CUJ
 func (c *Client) DeleteCUJ(ctx context.Context, id string) error {
+	if c.offline {
+		return ErrOffline
+	}
+	ctx, cancel := c.withTimeout(ctx)
+	defer cancel()
 	return c.base.DeleteCUJ(ctx, id)
 }
 
 // LinkCUJToFeature links a CUJ to a feature
 func (c *Client) LinkCUJToFeature(ctx context.Context, cujID, featureID string) error {
+	if c.offline {
+		return ErrOffline
+	}
+	ctx, cancel := c.withTimeout(ctx)
+	defer cancel()
 	return c.base.LinkCUJToFeature(ctx, cujID, featureID)
 }
 
 // UnlinkCUJFromFeature removes a link between a CUJ and a feature
 func (c *Client) UnlinkCUJFromFeature(ctx context.Context, cujID, featureID string) error {
+	if c.offline {
+		return ErrOffline
+	}
+	ctx, cancel := c.withTimeout(ctx)
+	defer cancel()
 	return c.base.UnlinkCUJFromFeature(ctx, cujID, featureID)
 }
 
 // GetCUJFeatureLinks gets all feature links for a CUJ
 func (c *Client) GetCUJFeatureLinks(ctx context.Context, cujID string) ([]CUJFeatureLink, error) {
+	if c.offline {
+		return nil, ErrOffline
+	}
+	ctx, cancel := c.withTimeout(ctx)
+	defer cancel()
 	links, err := c.base.GetCUJFeatureLinks(ctx, cujID)
 	if err != nil {
 		return nil, err
@@ -746,16 +811,31 @@ func (c *Client) GetCUJFeatureLinks(ctx context.Context, cujID string) ([]CUJFea
 
 // SendMessage sends a message via Intermute
 func (c *Client) SendMessage(ctx context.Context, msg ic.Message) (ic.SendResponse, error) {
+	if c.offline {
+		return ic.SendResponse{}, ErrOffline
+	}
+	ctx, cancel := c.withTimeout(ctx)
+	defer cancel()
 	return c.base.SendMessage(ctx, msg)
 }
 
 // InboxSince retrieves messages since a cursor
 func (c *Client) InboxSince(ctx context.Context, agent string, cursor uint64) (ic.InboxResponse, error) {
+	if c.offline {
+		return ic.InboxResponse{}, ErrOffline
+	}
+	ctx, cancel := c.withTimeout(ctx)
+	defer cancel()
 	return c.base.InboxSince(ctx, agent, cursor)
 }
 
 // ListAgents lists registered agents
 func (c *Client) ListAgents(ctx context.Context, project string) ([]ic.Agent, error) {
+	if c.offline {
+		return nil, ErrOffline
+	}
+	ctx, cancel := c.withTimeout(ctx)
+	defer cancel()
 	return c.base.ListAgents(ctx, project)
 }
 
@@ -769,6 +849,11 @@ var ErrConflict = ic.ErrConflict
 
 // GetAgent retrieves an agent by name and enriches with inbox counts
 func (c *Client) GetAgent(ctx context.Context, name string) (*Agent, error) {
+	if c.offline {
+		return nil, ErrOffline
+	}
+	ctx, cancel := c.withTimeout(ctx)
+	defer cancel()
 	agents, err := c.base.ListAgents(ctx, c.project)
 	if err != nil {
 		return nil, err
@@ -790,6 +875,11 @@ func (c *Client) GetAgent(ctx context.Context, name string) (*Agent, error) {
 
 // ListAgentsEnriched lists all agents with inbox counts
 func (c *Client) ListAgentsEnriched(ctx context.Context) ([]Agent, error) {
+	if c.offline {
+		return nil, ErrOffline
+	}
+	ctx, cancel := c.withTimeout(ctx)
+	defer cancel()
 	agents, err := c.base.ListAgents(ctx, c.project)
 	if err != nil {
 		return nil, err
@@ -811,6 +901,11 @@ func (c *Client) ListAgentsEnriched(ctx context.Context) ([]Agent, error) {
 
 // InboxCounts returns total and unread message counts for an agent
 func (c *Client) InboxCounts(ctx context.Context, agentID string) (InboxCounts, error) {
+	if c.offline {
+		return InboxCounts{}, ErrOffline
+	}
+	ctx, cancel := c.withTimeout(ctx)
+	defer cancel()
 	counts, err := c.base.InboxCounts(ctx, agentID)
 	if err != nil {
 		return InboxCounts{}, err
@@ -820,6 +915,11 @@ func (c *Client) InboxCounts(ctx context.Context, agentID string) (InboxCounts, 
 
 // AgentMessages retrieves messages for an agent (uses InboxSince with cursor 0)
 func (c *Client) AgentMessages(ctx context.Context, agentID string, limit int) ([]Message, error) {
+	if c.offline {
+		return nil, ErrOffline
+	}
+	ctx, cancel := c.withTimeout(ctx)
+	defer cancel()
 	resp, err := c.base.InboxSince(ctx, agentID, 0)
 	if err != nil {
 		return nil, err
@@ -838,6 +938,11 @@ func (c *Client) AgentMessages(ctx context.Context, agentID string, limit int) (
 
 // Reserve creates a new file reservation
 func (c *Client) Reserve(ctx context.Context, r Reservation, ttlMinutes int) (*Reservation, error) {
+	if c.offline {
+		return nil, ErrOffline
+	}
+	ctx, cancel := c.withTimeout(ctx)
+	defer cancel()
 	if r.Project == "" {
 		r.Project = c.project
 	}
@@ -851,11 +956,21 @@ func (c *Client) Reserve(ctx context.Context, r Reservation, ttlMinutes int) (*R
 
 // ReleaseReservation releases a file reservation by ID
 func (c *Client) ReleaseReservation(ctx context.Context, id string) error {
+	if c.offline {
+		return ErrOffline
+	}
+	ctx, cancel := c.withTimeout(ctx)
+	defer cancel()
 	return c.base.ReleaseReservation(ctx, id)
 }
 
 // ActiveReservations returns all active reservations for the project
 func (c *Client) ActiveReservations(ctx context.Context) ([]Reservation, error) {
+	if c.offline {
+		return nil, ErrOffline
+	}
+	ctx, cancel := c.withTimeout(ctx)
+	defer cancel()
 	reservations, err := c.base.ActiveReservations(ctx, c.project)
 	if err != nil {
 		return nil, err
@@ -869,6 +984,11 @@ func (c *Client) ActiveReservations(ctx context.Context) ([]Reservation, error) 
 
 // AgentReservations returns all reservations held by an agent
 func (c *Client) AgentReservations(ctx context.Context, agentID string) ([]Reservation, error) {
+	if c.offline {
+		return nil, ErrOffline
+	}
+	ctx, cancel := c.withTimeout(ctx)
+	defer cancel()
 	reservations, err := c.base.AgentReservations(ctx, agentID)
 	if err != nil {
 		return nil, err

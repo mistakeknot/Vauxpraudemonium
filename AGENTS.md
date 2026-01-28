@@ -64,14 +64,27 @@ go mod tidy
 - Unified shell layout (Sidebar + ShellLayout) in `pkg/tui`
 - 9 views migrated to Cursor-style 3-pane layout
 - Gurgeh Arbiter subsystem (sprint state, consistency, confidence)
+- Signal system: `pkg/signals/` + per-tool emitters (Pollard, Gurgeh, Coldwine)
+- Spec evolution: versioned snapshots, assumption confidence decay
+- Outcome hypotheses: falsifiable "if X then Y" per feature
+- Structured requirements: Given/When/Then format
+- Phase-specific deep research: Pollard targeted scans per Arbiter phase
+- Competitor watch mode: `pollard watch [--once]`
+- Agent-powered ranking: `gurgeh prioritize <spec-id>`
 
 ### In Progress
 - Bigend TUI mode
 - Intermute messaging (REST + WebSocket + embedded in-process; domain entities: Spec, Insight, CUJ, Epic, Session)
 
 ### TODO
-- Remote host support for Bigend
+- Remote host support for Bigend (deferred; local-only default)
 - Pollard integration into Bigend daemon
+- Agent-powered ranking: wire real LLM agent call (currently uses goal-order placeholder)
+- Signal TUI integration: inline signal display in each tool's TUI
+
+## Operating Principles
+
+- Local-only by default: servers bind to loopback; remote/multi-host deferred; non-loopback requires explicit opt-in + auth
 
 ---
 
@@ -96,6 +109,7 @@ Autarch/
 │   ├── discovery/             # Project discovery
 │   ├── events/                # Event spine
 │   ├── intermute/             # Intermute client
+│   ├── signals/               # Typed alerts (cross-tool)
 │   └── tui/                   # Shared TUI styles
 ├── docs/                       # Documentation
 └── dev                         # Build/run script
@@ -197,6 +211,7 @@ When adding or editing shortcuts, review
 | `contract` | Cross-tool entity types (Initiative, Epic, Story, Task, Run, Outcome) |
 | `events` | Event spine for communication (SQLite at `~/.autarch/events.db`) |
 | `intermute` | Intermute client wrapper (agents, messages, reservations) |
+| `signals` | Typed alerts: competitor shipped, assumption decayed, execution drifted |
 | `tui` | Shared TUI styles + unified shell layout (Sidebar, ShellLayout, SplitLayout) |
 | `agenttargets` | Run-target registry/resolver |
 | `discovery` | Project discovery |
@@ -365,7 +380,11 @@ Low-confidence proposals show warnings but don't block. Users can refine or acce
 | `internal/gurgeh/arbiter/consistency/` | Local adapter for cross-section validation |
 | `internal/gurgeh/arbiter/confidence/` | Local adapter for 0.0-1.0 scoring |
 | `internal/gurgeh/arbiter/intermute.go` | ResearchProvider interface + ResearchBridge (Intermute client wrapper) |
+| `internal/gurgeh/arbiter/research_phases.go` | Phase → hunter mapping + query extractors |
 | `internal/gurgeh/arbiter/deepscan.go` | Async deep scan handoff via Intermute messaging |
+| `internal/gurgeh/specs/evolution.go` | Spec versioning: SaveRevision, LoadHistory, assumption decay |
+| `internal/gurgeh/specs/diff.go` | Structured spec diff between versions |
+| `internal/gurgeh/prioritize/ranker.go` | Agent-powered feature ranking |
 | `internal/gurgeh/tui/sprint.go` | Bubble Tea sprint TUI view |
 
 ### CLI Commands
@@ -380,6 +399,13 @@ gurgeh sprint new --from-research insights.json
 # Export completed PRD
 gurgeh sprint export PRD-001 --format markdown
 gurgeh sprint export PRD-001 --format json
+
+# Spec evolution
+gurgeh history <spec-id>              # Show spec revision changelog
+gurgeh diff <spec-id> v1 v2           # Structured diff between versions
+
+# Feature ranking
+gurgeh prioritize <spec-id>           # Agent-powered ranked recommendations
 ```
 
 ### Typical Timing

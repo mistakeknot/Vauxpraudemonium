@@ -2334,10 +2334,11 @@ Visual debugger showing:
 | Feature | Component | Description |
 |---------|-----------|-------------|
 | Step-by-step debugger | Vauxhall | Visual debugger for agent workflows |
-| Multi-host support | Vauxhall | Monitor agents on remote servers |
+| Multi-host support (deferred) | Vauxhall | Monitor agents on remote servers (not in v1; local-only default) |
 | Agent marketplace | Vauxhall | Share and discover agent configurations |
 
 ## Non-Goals
 
 - Multi-host support (Phase 4 - future work)
-- Authentication (assume trusted network for v1)
+- Remote access beyond loopback (local-only by default for v1)
+- Authentication for local-only v1 (required if/when remote is enabled)

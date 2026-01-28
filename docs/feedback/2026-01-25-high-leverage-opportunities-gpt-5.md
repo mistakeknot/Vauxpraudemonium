@@ -39,6 +39,7 @@ Make Pollard outputs flow directly into Gurgeh (planning) and Coldwine (executio
 - Impact: Bigend can surface insights and correlate progress with research.
 
 ### 7) Multi-repo + remote orchestration
+Deferred for now. Local-only by default; revisit remote support when a concrete need appears.
 Expand global discovery and remote host support so Bigend can observe and Coldwine can orchestrate across workspaces.
 - Why high leverage: Enables real-world scale and multi-team usage.
 - Impact: Improves adoption in complex org contexts.

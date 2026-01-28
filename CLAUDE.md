@@ -27,6 +27,17 @@ go run ./cmd/pollard scan --hunter openalex   # Multi-domain academic
 go run ./cmd/pollard scan --hunter pubmed     # Medical research
 go run ./cmd/pollard report         # Generate landscape report
 go run ./cmd/pollard report --type competitive
+go run ./cmd/pollard watch --once    # Single competitor watch cycle
+go run ./cmd/pollard watch           # Continuous monitoring
+
+# API servers (local-only by default)
+go run ./cmd/pollard serve --addr 127.0.0.1:8090   # Pollard research API
+go run ./cmd/gurgeh serve --addr 127.0.0.1:8091    # Gurgeh spec API (read-only)
+
+# Gurgeh spec quality
+go run ./cmd/gurgeh history <spec-id>       # Spec revision changelog
+go run ./cmd/gurgeh diff <spec-id> v1 v2    # Structured version diff
+go run ./cmd/gurgeh prioritize <spec-id>    # Agent-powered feature ranking
 
 # Build all
 go build ./cmd/...
@@ -43,7 +54,10 @@ go test ./...
 | `internal/{tool}/` | Tool-specific code |
 | `pkg/tui/` | Shared TUI styles (Tokyo Night) |
 | `docs/{tool}/` | Tool-specific documentation |
+| `pkg/signals/` | Cross-tool signal types |
 | `.pollard/` | Pollard data directory (sources, insights, reports) |
+| `.pollard/watch/` | Competitor watch state |
+| `.gurgeh/specs/history/` | Spec version snapshots |
 
 ## Design Decisions (Do Not Re-Ask)
 
@@ -52,6 +66,7 @@ go test ./...
 - Bubble Tea for all TUIs
 - htmx + Tailwind for Bigend web
 - SQLite for local state (read-only to external DBs)
+- Local-only by default: servers bind to loopback; remote/multi-host deferred; non-loopback requires explicit opt-in + auth
 - tmux integration via CLI commands
 - Pollard tech hunters use free API tiers (no auth required)
 - Pollard general-purpose hunters: some require API keys (USDA, CourtListener)

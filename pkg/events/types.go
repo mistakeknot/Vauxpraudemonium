@@ -46,6 +46,13 @@ const (
 
 	// Insight events (Pollard -> Gurgeh)
 	EventInsightLinked EventType = "insight_linked"
+
+	// Spec evolution events
+	EventSpecRevised EventType = "spec_revised"
+
+	// Signal events
+	EventSignalRaised    EventType = "signal_raised"
+	EventSignalDismissed EventType = "signal_dismissed"
 )
 
 // EntityType identifies the type of entity affected
@@ -59,6 +66,8 @@ const (
 	EntityRun        EntityType = "run"
 	EntityOutcome    EntityType = "outcome"
 	EntityInsight    EntityType = "insight"
+	EntitySignal     EntityType = "signal"
+	EntitySpec       EntityType = "spec"
 )
 
 // SourceTool is an alias to contract.SourceTool for backward compatibility

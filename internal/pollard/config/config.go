@@ -17,6 +17,15 @@ type Config struct {
 	Defaults DefaultsConfig          `yaml:"defaults,omitempty"`
 	Pipeline PipelineConfig          `yaml:"pipeline,omitempty"`
 	Scoring  ScoringConfig           `yaml:"scoring,omitempty"`
+	Watch    WatchConfig             `yaml:"watch,omitempty"`
+}
+
+// WatchConfig controls the competitor watch mode.
+type WatchConfig struct {
+	Enabled  bool     `yaml:"enabled"`
+	Interval string   `yaml:"interval,omitempty"` // e.g., "24h"
+	Hunters  []string `yaml:"hunters,omitempty"`
+	NotifyOn []string `yaml:"notify_on,omitempty"` // signal types
 }
 
 // PipelineConfig controls the 4-stage research pipeline.

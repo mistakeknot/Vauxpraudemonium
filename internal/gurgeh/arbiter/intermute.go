@@ -56,6 +56,7 @@ type ResearchProvider interface {
 	FetchLinkedInsights(ctx context.Context, specID string) ([]ResearchFinding, error)
 	StartDeepScan(ctx context.Context, specID string) (string, error)     // returns scan job ID
 	CheckDeepScan(ctx context.Context, scanID string) (bool, error)       // returns true when done
+	RunTargetedScan(ctx context.Context, specID string, hunters []string, mode string, query string) error // phase-specific research
 }
 
 // ResearchBridge implements ResearchProvider by wrapping the Intermute client.
@@ -148,6 +149,12 @@ func (b *ResearchBridge) CheckDeepScan(ctx context.Context, scanID string) (bool
 		return false, fmt.Errorf("checking deep scan: %w", err)
 	}
 	return done, nil
+}
+
+// RunTargetedScan is a no-op for the bridge; phase research is handled
+// by the orchestrator calling Pollard's scanner directly.
+func (b *ResearchBridge) RunTargetedScan(_ context.Context, _ string, _ []string, _ string, _ string) error {
+	return nil
 }
 
 // FetchLinkedInsights retrieves insights linked to a spec and maps them to ResearchFindings.

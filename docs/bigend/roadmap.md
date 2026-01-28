@@ -215,14 +215,16 @@ type Activity struct {
 
 ### M8: Multi-Host Support (Future)
 
+Deferred for now. Local-only by default; revisit when a concrete need appears.
+
 **Goal:** Monitor agents on remote servers
 
 | Task | Priority | Complexity | Description |
 |------|----------|------------|-------------|
-| SSH tunnel support | P1 | High | Connect to remote tmux/DBs |
-| Host configuration | P1 | Medium | Define remote hosts in config |
-| Unified view | P1 | Medium | Merge data from multiple hosts |
-| Latency handling | P2 | Medium | Graceful degradation for slow links |
+| SSH tunnel support | P1 | High | Deferred: connect to remote tmux/DBs |
+| Host configuration | P1 | Medium | Deferred: define remote hosts in config |
+| Unified view | P1 | Medium | Deferred: merge data from multiple hosts |
+| Latency handling | P2 | Medium | Deferred: graceful degradation for slow links |
 
 **Config Example:**
 ```toml

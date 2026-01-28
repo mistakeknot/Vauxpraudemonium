@@ -411,19 +411,10 @@ If you start with just `gurgeh` and later install `autarch`, your data is alread
 └── briefs/           # Agent brief files (content)
 ```
 
-### Multi-Machine Mode
+### Multi-Machine Mode (Deferred)
 
-For advanced setups (laptop + server, multiple agents):
-
-```bash
-# On server: run standalone Intermute
-intermute --port 7338
-
-# On laptop: connect to remote
-autarch --server server.local:7338
-```
-
-Intermute remains a separate repo/binary for this use case, but most users just run `autarch`.
+Local-only by default. Remote/multi-host support is deferred until there is a concrete need.
+When it returns, it should be explicit opt-in with auth and clear network boundaries.
 
 ### Implementation
 

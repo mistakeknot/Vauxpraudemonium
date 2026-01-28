@@ -89,9 +89,9 @@ func (g *Generator) generateUsers(_ *ProjectContext, userInput string) (string, 
 func (g *Generator) generateFeaturesGoals(_ *ProjectContext, userInput string) (string, []string) {
 	var base string
 	if userInput != "" {
-		base = fmt.Sprintf("## Features\n\n1. %s\n2. [Feature 2]\n3. [Feature 3]\n\n## Goals\n\n- [Measurable outcome 1]\n- [Measurable outcome 2]", userInput)
+		base = fmt.Sprintf("## Features\n\n1. %s\n2. [Feature 2]\n3. [Feature 3]\n\n## Goals\n\n- [Measurable outcome 1]\n- [Measurable outcome 2]\n\n## Hypotheses\n\nFor each feature, state a falsifiable hypothesis:\nIf we build [feature], then [metric] will [change] by [amount] within [timeframe].\n\n- HYP-001: If we build %s, then [metric] will [target] within [N] days", userInput, userInput)
 	} else {
-		base = "## Features\n\n1. [Core feature]\n2. [Supporting feature]\n3. [Nice-to-have feature]\n\n## Goals\n\n- [Measurable outcome 1]\n- [Measurable outcome 2]"
+		base = "## Features\n\n1. [Core feature]\n2. [Supporting feature]\n3. [Nice-to-have feature]\n\n## Goals\n\n- [Measurable outcome 1]\n- [Measurable outcome 2]\n\n## Hypotheses\n\nFor each feature, state a falsifiable hypothesis:\nIf we build [feature], then [metric] will [change] by [amount] within [timeframe].\n\n- HYP-001: If we build [core feature], then [metric] will [target] within [N] days"
 	}
 	return base, []string{
 		"Prioritize by user impact",
@@ -157,11 +157,13 @@ func (g *Generator) generateVision(projectCtx *ProjectContext, userInput string)
 }
 
 func (g *Generator) generateRequirements(_ *ProjectContext, userInput string) (string, []string) {
+	gwt := "\n\n## Structured Requirements (Given/When/Then)\n\nFor each feature, produce requirements in Given/When/Then format.\nEach must have at least one measurable constraint.\n\n- REQ-001:\n  Given: [precondition]\n  When: [action]\n  Then: [expected outcome]\n  Constraint: [measurable bound, e.g. latency < 200ms]"
+
 	var base string
 	if userInput != "" {
-		base = fmt.Sprintf("## Requirements\n\n- %s\n- [Requirement 2]\n- [Requirement 3]", userInput)
+		base = fmt.Sprintf("## Requirements\n\n- %s\n- [Requirement 2]\n- [Requirement 3]%s", userInput, gwt)
 	} else {
-		base = "## Requirements\n\n- [Functional requirement 1]\n- [Functional requirement 2]\n- [Non-functional requirement 1]"
+		base = "## Requirements\n\n- [Functional requirement 1]\n- [Functional requirement 2]\n- [Non-functional requirement 1]" + gwt
 	}
 	return base, []string{
 		"Functional requirements only",

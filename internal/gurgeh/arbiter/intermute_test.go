@@ -127,6 +127,10 @@ func (m *mockResearchBridge) CheckDeepScan(_ context.Context, scanID string) (bo
 	return true, nil
 }
 
+func (m *mockResearchBridge) RunTargetedScan(_ context.Context, _ string, _ []string, _ string, _ string) error {
+	return nil
+}
+
 func TestResearchBridge_CreateSpec(t *testing.T) {
 	mock := newMockClient()
 	bridge := &mockResearchBridge{mock: mock}
