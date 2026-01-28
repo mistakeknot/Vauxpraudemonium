@@ -19,6 +19,7 @@ type ChatPanel struct {
 	messages []ChatMessage
 	composer *Composer
 	selector *AgentSelector
+	settings ChatSettings
 	width    int
 	height   int
 	scroll   int // Scroll offset for history (0 = bottom)
@@ -30,6 +31,7 @@ func NewChatPanel() *ChatPanel {
 	return &ChatPanel{
 		messages: []ChatMessage{},
 		composer: composer,
+		settings: DefaultChatSettings(),
 	}
 }
 
@@ -44,7 +46,9 @@ func (p *ChatPanel) AddMessage(role, content string) {
 		Content: content,
 	})
 	// Auto-scroll to bottom when new message added
-	p.scroll = 0
+	if p.settings.AutoScroll {
+		p.scroll = 0
+	}
 }
 
 // ClearMessages removes all messages from the chat history.
@@ -149,12 +153,20 @@ func (p *ChatPanel) renderHistory(height int) string {
 
 	// Build message lines
 	var lines []string
+	lastRole := ""
 	for _, msg := range p.messages {
+		roleLower := strings.ToLower(msg.Role)
+		showRole := roleLower != "system"
+		if p.settings.GroupMessages && roleLower == lastRole {
+			showRole = false
+		}
+
 		// Role header (omit system labels)
-		if strings.ToLower(msg.Role) != "system" {
+		if showRole {
 			roleStyle := p.roleStyle(msg.Role)
 			lines = append(lines, roleStyle.Render(formatRole(msg.Role)+":"))
 		}
+		lastRole = roleLower
 
 		// Content with indent
 		contentStyle := lipgloss.NewStyle().
@@ -275,6 +287,11 @@ func (p *ChatPanel) SetComposerPlaceholder(placeholder string) {
 // SetAgentSelector sets the selector rendered under the composer.
 func (p *ChatPanel) SetAgentSelector(selector *AgentSelector) {
 	p.selector = selector
+}
+
+// SetSettings updates chat panel settings.
+func (p *ChatPanel) SetSettings(settings ChatSettings) {
+	p.settings = settings
 }
 
 // ScrollUp scrolls the history up (shows older messages).
