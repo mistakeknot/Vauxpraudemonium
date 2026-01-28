@@ -16,9 +16,8 @@ behavior consistent across tools.
 
 ## Common Letter Bindings (Only When Not in Text Input)
 - `?` help
-- `q` quit
 - `j`/`k` down/up
-- `h`/`l` back/forward (esc is also back)
+- `l` forward
 - `g`/`G` top/bottom
 - `/` search
 - `n`/`p` next/prev
@@ -26,7 +25,7 @@ behavior consistent across tools.
 - `1-9` tabs or sections
 
 ## Avoid or Handle Carefully
-- `ctrl+c`, `ctrl+z`, `ctrl+\`: terminal signals
+- `ctrl+z`, `ctrl+\`: terminal signals
 - `ctrl+d`: EOF
 - `ctrl+s`, `ctrl+q`: flow control (XON/XOFF) unless disabled
 - `ctrl+l`: clear screen
@@ -37,6 +36,7 @@ behavior consistent across tools.
 - Do not capture printable characters when an input is focused.
 - Keep standard editing keys working (arrows, backspace, delete).
 - Enter should submit/accept; Esc should cancel/blur.
+- `ctrl+c` should always quit from any screen.
 
 ## Checklist for New Shortcuts
 - Consistent with existing TUI Keybindings in `AGENTS.md`.

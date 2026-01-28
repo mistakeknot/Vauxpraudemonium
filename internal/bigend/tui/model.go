@@ -1243,7 +1243,7 @@ func (m Model) renderFooter() string {
 		HelpKeyStyle.Render("p") + HelpDescStyle.Render(" preview • ") +
 		HelpKeyStyle.Render("m") + HelpDescStyle.Render(" mcp • ") +
 		HelpKeyStyle.Render("space") + HelpDescStyle.Render(" toggle • ") +
-		HelpKeyStyle.Render("q") + HelpDescStyle.Render(" quit")
+		HelpKeyStyle.Render("ctrl+c") + HelpDescStyle.Render(" quit")
 	if m.filterActive {
 		help += HelpDescStyle.Render(" • ") + HelpKeyStyle.Render("esc/enter") + HelpDescStyle.Render(" exit filter")
 	}

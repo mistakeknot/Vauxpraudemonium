@@ -92,7 +92,7 @@ func (m *Model) renderSuggestions() []string {
 	lines = append(lines, "3 CUJ: "+countToggle(m.suggestions.acceptCUJ, len(m.suggestions.sugg.CriticalUserJourneys)))
 	lines = append(lines, "4 Market: "+countToggle(m.suggestions.acceptMarket, len(m.suggestions.sugg.MarketResearch)))
 	lines = append(lines, "5 Competitive: "+countToggle(m.suggestions.acceptCompetitive, len(m.suggestions.sugg.CompetitiveLandscape)))
-	lines = append(lines, "[1-5] toggle  [a] accept  [r] reject  [q] quit")
+	lines = append(lines, "[1-5] toggle  [a] accept  [r] reject  [ctrl+c] quit")
 	return lines
 }
 

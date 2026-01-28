@@ -957,7 +957,7 @@ func visibleWidth(s string) int {
 }
 
 func defaultKeys() string {
-	return "j/k move  enter toggle  / search  tab focus  n new  g sprint  [ ] prev/next  ctrl+o open  \\ swap  a archive  d delete  u undo  H archived  R research  p suggestions  s review  ? help  q quit"
+	return "j/k move  enter toggle  / search  tab focus  n new  g sprint  [ ] prev/next  ctrl+o open  \\ swap  a archive  d delete  u undo  H archived  R research  p suggestions  s review  ? help  ctrl+c quit"
 }
 
 func (m Model) helpExtras() []pkgtui.HelpBinding {

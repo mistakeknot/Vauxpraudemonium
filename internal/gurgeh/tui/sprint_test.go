@@ -204,7 +204,7 @@ func TestSprintViewQuit(t *testing.T) {
 	state := arbiter.NewSprintState("/tmp/test")
 	view := NewSprintView(state)
 
-	_, cmd := view.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'q'}})
+	_, cmd := view.Update(tea.KeyMsg{Type: tea.KeyCtrlC})
 	if cmd == nil {
 		t.Error("expected quit command")
 	}

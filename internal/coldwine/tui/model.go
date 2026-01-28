@@ -57,7 +57,6 @@ type Model struct {
 	CoordInboxLoader     func(recipient string, limit int, urgentOnly bool) ([]storage.MessageDelivery, error)
 	CoordLocksLoader     func(limit int) ([]storage.Reservation, error)
 	Now                  func() time.Time
-	CtrlCAt              time.Time
 	SearchMode           bool
 	SearchQuery          string
 	FilterMode           string
@@ -155,7 +154,6 @@ type scanCommitResultMsg struct {
 
 const refreshInterval = 2 * time.Second
 const scanCommitInterval = time.Minute
-const ctrlCWindow = 2 * time.Second
 
 type StatusLevel string
 
@@ -272,17 +270,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, nil
 	case tea.KeyMsg:
 		if msg.Type == tea.KeyCtrlC {
-			nowFn := m.Now
-			if nowFn == nil {
-				nowFn = time.Now
-			}
-			now := nowFn()
-			if !m.CtrlCAt.IsZero() && now.Sub(m.CtrlCAt) <= ctrlCWindow {
-				return m, tea.Quit
-			}
-			m.CtrlCAt = now
-			m.SetStatusInfo("press ctrl+c again to quit")
-			return m, nil
+			return m, tea.Quit
 		}
 		keyStr := msg.String()
 		if msg.Type == tea.KeyCtrlK {

@@ -77,8 +77,8 @@ var keys = keyMap{
 		key.WithHelp("]", "focus content"),
 	),
 	Quit: key.NewBinding(
-		key.WithKeys("q", "ctrl+c"),
-		key.WithHelp("q", "quit"),
+		key.WithKeys("ctrl+c"),
+		key.WithHelp("ctrl+c", "quit"),
 	),
 	Help: key.NewBinding(
 		key.WithKeys("?"),
@@ -301,7 +301,7 @@ func (m Model) renderFooter() string {
 		tui.HelpKeyStyle.Render("tab") + tui.HelpDescStyle.Render(" next • ") +
 		tui.HelpKeyStyle.Render("[/]") + tui.HelpDescStyle.Render(" focus • ") +
 		tui.HelpKeyStyle.Render("ctrl+r") + tui.HelpDescStyle.Render(" refresh • ") +
-		tui.HelpKeyStyle.Render("q") + tui.HelpDescStyle.Render(" quit")
+		tui.HelpKeyStyle.Render("ctrl+c") + tui.HelpDescStyle.Render(" quit")
 
 	lastUpdate := ""
 	if !m.lastRefresh.IsZero() {

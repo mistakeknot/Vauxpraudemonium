@@ -85,7 +85,7 @@ Navigation:
   1-4       Switch between tabs (Bigend, Gurgeh, Coldwine, Pollard)
   Ctrl+P    Open command palette
   ?         Show help
-  q         Quit`,
+  Ctrl+C    Quit`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			// Suppress logging in TUI mode
 			logger := slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{

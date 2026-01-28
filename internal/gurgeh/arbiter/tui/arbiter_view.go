@@ -194,7 +194,7 @@ func (v *ArbiterView) Update(msg tea.Msg) (pkgtui.View, tea.Cmd) {
 		case "esc":
 			// Cancel / go back
 			return v, nil
-		case "q", "ctrl+c":
+		case "ctrl+c":
 			return v, tea.Quit
 		}
 		v.updateDocPanel()

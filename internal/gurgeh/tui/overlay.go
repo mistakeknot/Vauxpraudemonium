@@ -34,7 +34,7 @@ func renderHelpOverlay() string {
 			sharedtui.HelpDescStyle.Render(" • ") +
 			sharedtui.HelpKeyStyle.Render("?") + sharedtui.HelpDescStyle.Render(" help") +
 			sharedtui.HelpDescStyle.Render(" • ") +
-			sharedtui.HelpKeyStyle.Render("q") + sharedtui.HelpDescStyle.Render(" quit"),
+			sharedtui.HelpKeyStyle.Render("ctrl+c") + sharedtui.HelpDescStyle.Render(" quit"),
 	}
 	return sharedtui.CardStyle.Copy().Width(60).Render(strings.Join(lines, "\n"))
 }

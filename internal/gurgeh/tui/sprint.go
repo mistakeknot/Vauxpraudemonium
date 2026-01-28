@@ -226,7 +226,7 @@ func (v *SprintView) renderConflicts() string {
 
 func (v *SprintView) renderHelp() string {
 	helpStyle := lipgloss.NewStyle().Foreground(pkgtui.ColorMuted)
-	return helpStyle.Render("a accept  e edit  r research  1-3 alternatives  j/k navigate  q quit")
+	return helpStyle.Render("a accept  e edit  r research  1-3 alternatives  j/k navigate  ctrl+c quit")
 }
 
 func (v *SprintView) renderResearchPanel() string {

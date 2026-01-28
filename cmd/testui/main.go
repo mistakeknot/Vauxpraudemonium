@@ -69,7 +69,7 @@ func (w *viewWrapper) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		w.width = msg.Width
 		w.height = msg.Height
 	case tea.KeyMsg:
-		if msg.String() == "q" || msg.String() == "ctrl+c" {
+		if msg.String() == "ctrl+c" {
 			return w, tea.Quit
 		}
 	}
@@ -80,7 +80,7 @@ func (w *viewWrapper) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (w *viewWrapper) View() string {
-	return w.view.View() + "\n\n(press q to quit)"
+	return w.view.View() + "\n\n(press ctrl+c to quit)"
 }
 
 func wrap(v tui.View) tea.Model {
