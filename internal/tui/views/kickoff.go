@@ -91,6 +91,7 @@ func NewKickoffView() *KickoffView {
 		splitLayout: splitLayout,
 		focusInput:  true,
 	}
+	v.seedChat()
 	v.updateDocPanel()
 
 	return v
@@ -99,6 +100,19 @@ func NewKickoffView() *KickoffView {
 // SetAgentSelector sets the shared agent selector.
 func (v *KickoffView) SetAgentSelector(selector *pkgtui.AgentSelector) {
 	v.chatPanel.SetAgentSelector(selector)
+}
+
+// seedChat resets the chat history with kickoff guidance.
+func (v *KickoffView) seedChat() {
+	v.chatPanel.ClearMessages()
+	v.chatPanel.AddMessage("system", "What do you want to build?")
+	v.chatPanel.AddMessage("system", "Tips:\n• Be specific about what you're building\n• Include key features or requirements\n• Mention any constraints or preferences")
+	v.chatPanel.AddMessage("system", "Shortcuts:\n• Ctrl+G → Create project\n• Ctrl+S → Scan current directory\n• Tab → Switch between panels\n• F2 → Agent selector")
+}
+
+// ChatMessagesForTest exposes chat history for tests.
+func (v *KickoffView) ChatMessagesForTest() []pkgtui.ChatMessage {
+	return v.chatPanel.Messages()
 }
 
 // SetProjectStartCallback sets the callback for when a project is started.
@@ -785,6 +799,7 @@ func timeAgoString(t time.Time) string {
 // Focus implements View
 func (v *KickoffView) Focus() tea.Cmd {
 	v.focusInput = true
+	v.seedChat()
 	return v.chatPanel.Focus()
 }
 
