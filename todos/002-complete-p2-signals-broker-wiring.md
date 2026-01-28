@@ -75,7 +75,7 @@ Publish signals through a local-only HTTP endpoint on the signals server and wir
 - [x] Pollard watch emits SignalCompetitorShipped (or equivalent) through broker
 - [x] Gurgeh signal emission publishes to broker when signals are raised
 - [x] Signals WS subscribers receive live updates
-- [ ] Tests added/updated for broker publish paths
+- [x] Tests added/updated for broker publish paths
 
 ## Work Log
 
@@ -99,6 +99,7 @@ Publish signals through a local-only HTTP endpoint on the signals server and wir
 - Added signals HTTP client with default local URL
 - Wired Pollard watch to publish competitor watch updates
 - Wired Gurgeh spec API to emit/store/publish signals on spec load
+- Added server publish handler tests and watch emission unit tests
 
 **Learnings:**
 - Local-only WS server needs an explicit publish surface for cross-process emitters
