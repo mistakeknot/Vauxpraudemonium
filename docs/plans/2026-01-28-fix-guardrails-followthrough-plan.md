@@ -102,8 +102,8 @@ Out of scope:
 - `go test ./...` (optional full sweep)
 
 ## Risks
-- Changing Register() behavior could mask real configuration errors. Mitigation: log a single info-level “Intermute offline” message when URL is empty (optional) and rely on `Available()` checks for call sites.
+- Changing Register() behavior could mask real configuration errors. Mitigation: emit a one-time warning **only when** `INTERMUTE_URL` is empty **and** either `INTERMUTE_API_KEY` or `INTERMUTE_PROJECT` is set (suspicious config). Otherwise remain silent and rely on `Available()` checks for call sites.
 
 ## Open Questions
 - Should we add a dedicated `timeout.IntermuteHeartbeat` constant, or reuse `timeout.HTTPDefault`?
-- Do we want a warning log when `INTERMUTE_URL` is missing, or total silence?
+- Do we want a warning log when `INTERMUTE_URL` is missing **only** if other Intermute env vars are set? (recommended)
