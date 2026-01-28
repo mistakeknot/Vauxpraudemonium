@@ -259,6 +259,12 @@ func (a *UnifiedApp) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return a, nil
 
 	case tea.KeyMsg:
+		if key.Matches(msg, a.keys.Quit) {
+			if a.cancel != nil {
+				a.cancel()
+			}
+			return a, tea.Quit
+		}
 		// Handle help overlay first
 		if a.showHelp {
 			switch {
@@ -282,12 +288,6 @@ func (a *UnifiedApp) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return a, cmd
 		}
 
-		if key.Matches(msg, a.keys.Quit) {
-			if a.cancel != nil {
-				a.cancel()
-			}
-			return a, tea.Quit
-		}
 		if key.Matches(msg, a.keys.Help) {
 			a.showHelp = true
 			return a, nil
@@ -1091,7 +1091,7 @@ func (a *UnifiedApp) renderFooterContent() string {
 	}
 
 	if a.mode == ModeDashboard {
-		help += "  │  1-4 tabs  ctrl+p palette  F2 agent  q quit"
+		help += "  │  1-4 tabs  ctrl+p palette  F2 agent  ctrl+c quit"
 	} else {
 		if a.breadcrumb.IsNavigating() {
 			help = "←/→ navigate  enter select  esc cancel  F2 agent"
@@ -1158,7 +1158,6 @@ func (a *UnifiedApp) renderHelpOverlay() string {
 			HelpBinding{Key: "1-4", Description: "Switch tabs"},
 			HelpBinding{Key: "tab", Description: "Next tab"},
 			HelpBinding{Key: "ctrl+p", Description: "Command palette"},
-			HelpBinding{Key: "q", Description: "Quit"},
 		)
 	} else {
 		globalBindings = append(globalBindings,

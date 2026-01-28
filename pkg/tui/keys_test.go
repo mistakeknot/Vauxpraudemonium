@@ -8,15 +8,15 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 )
 
-func TestCommonKeysBackMatchesEscAndH(t *testing.T) {
+func TestCommonKeysBackMatchesEscOnly(t *testing.T) {
 	keys := NewCommonKeys()
 	esc := tea.KeyMsg{Type: tea.KeyEsc}
 	if !key.Matches(esc, keys.Back) {
 		t.Fatalf("expected Back to match esc")
 	}
 	h := tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'h'}}
-	if !key.Matches(h, keys.Back) {
-		t.Fatalf("expected Back to match h")
+	if key.Matches(h, keys.Back) {
+		t.Fatalf("expected Back to not match h")
 	}
 }
 
@@ -62,12 +62,16 @@ func TestCommonKeysIncludesTopBottomNextPrevAndSections(t *testing.T) {
 func TestHandleCommonQuitAndHelp(t *testing.T) {
 	keys := NewCommonKeys()
 
-	quitCmd := HandleCommon(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'q'}}, keys)
+	quitCmd := HandleCommon(tea.KeyMsg{Type: tea.KeyCtrlC}, keys)
 	if quitCmd == nil {
 		t.Fatalf("expected quit command")
 	}
 	if _, ok := quitCmd().(tea.QuitMsg); !ok {
 		t.Fatalf("expected QuitMsg")
+	}
+
+	if cmd := HandleCommon(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'q'}}, keys); cmd != nil {
+		t.Fatalf("expected q to no longer trigger quit")
 	}
 
 	helpCmd := HandleCommon(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'?'}}, keys)

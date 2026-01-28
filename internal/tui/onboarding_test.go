@@ -16,7 +16,7 @@ func TestOnboardingQuitKeyCancels(t *testing.T) {
 		return func() tea.Msg { return onboardingCancelMsg{} }
 	})
 
-	_, cmd := orchestrator.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("q")})
+	_, cmd := orchestrator.Update(tea.KeyMsg{Type: tea.KeyCtrlC})
 
 	if !called {
 		t.Fatal("expected onCancel to be called")

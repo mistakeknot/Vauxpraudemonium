@@ -142,6 +142,9 @@ func (a *App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return a, tea.Batch(cmds...)
 
 	case tea.KeyMsg:
+		if key.Matches(msg, a.keys.Quit) {
+			return a, tea.Quit
+		}
 		if a.help.Visible {
 			switch {
 			case key.Matches(msg, a.keys.Help), key.Matches(msg, a.keys.Back):
@@ -292,7 +295,7 @@ func (a *App) helpExtras() []pkgtui.HelpBinding {
 
 func (a *App) renderFooter() string {
 	// Get help from active view
-	help := "1-4 tabs  ctrl+p palette  q quit"
+	help := "1-4 tabs  ctrl+p palette  ctrl+c quit"
 	if len(a.views) > 0 {
 		active := a.tabs.Active()
 		if active < len(a.views) {

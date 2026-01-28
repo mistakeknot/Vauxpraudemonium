@@ -36,3 +36,16 @@ func TestUnifiedAppShiftTabCyclesBack(t *testing.T) {
 		t.Fatalf("expected shift+tab to move to previous tab")
 	}
 }
+
+func TestUnifiedAppCtrlCQuitsWithHelpVisible(t *testing.T) {
+	app := NewUnifiedApp(nil)
+	app.showHelp = true
+
+	_, cmd := app.Update(tea.KeyMsg{Type: tea.KeyCtrlC})
+	if cmd == nil {
+		t.Fatalf("expected quit command")
+	}
+	if _, ok := cmd().(tea.QuitMsg); !ok {
+		t.Fatalf("expected QuitMsg")
+	}
+}

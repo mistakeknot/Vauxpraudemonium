@@ -15,7 +15,7 @@ func TestBreadcrumbBackExitsNavigation(t *testing.T) {
 		t.Fatal("expected breadcrumb to be navigating")
 	}
 
-	b, _ = b.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("h")})
+	b, _ = b.Update(tea.KeyMsg{Type: tea.KeyEsc})
 
 	if b.IsNavigating() {
 		t.Fatalf("expected back to exit navigation, selected=%d", b.selected)

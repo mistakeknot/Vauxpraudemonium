@@ -28,8 +28,8 @@ type CommonKeys struct {
 func NewCommonKeys() CommonKeys {
 	return CommonKeys{
 		Quit: key.NewBinding(
-			key.WithKeys("q", "ctrl+c"),
-			key.WithHelp("q/ctrl+c", "quit"),
+			key.WithKeys("ctrl+c"),
+			key.WithHelp("ctrl+c", "quit"),
 		),
 		Help: key.NewBinding(
 			key.WithKeys("?"),
@@ -40,8 +40,8 @@ func NewCommonKeys() CommonKeys {
 			key.WithHelp("/", "search"),
 		),
 		Back: key.NewBinding(
-			key.WithKeys("esc", "h"),
-			key.WithHelp("esc/h", "back"),
+			key.WithKeys("esc"),
+			key.WithHelp("esc", "back"),
 		),
 		NavUp: key.NewBinding(
 			key.WithKeys("k", "up"),
