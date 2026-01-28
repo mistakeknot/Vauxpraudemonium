@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/charmbracelet/bubbles/key"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/mistakeknot/autarch/internal/coldwine/epics"
@@ -24,6 +25,8 @@ type EpicReviewView struct {
 
 	// Shell layout for unified 3-pane layout (chat only, no sidebar)
 	shell *pkgtui.ShellLayout
+	// Agent selector shown under chat pane
+	agentSelector *pkgtui.AgentSelector
 
 	// Callbacks
 	onAccept     func(proposals []epics.EpicProposal) tea.Cmd
@@ -38,6 +41,11 @@ func NewEpicReviewView(proposals []epics.EpicProposal) *EpicReviewView {
 		expanded:  make(map[int]bool),
 		shell:     pkgtui.NewShellLayout(),
 	}
+}
+
+// SetAgentSelector sets the shared agent selector.
+func (v *EpicReviewView) SetAgentSelector(selector *pkgtui.AgentSelector) {
+	v.agentSelector = selector
 }
 
 // SetCallbacks sets the action callbacks.
@@ -68,26 +76,36 @@ func (v *EpicReviewView) Update(msg tea.Msg) (tui.View, tea.Cmd) {
 		return v, nil
 
 	case tea.KeyMsg:
+		if v.agentSelector != nil {
+			selectorMsg, selectorCmd := v.agentSelector.Update(msg)
+			if selectorMsg != nil {
+				return v, tea.Batch(selectorCmd, func() tea.Msg { return selectorMsg })
+			}
+			if v.agentSelector.Open || msg.Type == tea.KeyF2 {
+				return v, selectorCmd
+			}
+		}
+
 		// Let shell handle global keys first (Tab for focus cycling)
 		v.shell, cmd = v.shell.Update(msg)
 		if cmd != nil {
 			return v, cmd
 		}
 
-		switch msg.String() {
-		case "enter":
+		switch {
+		case key.Matches(msg, commonKeys.Select) || key.Matches(msg, commonKeys.Toggle):
 			// Toggle expand selected (same as space for consistency)
 			v.expanded[v.selected] = !v.expanded[v.selected]
 			return v, nil
 
-		case "A":
+		case msg.String() == "A":
 			// Accept ALL proposals (uppercase A for intentional action)
 			if v.onAccept != nil {
 				return v, v.onAccept(v.proposals)
 			}
 			return v, nil
 
-		case "R":
+		case msg.String() == "R":
 			// Regenerate (uppercase R to differentiate from refresh)
 			// Warning: destructive if user has edits
 			if v.hasEdits() {
@@ -99,12 +117,12 @@ func (v *EpicReviewView) Update(msg tea.Msg) (tui.View, tea.Cmd) {
 			}
 			return v, nil
 
-		case "e":
+		case msg.String() == "e":
 			// Edit selected
 			v.editing = true
 			return v, nil
 
-		case "d":
+		case msg.String() == "d":
 			// Delete selected
 			if v.selected >= 0 && v.selected < len(v.proposals) {
 				v.proposals = append(v.proposals[:v.selected], v.proposals[v.selected+1:]...)
@@ -114,24 +132,19 @@ func (v *EpicReviewView) Update(msg tea.Msg) (tui.View, tea.Cmd) {
 			}
 			return v, nil
 
-		case "j", "down":
+		case key.Matches(msg, commonKeys.NavDown):
 			if v.selected < len(v.proposals)-1 {
 				v.selected++
 			}
 			return v, nil
 
-		case "k", "up":
+		case key.Matches(msg, commonKeys.NavUp):
 			if v.selected > 0 {
 				v.selected--
 			}
 			return v, nil
 
-		case " ":
-			// Toggle expand (space key returns " " in Bubble Tea)
-			v.expanded[v.selected] = !v.expanded[v.selected]
-			return v, nil
-
-		case "esc":
+		case key.Matches(msg, commonKeys.Back):
 			if v.editing {
 				v.editing = false
 			} else if v.onBack != nil {
@@ -139,13 +152,13 @@ func (v *EpicReviewView) Update(msg tea.Msg) (tui.View, tea.Cmd) {
 			}
 			return v, nil
 
-		case "backspace", "b":
+		case msg.String() == "backspace" || msg.String() == "b":
 			if !v.editing && v.onBack != nil {
 				return v, v.onBack()
 			}
 			return v, nil
 
-		case "+":
+		case msg.String() == "+":
 			// Increase priority
 			if v.selected >= 0 && v.selected < len(v.proposals) {
 				v.proposals[v.selected].Edited = true
@@ -160,7 +173,7 @@ func (v *EpicReviewView) Update(msg tea.Msg) (tui.View, tea.Cmd) {
 			}
 			return v, nil
 
-		case "-":
+		case msg.String() == "-":
 			// Decrease priority
 			if v.selected >= 0 && v.selected < len(v.proposals) {
 				v.proposals[v.selected].Edited = true
@@ -271,6 +284,11 @@ func (v *EpicReviewView) renderChat() string {
 		Foreground(pkgtui.ColorMuted)
 
 	lines = append(lines, hintStyle.Render("Tab to focus chat"))
+
+	if v.agentSelector != nil {
+		lines = append(lines, "")
+		lines = append(lines, v.agentSelector.View())
+	}
 
 	return strings.Join(lines, "\n")
 }
@@ -427,7 +445,7 @@ func (v *EpicReviewView) Name() string {
 
 // ShortHelp implements View
 func (v *EpicReviewView) ShortHelp() string {
-	return "A accept  b back  d delete  +/- priority  space expand  Tab focus"
+	return "A accept  b back  d delete  +/- priority  space expand  F2 agent  Tab focus"
 }
 
 // FullHelp implements FullHelpProvider

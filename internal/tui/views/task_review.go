@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/charmbracelet/bubbles/key"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/mistakeknot/autarch/internal/coldwine/tasks"
@@ -14,16 +15,18 @@ import (
 // TaskReviewView displays proposed tasks for review and editing.
 // Uses the unified shell layout with chat for Q&A during review (no sidebar).
 type TaskReviewView struct {
-	tasks       []tasks.TaskProposal
-	groupedView bool // Group by epic
-	selected    int
-	expanded    map[int]bool
-	width       int
-	height      int
+	tasks        []tasks.TaskProposal
+	groupedView  bool // Group by epic
+	selected     int
+	expanded     map[int]bool
+	width        int
+	height       int
 	scrollOffset int
 
 	// Shell layout for unified 3-pane layout (chat only, no sidebar)
 	shell *pkgtui.ShellLayout
+	// Agent selector shown under chat pane
+	agentSelector *pkgtui.AgentSelector
 
 	// Callbacks
 	onAccept func(tasks []tasks.TaskProposal) tea.Cmd
@@ -41,6 +44,11 @@ func NewTaskReviewView(taskList []tasks.TaskProposal) *TaskReviewView {
 		expanded:    make(map[int]bool),
 		shell:       pkgtui.NewShellLayout(),
 	}
+}
+
+// SetAgentSelector sets the shared agent selector.
+func (v *TaskReviewView) SetAgentSelector(selector *pkgtui.AgentSelector) {
+	v.agentSelector = selector
 }
 
 // SetAcceptCallback sets the callback for when tasks are accepted.
@@ -70,35 +78,45 @@ func (v *TaskReviewView) Update(msg tea.Msg) (tui.View, tea.Cmd) {
 		return v, nil
 
 	case tea.KeyMsg:
+		if v.agentSelector != nil {
+			selectorMsg, selectorCmd := v.agentSelector.Update(msg)
+			if selectorMsg != nil {
+				return v, tea.Batch(selectorCmd, func() tea.Msg { return selectorMsg })
+			}
+			if v.agentSelector.Open || msg.Type == tea.KeyF2 {
+				return v, selectorCmd
+			}
+		}
+
 		// Let shell handle global keys first (Tab for focus cycling)
 		v.shell, cmd = v.shell.Update(msg)
 		if cmd != nil {
 			return v, cmd
 		}
-		switch msg.String() {
-		case "enter":
+		switch {
+		case key.Matches(msg, commonKeys.Select) || key.Matches(msg, commonKeys.Toggle):
 			// Toggle expand selected (same as space for consistency)
 			v.expanded[v.selected] = !v.expanded[v.selected]
 			return v, nil
 
-		case "A":
+		case msg.String() == "A":
 			// Accept ALL tasks (uppercase A for intentional action)
 			if v.onAccept != nil {
 				return v, v.onAccept(v.tasks)
 			}
 			return v, nil
 
-		case "g":
+		case msg.String() == "g":
 			// Toggle grouped view
 			v.groupedView = !v.groupedView
 			return v, nil
 
-		case "e":
+		case msg.String() == "e":
 			// Edit selected
 			// TODO: Add inline editing
 			return v, nil
 
-		case "d":
+		case msg.String() == "d":
 			// Delete selected
 			if v.selected >= 0 && v.selected < len(v.tasks) {
 				v.tasks = append(v.tasks[:v.selected], v.tasks[v.selected+1:]...)
@@ -110,32 +128,27 @@ func (v *TaskReviewView) Update(msg tea.Msg) (tui.View, tea.Cmd) {
 			}
 			return v, nil
 
-		case "j", "down":
+		case key.Matches(msg, commonKeys.NavDown):
 			if v.selected < len(v.tasks)-1 {
 				v.selected++
 				v.ensureVisible()
 			}
 			return v, nil
 
-		case "k", "up":
+		case key.Matches(msg, commonKeys.NavUp):
 			if v.selected > 0 {
 				v.selected--
 				v.ensureVisible()
 			}
 			return v, nil
 
-		case " ":
-			// Toggle expand (space key returns " " in Bubble Tea)
-			v.expanded[v.selected] = !v.expanded[v.selected]
-			return v, nil
-
-		case "b", "backspace", "esc":
+		case key.Matches(msg, commonKeys.Back) || msg.String() == "backspace" || msg.String() == "b":
 			if v.onBack != nil {
 				return v, v.onBack()
 			}
 			return v, nil
 
-		case "tab":
+		case msg.String() == "tab":
 			// Cycle through types
 			if v.selected >= 0 && v.selected < len(v.tasks) {
 				v.tasks[v.selected].Edited = true
@@ -260,6 +273,11 @@ func (v *TaskReviewView) renderChat() string {
 		Foreground(pkgtui.ColorMuted)
 
 	lines = append(lines, hintStyle.Render("Tab to focus chat"))
+
+	if v.agentSelector != nil {
+		lines = append(lines, "")
+		lines = append(lines, v.agentSelector.View())
+	}
 
 	return strings.Join(lines, "\n")
 }
@@ -458,7 +476,7 @@ func (v *TaskReviewView) Name() string {
 
 // ShortHelp implements View
 func (v *TaskReviewView) ShortHelp() string {
-	return "A accept  b back  d delete  g group  Tab focus"
+	return "A accept  b back  d delete  g group  F2 agent  Tab focus"
 }
 
 // FullHelp implements FullHelpProvider

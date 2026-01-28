@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/charmbracelet/bubbles/key"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/mistakeknot/autarch/internal/pollard/research"
@@ -27,6 +28,8 @@ type SpecSummaryView struct {
 
 	// Shell layout for unified 3-pane layout (chat only, no sidebar)
 	shell *pkgtui.ShellLayout
+	// Agent selector shown under chat pane
+	agentSelector *pkgtui.AgentSelector
 
 	// Research state
 	researchComplete bool
@@ -46,6 +49,11 @@ func NewSpecSummaryView(spec *SpecSummary, coordinator *research.Coordinator) *S
 		expanded:    make(map[int]bool),
 		shell:       pkgtui.NewShellLayout(),
 	}
+}
+
+// SetAgentSelector sets the shared agent selector.
+func (v *SpecSummaryView) SetAgentSelector(selector *pkgtui.AgentSelector) {
+	v.agentSelector = selector
 }
 
 // SetCallbacks sets the action callbacks.
@@ -97,57 +105,66 @@ func (v *SpecSummaryView) Update(msg tea.Msg) (tui.View, tea.Cmd) {
 		return v, nil
 
 	case tea.KeyMsg:
+		if v.agentSelector != nil {
+			selectorMsg, selectorCmd := v.agentSelector.Update(msg)
+			if selectorMsg != nil {
+				return v, tea.Batch(selectorCmd, func() tea.Msg { return selectorMsg })
+			}
+			if v.agentSelector.Open || msg.Type == tea.KeyF2 {
+				return v, selectorCmd
+			}
+		}
+
 		// Let shell handle global keys first (Tab for focus cycling)
 		v.shell, cmd = v.shell.Update(msg)
 		if cmd != nil {
 			return v, cmd
 		}
 
-		switch msg.String() {
-		case "enter":
+		switch {
+		case key.Matches(msg, commonKeys.Select):
 			// Generate epics
 			if v.onGenerateEpics != nil {
 				return v, v.onGenerateEpics(v.spec)
 			}
 			return v, nil
 
-		case "e":
+		case msg.String() == "e":
 			// Edit spec
 			if v.onEditSpec != nil {
 				return v, v.onEditSpec(v.spec)
 			}
 			return v, nil
 
-		case "r":
+		case key.Matches(msg, commonKeys.Refresh):
 			// Wait for research / refresh
 			if !v.researchComplete && v.onWaitResearch != nil {
 				return v, v.onWaitResearch()
 			}
 			return v, v.checkResearchStatus()
 
-		case "ctrl+r":
+		case msg.String() == "ctrl+r":
 			// View research
 			return v, nil // Could open overlay
 
-		case "j", "down":
+		case key.Matches(msg, commonKeys.NavDown):
 			maxItems := len(v.spec.Requirements) + len(v.spec.Decisions)
 			if v.selected < maxItems-1 {
 				v.selected++
 			}
 			return v, nil
 
-		case "k", "up":
+		case key.Matches(msg, commonKeys.NavUp):
 			if v.selected > 0 {
 				v.selected--
 			}
 			return v, nil
 
-		case " ":
-			// Toggle expand (space key returns " " in Bubble Tea)
+		case key.Matches(msg, commonKeys.Toggle):
 			v.expanded[v.selected] = !v.expanded[v.selected]
 			return v, nil
 
-		case "esc", "b", "backspace":
+		case key.Matches(msg, commonKeys.Back) || msg.String() == "backspace" || msg.String() == "b":
 			// Back navigation (note: spec_summary may need a back callback)
 			// For now, esc cancels any pending operation
 			return v, nil
@@ -252,6 +269,11 @@ func (v *SpecSummaryView) renderChat() string {
 		Foreground(pkgtui.ColorMuted)
 
 	lines = append(lines, hintStyle.Render("Tab to focus chat"))
+
+	if v.agentSelector != nil {
+		lines = append(lines, "")
+		lines = append(lines, v.agentSelector.View())
+	}
 
 	return strings.Join(lines, "\n")
 }
@@ -362,7 +384,7 @@ func (v *SpecSummaryView) Name() string {
 
 // ShortHelp implements View
 func (v *SpecSummaryView) ShortHelp() string {
-	return "enter generate  e edit  r refresh  Tab focus"
+	return "enter generate  e edit  r refresh  F2 agent  Tab focus"
 }
 
 // FullHelp implements FullHelpProvider

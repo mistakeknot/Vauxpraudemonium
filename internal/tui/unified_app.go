@@ -3,8 +3,11 @@ package tui
 import (
 	"context"
 	"fmt"
+	"os"
+	"os/exec"
 	"strings"
 
+	"github.com/charmbracelet/bubbles/key"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/mistakeknot/autarch/internal/autarch/agent"
@@ -29,21 +32,23 @@ type UnifiedApp struct {
 	mode   AppMode
 
 	// Onboarding state
-	onboardingState    OnboardingState
-	breadcrumb         *Breadcrumb
-	currentView        View
-	projectID          string
-	projectName        string
-	projectDesc        string
-	interviewAnswers   map[string]string
-	generatedEpics     []epics.EpicProposal
-	generatedTasks     []tasks.TaskProposal
-	researchCoord      *research.Coordinator
-	ctx                context.Context
-	cancel             context.CancelFunc
+	onboardingState  OnboardingState
+	breadcrumb       *Breadcrumb
+	currentView      View
+	projectID        string
+	projectName      string
+	projectDesc      string
+	interviewAnswers map[string]string
+	generatedEpics   []epics.EpicProposal
+	generatedTasks   []tasks.TaskProposal
+	researchCoord    *research.Coordinator
+	ctx              context.Context
+	cancel           context.CancelFunc
 
 	// Agent for AI generation
-	codingAgent *agent.Agent
+	codingAgent   *agent.Agent
+	agentSelector *pkgtui.AgentSelector
+	selectedAgent string
 
 	// Loading state
 	generating     bool
@@ -55,19 +60,20 @@ type UnifiedApp struct {
 	palette   *Palette
 
 	// UI state
-	width      int
-	height     int
-	err        error
-	showHelp   bool // Help overlay visible
+	width    int
+	height   int
+	err      error
+	showHelp bool // Help overlay visible
+	keys     pkgtui.CommonKeys
 
 	// View factories (injected from main.go)
-	createKickoffView      func() View
-	createArbiterView      func(*research.Coordinator) View
-	createSpecSummaryView  func(*SpecSummary, *research.Coordinator) View
-	createEpicReviewView   func([]epics.EpicProposal) View
-	createTaskReviewView   func([]tasks.TaskProposal) View
-	createTaskDetailView   func(tasks.TaskProposal, *research.Coordinator) View
-	createDashboardViews   func(*autarch.Client) []View
+	createKickoffView     func() View
+	createArbiterView     func(*research.Coordinator) View
+	createSpecSummaryView func(*SpecSummary, *research.Coordinator) View
+	createEpicReviewView  func([]epics.EpicProposal) View
+	createTaskReviewView  func([]tasks.TaskProposal) View
+	createTaskDetailView  func(tasks.TaskProposal, *research.Coordinator) View
+	createDashboardViews  func(*autarch.Client) []View
 }
 
 // NewUnifiedApp creates a new unified application
@@ -88,6 +94,7 @@ func NewUnifiedApp(client *autarch.Client) *UnifiedApp {
 		researchCoord:   research.NewCoordinator(nil),
 		ctx:             ctx,
 		cancel:          cancel,
+		keys:            pkgtui.NewCommonKeys(),
 	}
 
 	return app
@@ -115,18 +122,111 @@ func (a *UnifiedApp) SetViewFactories(
 	a.createDashboardViews = dashViews
 }
 
+type agentSelectorSetter interface {
+	SetAgentSelector(*pkgtui.AgentSelector)
+}
+
+type agentNameSetter interface {
+	SetAgentName(string)
+}
+
+func (a *UnifiedApp) initAgentSelector() {
+	if a.agentSelector != nil {
+		return
+	}
+
+	projectRoot := ""
+	if cwd, err := os.Getwd(); err == nil {
+		projectRoot = cwd
+	}
+
+	options, err := LoadAgentOptions(projectRoot)
+	if err != nil {
+		return
+	}
+
+	options = filterSupportedAgentOptions(options)
+	if len(options) == 0 {
+		return
+	}
+
+	a.agentSelector = pkgtui.NewAgentSelector(options)
+	if a.selectedAgent != "" {
+		a.setSelectorIndex(a.selectedAgent)
+		return
+	}
+	if a.codingAgent != nil {
+		a.selectedAgent = string(a.codingAgent.Type)
+		a.setSelectorIndex(a.selectedAgent)
+		return
+	}
+
+	a.selectedAgent = options[0].Name
+	if resolved, err := agent.DetectAgentByName(a.selectedAgent, exec.LookPath); err == nil {
+		a.codingAgent = resolved
+	}
+}
+
+func (a *UnifiedApp) setSelectorIndex(name string) {
+	if a.agentSelector == nil {
+		return
+	}
+	for i, opt := range a.agentSelector.Options {
+		if strings.EqualFold(opt.Name, name) {
+			a.agentSelector.Index = i
+			return
+		}
+	}
+}
+
+func (a *UnifiedApp) attachAgentSelector(view View) {
+	if a.agentSelector == nil || view == nil {
+		return
+	}
+	if setter, ok := view.(agentSelectorSetter); ok {
+		setter.SetAgentSelector(a.agentSelector)
+	}
+	a.attachAgentName(view)
+}
+
+func (a *UnifiedApp) attachAgentName(view View) {
+	if view == nil || a.selectedAgent == "" {
+		return
+	}
+	if setter, ok := view.(agentNameSetter); ok {
+		setter.SetAgentName(a.selectedAgent)
+	}
+}
+
+func filterSupportedAgentOptions(options []pkgtui.AgentOption) []pkgtui.AgentOption {
+	if len(options) == 0 {
+		return options
+	}
+	out := make([]pkgtui.AgentOption, 0, len(options))
+	for _, opt := range options {
+		switch strings.ToLower(opt.Name) {
+		case "codex", "claude":
+			out = append(out, opt)
+		}
+	}
+	return out
+}
+
 // Init implements tea.Model
 func (a *UnifiedApp) Init() tea.Cmd {
 	// Detect coding agent
 	detectedAgent, err := agent.DetectAgent()
 	if err == nil {
 		a.codingAgent = detectedAgent
+		a.selectedAgent = string(detectedAgent.Type)
 	}
 	// Note: We don't error here - we'll handle missing agent when we need it
+	a.initAgentSelector()
 
 	// Start with kickoff view
 	if a.createKickoffView != nil {
 		a.currentView = a.createKickoffView()
+		a.attachAgentSelector(a.currentView)
 		return tea.Batch(
 			a.currentView.Init(),
 			a.currentView.Focus(),
@@ -161,8 +261,10 @@ func (a *UnifiedApp) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case tea.KeyMsg:
 		// Handle help overlay first
 		if a.showHelp {
-			// Any key closes help
-			a.showHelp = false
+			switch {
+			case key.Matches(msg, a.keys.Help), key.Matches(msg, a.keys.Back):
+				a.showHelp = false
+			}
 			return a, nil
 		}
 
@@ -180,15 +282,18 @@ func (a *UnifiedApp) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return a, cmd
 		}
 
-		switch msg.String() {
-		case "?":
-			// Toggle help overlay
+		if key.Matches(msg, a.keys.Quit) {
+			if a.cancel != nil {
+				a.cancel()
+			}
+			return a, tea.Quit
+		}
+		if key.Matches(msg, a.keys.Help) {
 			a.showHelp = true
 			return a, nil
+		}
 
-		case "ctrl+c":
-			a.cancel()
-			return a, tea.Quit
+		switch msg.String() {
 
 		case "ctrl+p":
 			if a.mode == ModeDashboard {
@@ -209,13 +314,19 @@ func (a *UnifiedApp) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 		// In dashboard mode, handle tab switching
 		if a.mode == ModeDashboard {
-			switch msg.String() {
-			case "q":
-				return a, tea.Quit
-			case "1", "2", "3", "4":
-				idx := int(msg.String()[0] - '1')
-				return a, a.switchDashboardTab(idx)
-			case "tab":
+			switch {
+			case len(a.keys.Sections) >= 4 && key.Matches(msg, a.keys.Sections[0]):
+				return a, a.switchDashboardTab(0)
+			case len(a.keys.Sections) >= 4 && key.Matches(msg, a.keys.Sections[1]):
+				return a, a.switchDashboardTab(1)
+			case len(a.keys.Sections) >= 4 && key.Matches(msg, a.keys.Sections[2]):
+				return a, a.switchDashboardTab(2)
+			case len(a.keys.Sections) >= 4 && key.Matches(msg, a.keys.Sections[3]):
+				return a, a.switchDashboardTab(3)
+			case key.Matches(msg, a.keys.TabCycle):
+				if msg.String() == "shift+tab" {
+					return a, a.switchDashboardTab((a.tabs.Active() - 1 + len(a.dashViews)) % len(a.dashViews))
+				}
 				return a, a.switchDashboardTab((a.tabs.Active() + 1) % len(a.dashViews))
 			}
 		}
@@ -226,6 +337,15 @@ func (a *UnifiedApp) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			a.currentView, cmd = a.currentView.Update(msg)
 			return a, cmd
 		}
+
+	case pkgtui.AgentSelectedMsg:
+		a.selectedAgent = msg.Name
+		a.setSelectorIndex(msg.Name)
+		if resolved, err := agent.DetectAgentByName(msg.Name, exec.LookPath); err == nil {
+			a.codingAgent = resolved
+		}
+		a.attachAgentName(a.currentView)
+		return a, nil
 
 	// Handle view transition messages
 	case ProjectCreatedMsg:
@@ -322,6 +442,7 @@ func (a *UnifiedApp) handleProjectCreated(msg ProjectCreatedMsg) tea.Cmd {
 	// Prefer Arbiter view if available
 	if a.createArbiterView != nil {
 		a.currentView = a.createArbiterView(a.researchCoord)
+		a.attachAgentSelector(a.currentView)
 
 		// Set up callback for when sprint completes (backward-compatible)
 		if iv, ok := a.currentView.(InterviewViewSetter); ok {
@@ -541,6 +662,7 @@ func (a *UnifiedApp) handleInterviewComplete(msg InterviewCompleteMsg) tea.Cmd {
 
 	if a.createSpecSummaryView != nil {
 		a.currentView = a.createSpecSummaryView(spec, a.researchCoord)
+		a.attachAgentSelector(a.currentView)
 
 		// Set up callbacks
 		if sv, ok := a.currentView.(SpecSummaryViewSetter); ok {
@@ -622,6 +744,7 @@ func (a *UnifiedApp) handleEpicsGenerated(msg EpicsGeneratedMsg) tea.Cmd {
 	// Show epic review view
 	if a.createEpicReviewView != nil {
 		a.currentView = a.createEpicReviewView(msg.Epics)
+		a.attachAgentSelector(a.currentView)
 		return tea.Batch(
 			a.currentView.Init(),
 			a.currentView.Focus(),
@@ -667,6 +790,7 @@ func (a *UnifiedApp) handleTasksGenerated(msg TasksGeneratedMsg) tea.Cmd {
 	// Show task review view
 	if a.createTaskReviewView != nil {
 		a.currentView = a.createTaskReviewView(msg.Tasks)
+		a.attachAgentSelector(a.currentView)
 		return tea.Batch(
 			a.currentView.Init(),
 			a.currentView.Focus(),
@@ -693,6 +817,7 @@ func (a *UnifiedApp) handleTasksAccepted(msg TasksAcceptedMsg) tea.Cmd {
 func (a *UnifiedApp) showTaskDetail(task tasks.TaskProposal) tea.Cmd {
 	if a.createTaskDetailView != nil {
 		a.currentView = a.createTaskDetailView(task, a.researchCoord)
+		a.attachAgentSelector(a.currentView)
 		return tea.Batch(
 			a.currentView.Init(),
 			a.currentView.Focus(),
@@ -713,6 +838,7 @@ func (a *UnifiedApp) navigateBack() tea.Cmd {
 		a.breadcrumb.SetCurrent(OnboardingEpicReview)
 		if a.createEpicReviewView != nil {
 			a.currentView = a.createEpicReviewView(a.generatedEpics)
+			a.attachAgentSelector(a.currentView)
 			return tea.Batch(a.currentView.Init(), a.currentView.Focus(), a.sendWindowSize())
 		}
 	case OnboardingComplete:
@@ -737,6 +863,7 @@ func (a *UnifiedApp) navigateToKickoff() tea.Cmd {
 
 	if a.createKickoffView != nil {
 		a.currentView = a.createKickoffView()
+		a.attachAgentSelector(a.currentView)
 		return tea.Batch(
 			a.currentView.Init(),
 			a.currentView.Focus(),
@@ -759,6 +886,7 @@ func (a *UnifiedApp) navigateToStep(state OnboardingState) tea.Cmd {
 			a.breadcrumb.SetCurrent(OnboardingEpicReview)
 			if a.createEpicReviewView != nil {
 				a.currentView = a.createEpicReviewView(a.generatedEpics)
+				a.attachAgentSelector(a.currentView)
 				return tea.Batch(
 					a.currentView.Init(),
 					a.currentView.Focus(),
@@ -774,6 +902,7 @@ func (a *UnifiedApp) navigateToStep(state OnboardingState) tea.Cmd {
 			a.breadcrumb.SetCurrent(OnboardingTaskReview)
 			if a.createTaskReviewView != nil {
 				a.currentView = a.createTaskReviewView(a.generatedTasks)
+				a.attachAgentSelector(a.currentView)
 				return tea.Batch(
 					a.currentView.Init(),
 					a.currentView.Focus(),
@@ -796,6 +925,10 @@ func (a *UnifiedApp) enterDashboard() tea.Cmd {
 	if a.createDashboardViews != nil {
 		a.dashViews = a.createDashboardViews(a.client)
 		if len(a.dashViews) > 0 {
+			for _, v := range a.dashViews {
+				a.attachAgentSelector(v)
+			}
+			a.updateCommands()
 			a.currentView = a.dashViews[0]
 
 			// Initialize all views
@@ -809,6 +942,36 @@ func (a *UnifiedApp) enterDashboard() tea.Cmd {
 		}
 	}
 	return nil
+}
+
+func (a *UnifiedApp) updateCommands() {
+	var cmds []Command
+
+	cmds = append(cmds, Command{
+		Name:        "Switch agent/model",
+		Description: "Toggle agent selector",
+		Action: func() tea.Cmd {
+			return func() tea.Msg {
+				return tea.KeyMsg{Type: tea.KeyF2}
+			}
+		},
+	})
+
+	for i, v := range a.dashViews {
+		idx := i
+		name := v.Name()
+		desc := fmt.Sprintf("View %s", strings.ToLower(name))
+		cmds = append(cmds, Command{
+			Name:        "Switch to " + name,
+			Description: desc,
+			Action:      func() tea.Cmd { return a.switchDashboardTab(idx) },
+		})
+		if provider, ok := v.(CommandProvider); ok {
+			cmds = append(cmds, provider.Commands()...)
+		}
+	}
+
+	a.palette.SetCommands(cmds)
 }
 
 func (a *UnifiedApp) switchDashboardTab(idx int) tea.Cmd {
@@ -928,12 +1091,12 @@ func (a *UnifiedApp) renderFooterContent() string {
 	}
 
 	if a.mode == ModeDashboard {
-		help += "  │  1-4 tabs  ctrl+p palette  q quit"
+		help += "  │  1-4 tabs  ctrl+p palette  F2 agent  q quit"
 	} else {
 		if a.breadcrumb.IsNavigating() {
-			help = "←/→ navigate  enter select  esc cancel"
+			help = "←/→ navigate  enter select  esc cancel  F2 agent"
 		} else {
-			help += "  │  ctrl+b jump  ctrl+c quit"
+			help += "  │  ctrl+b jump  F2 agent  ctrl+c quit"
 		}
 	}
 
@@ -987,6 +1150,7 @@ func (a *UnifiedApp) renderHelpOverlay() string {
 	globalBindings := []HelpBinding{
 		{Key: "?", Description: "Show this help"},
 		{Key: "ctrl+c", Description: "Quit"},
+		{Key: "F2", Description: "Agent selector"},
 	}
 
 	if a.mode == ModeDashboard {

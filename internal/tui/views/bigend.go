@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/charmbracelet/bubbles/key"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/mistakeknot/autarch/internal/coldwine/tasks"
@@ -106,8 +107,8 @@ func (v *BigendView) Update(msg tea.Msg) (tui.View, tea.Cmd) {
 		return v, nil
 
 	case tea.KeyMsg:
-		switch msg.String() {
-		case "j", "down":
+		switch {
+		case key.Matches(msg, commonKeys.NavDown):
 			if v.focusPane == FocusSessions {
 				if v.selected < len(v.sessions)-1 {
 					v.selected++
@@ -117,7 +118,7 @@ func (v *BigendView) Update(msg tea.Msg) (tui.View, tea.Cmd) {
 					v.taskSelected++
 				}
 			}
-		case "k", "up":
+		case key.Matches(msg, commonKeys.NavUp):
 			if v.focusPane == FocusSessions {
 				if v.selected > 0 {
 					v.selected--
@@ -127,22 +128,22 @@ func (v *BigendView) Update(msg tea.Msg) (tui.View, tea.Cmd) {
 					v.taskSelected--
 				}
 			}
-		case "tab":
+		case key.Matches(msg, commonKeys.TabCycle):
 			// Toggle focus between panes
 			if v.focusPane == FocusSessions {
 				v.focusPane = FocusTasks
 			} else {
 				v.focusPane = FocusSessions
 			}
-		case "enter":
+		case key.Matches(msg, commonKeys.Select):
 			// Select task to view details
 			if v.focusPane == FocusTasks && len(v.readyTasks) > 0 && v.onTaskSelect != nil {
 				return v, v.onTaskSelect(v.readyTasks[v.taskSelected])
 			}
-		case "n":
+		case msg.String() == "n":
 			// New session
 			// TODO: implement
-		case "r":
+		case key.Matches(msg, commonKeys.Refresh):
 			v.loading = true
 			return v, v.loadSessions()
 		}

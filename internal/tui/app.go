@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/charmbracelet/bubbles/key"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/mistakeknot/autarch/pkg/autarch"
@@ -19,6 +20,8 @@ type App struct {
 	width   int
 	height  int
 	err     error
+	keys    pkgtui.CommonKeys
+	help    pkgtui.HelpOverlay
 }
 
 // NewApp creates a new unified TUI app
@@ -33,6 +36,8 @@ func NewApp(client *autarch.Client, views ...View) *App {
 		tabs:    NewTabBar(names),
 		views:   views,
 		palette: NewPalette(),
+		keys:    pkgtui.NewCommonKeys(),
+		help:    pkgtui.NewHelpOverlay(),
 	}
 
 	// Collect commands from all views
@@ -46,6 +51,15 @@ func (a *App) updateCommands() {
 
 	// Global commands
 	cmds = append(cmds,
+		Command{
+			Name:        "Switch agent/model",
+			Description: "Toggle agent selector",
+			Action: func() tea.Cmd {
+				return func() tea.Msg {
+					return tea.KeyMsg{Type: tea.KeyF2}
+				}
+			},
+		},
 		Command{
 			Name:        "Switch to Bigend",
 			Description: "View sessions",
@@ -128,6 +142,13 @@ func (a *App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return a, tea.Batch(cmds...)
 
 	case tea.KeyMsg:
+		if a.help.Visible {
+			switch {
+			case key.Matches(msg, a.keys.Help), key.Matches(msg, a.keys.Back):
+				a.help.Toggle()
+			}
+			return a, nil
+		}
 		// Handle palette first if visible
 		if a.palette.Visible() {
 			var cmd tea.Cmd
@@ -135,35 +156,38 @@ func (a *App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return a, cmd
 		}
 
-		switch msg.String() {
-		case "ctrl+c", "q":
-			return a, tea.Quit
+		if cmd := pkgtui.HandleCommon(msg, a.keys); cmd != nil {
+			return a, cmd
+		}
 
+		switch msg.String() {
 		case "ctrl+p":
 			return a, a.palette.Show()
 
-		case "?":
-			// Show help
-			return a, nil
-
-		case "1":
-			return a, a.doSwitchTab(0)
-		case "2":
-			return a, a.doSwitchTab(1)
-		case "3":
-			return a, a.doSwitchTab(2)
-		case "4":
-			return a, a.doSwitchTab(3)
-
-		case "tab":
-			return a, a.doSwitchTab((a.tabs.Active() + 1) % len(a.views))
-
-		case "shift+tab":
-			return a, a.doSwitchTab((a.tabs.Active() - 1 + len(a.views)) % len(a.views))
+		default:
+			switch {
+			case len(a.keys.Sections) >= 4 && key.Matches(msg, a.keys.Sections[0]):
+				return a, a.doSwitchTab(0)
+			case len(a.keys.Sections) >= 4 && key.Matches(msg, a.keys.Sections[1]):
+				return a, a.doSwitchTab(1)
+			case len(a.keys.Sections) >= 4 && key.Matches(msg, a.keys.Sections[2]):
+				return a, a.doSwitchTab(2)
+			case len(a.keys.Sections) >= 4 && key.Matches(msg, a.keys.Sections[3]):
+				return a, a.doSwitchTab(3)
+			case key.Matches(msg, a.keys.TabCycle):
+				if msg.String() == "shift+tab" {
+					return a, a.doSwitchTab((a.tabs.Active() - 1 + len(a.views)) % len(a.views))
+				}
+				return a, a.doSwitchTab((a.tabs.Active() + 1) % len(a.views))
+			}
 		}
 
 	case switchTabMsg:
 		return a, a.doSwitchTab(msg.index)
+
+	case pkgtui.ToggleHelpMsg:
+		a.help.Toggle()
+		return a, nil
 	}
 
 	// Pass message to active view
@@ -207,6 +231,10 @@ func (a *App) View() string {
 		return "Loading..."
 	}
 
+	if a.help.Visible {
+		return a.help.Render(a.keys, a.helpExtras(), a.width)
+	}
+
 	var b strings.Builder
 
 	// Tab bar (2 lines)
@@ -246,6 +274,20 @@ func (a *App) View() string {
 	}
 
 	return b.String()
+}
+
+func (a *App) helpExtras() []pkgtui.HelpBinding {
+	if len(a.views) == 0 {
+		return nil
+	}
+	active := a.tabs.Active()
+	if active >= len(a.views) {
+		return nil
+	}
+	if provider, ok := a.views[active].(pkgtui.FullHelpProvider); ok {
+		return provider.FullHelp()
+	}
+	return nil
 }
 
 func (a *App) renderFooter() string {

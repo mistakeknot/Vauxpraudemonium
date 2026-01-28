@@ -8,6 +8,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/charmbracelet/bubbles/key"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/google/uuid"
@@ -54,7 +55,7 @@ type KickoffView struct {
 type RecentProject struct {
 	ID       string
 	Name     string
-	Status   string    // "draft", "complete"
+	Status   string // "draft", "complete"
 	LastOpen time.Time
 	Path     string
 }
@@ -93,6 +94,11 @@ func NewKickoffView() *KickoffView {
 	v.updateDocPanel()
 
 	return v
+}
+
+// SetAgentSelector sets the shared agent selector.
+func (v *KickoffView) SetAgentSelector(selector *pkgtui.AgentSelector) {
+	v.chatPanel.SetAgentSelector(selector)
 }
 
 // SetProjectStartCallback sets the callback for when a project is started.
@@ -339,8 +345,8 @@ func (v *KickoffView) Update(msg tea.Msg) (tui.View, tea.Cmd) {
 	case tea.KeyMsg:
 		// Handle delete confirmation first
 		if v.confirmingDelete {
-			switch msg.String() {
-			case "y", "Y":
+			switch {
+			case msg.String() == "y" || msg.String() == "Y":
 				// Confirmed - delete the project
 				if v.deleteTarget != nil {
 					target := *v.deleteTarget
@@ -351,7 +357,7 @@ func (v *KickoffView) Update(msg tea.Msg) (tui.View, tea.Cmd) {
 				v.confirmingDelete = false
 				v.deleteTarget = nil
 				return v, nil
-			case "n", "N", "esc":
+			case msg.String() == "n" || msg.String() == "N" || key.Matches(msg, commonKeys.Back):
 				// Cancelled
 				v.confirmingDelete = false
 				v.deleteTarget = nil
@@ -363,8 +369,8 @@ func (v *KickoffView) Update(msg tea.Msg) (tui.View, tea.Cmd) {
 
 		// Pass most keys to input if focused
 		if v.focusInput {
-			switch msg.String() {
-			case "tab":
+			switch {
+			case key.Matches(msg, commonKeys.TabCycle):
 				// Toggle focus to recents
 				if len(v.recents) > 0 {
 					v.focusInput = false
@@ -372,7 +378,7 @@ func (v *KickoffView) Update(msg tea.Msg) (tui.View, tea.Cmd) {
 				}
 				return v, nil
 
-			case "ctrl+g":
+			case msg.String() == "ctrl+g":
 				// Submit the project description (ctrl+g = "go")
 				val := v.chatPanel.Value()
 				if strings.TrimSpace(val) != "" {
@@ -384,7 +390,7 @@ func (v *KickoffView) Update(msg tea.Msg) (tui.View, tea.Cmd) {
 				v.chatPanel.SetComposerHint("Type a description first, then ctrl+g")
 				return v, nil
 
-			case "ctrl+s":
+			case msg.String() == "ctrl+s":
 				// Scan current directory
 				if v.onScanCodebase != nil {
 					cwd, _ := os.Getwd()
@@ -401,7 +407,7 @@ func (v *KickoffView) Update(msg tea.Msg) (tui.View, tea.Cmd) {
 				}
 				return v, nil
 
-			case "esc":
+			case key.Matches(msg, commonKeys.Back):
 				// If there's content, clear focus; otherwise do nothing
 				if len(v.recents) > 0 {
 					v.focusInput = false
@@ -418,25 +424,25 @@ func (v *KickoffView) Update(msg tea.Msg) (tui.View, tea.Cmd) {
 		}
 
 		// Recents list is focused - handle navigation
-		switch msg.String() {
-		case "tab":
+		switch {
+		case key.Matches(msg, commonKeys.TabCycle):
 			// Toggle focus to input
 			v.focusInput = true
 			return v, v.chatPanel.Focus()
 
-		case "up", "k":
+		case key.Matches(msg, commonKeys.NavUp):
 			if v.selected > 0 {
 				v.selected--
 			}
 			return v, nil
 
-		case "down", "j":
+		case key.Matches(msg, commonKeys.NavDown):
 			if v.selected < len(v.recents)-1 {
 				v.selected++
 			}
 			return v, nil
 
-		case "enter":
+		case key.Matches(msg, commonKeys.Select):
 			// Enter on a selected project opens it
 			if len(v.recents) > 0 {
 				recent := v.recents[v.selected]
@@ -452,7 +458,7 @@ func (v *KickoffView) Update(msg tea.Msg) (tui.View, tea.Cmd) {
 			}
 			return v, nil
 
-		case "d", "delete":
+		case msg.String() == "d" || msg.String() == "delete":
 			// Show delete confirmation
 			if len(v.recents) > 0 && v.selected >= 0 && v.selected < len(v.recents) {
 				v.confirmingDelete = true
@@ -796,12 +802,12 @@ func (v *KickoffView) Name() string {
 func (v *KickoffView) ShortHelp() string {
 	if v.focusInput {
 		if v.onScanCodebase != nil {
-			return "ctrl+g create  ctrl+s scan  tab switch"
+			return "ctrl+g create  ctrl+s scan  F2 agent  tab switch"
 		}
-		return "ctrl+g create  tab switch"
+		return "ctrl+g create  F2 agent  tab switch"
 	}
 	// Recents list focused
-	return "enter open  d delete  tab switch"
+	return "enter open  d delete  F2 agent  tab switch"
 }
 
 // FullHelp implements FullHelpProvider

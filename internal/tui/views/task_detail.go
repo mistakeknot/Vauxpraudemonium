@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/charmbracelet/bubbles/key"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/mistakeknot/autarch/internal/coldwine/tasks"
@@ -25,16 +26,18 @@ const (
 // TaskDetailView shows full task context and start options.
 // Uses the unified shell layout with chat for Q&A during review (no sidebar).
 type TaskDetailView struct {
-	task         tasks.TaskProposal
-	coordinator  *research.Coordinator
-	width        int
-	height       int
+	task        tasks.TaskProposal
+	coordinator *research.Coordinator
+	width       int
+	height      int
 
 	// Shell layout for unified 3-pane layout (chat only, no sidebar)
 	shell *pkgtui.ShellLayout
+	// Agent selector shown under chat pane
+	agentSelector *pkgtui.AgentSelector
 
 	// Agent selection
-	agents       []AgentType
+	agents        []AgentType
 	selectedAgent int
 	useWorktree   bool
 
@@ -44,6 +47,8 @@ type TaskDetailView struct {
 	// Callbacks
 	onStart func(task tasks.TaskProposal, agent AgentType, worktree bool) tea.Cmd
 	onBack  func() tea.Cmd
+
+	keys pkgtui.CommonKeys
 }
 
 // NewTaskDetailView creates a new task detail view.
@@ -55,7 +60,13 @@ func NewTaskDetailView(task tasks.TaskProposal, coordinator *research.Coordinato
 		agents:        []AgentType{AgentClaude, AgentCodex, AgentAider, AgentManual},
 		selectedAgent: 0,
 		useWorktree:   false,
+		keys:          pkgtui.NewCommonKeys(),
 	}
+}
+
+// SetAgentSelector sets the shared agent selector.
+func (v *TaskDetailView) SetAgentSelector(selector *pkgtui.AgentSelector) {
+	v.agentSelector = selector
 }
 
 // SetCallbacks sets the action callbacks.
@@ -96,20 +107,30 @@ func (v *TaskDetailView) Update(msg tea.Msg) (tui.View, tea.Cmd) {
 		return v, nil
 
 	case tea.KeyMsg:
+		if v.agentSelector != nil {
+			selectorMsg, selectorCmd := v.agentSelector.Update(msg)
+			if selectorMsg != nil {
+				return v, tea.Batch(selectorCmd, func() tea.Msg { return selectorMsg })
+			}
+			if v.agentSelector.Open || msg.Type == tea.KeyF2 {
+				return v, selectorCmd
+			}
+		}
+
 		// Let shell handle global keys first (Tab for focus cycling)
 		v.shell, cmd = v.shell.Update(msg)
 		if cmd != nil {
 			return v, cmd
 		}
 
-		switch msg.String() {
-		case "esc", "b", "backspace":
+		switch {
+		case key.Matches(msg, v.keys.Back) || msg.String() == "backspace":
 			if v.onBack != nil {
 				return v, v.onBack()
 			}
 			return v, nil
 
-		case "enter":
+		case key.Matches(msg, v.keys.Select):
 			// Start with selected agent
 			if v.onStart != nil {
 				agent := v.agents[v.selectedAgent]
@@ -117,19 +138,19 @@ func (v *TaskDetailView) Update(msg tea.Msg) (tui.View, tea.Cmd) {
 			}
 			return v, nil
 
-		case "left", "h":
+		case msg.String() == "left":
 			if v.selectedAgent > 0 {
 				v.selectedAgent--
 			}
 			return v, nil
 
-		case "right", "l":
+		case msg.String() == "right" || msg.String() == "l":
 			if v.selectedAgent < len(v.agents)-1 {
 				v.selectedAgent++
 			}
 			return v, nil
 
-		case "w":
+		case msg.String() == "w":
 			v.useWorktree = !v.useWorktree
 			return v, nil
 		}
@@ -220,6 +241,11 @@ func (v *TaskDetailView) renderChat() string {
 		Foreground(pkgtui.ColorMuted)
 
 	lines = append(lines, hintStyle.Render("Tab to focus chat"))
+
+	if v.agentSelector != nil {
+		lines = append(lines, "")
+		lines = append(lines, v.agentSelector.View())
+	}
 
 	return strings.Join(lines, "\n")
 }
@@ -415,7 +441,7 @@ func (v *TaskDetailView) Name() string {
 
 // ShortHelp implements View
 func (v *TaskDetailView) ShortHelp() string {
-	return "enter start  ←→ agent  w worktree  Tab focus"
+	return "enter start  ←→ agent  w worktree  F2 agent  Tab focus"
 }
 
 // FullHelp implements FullHelpProvider

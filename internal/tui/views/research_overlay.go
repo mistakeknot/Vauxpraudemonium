@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/charmbracelet/bubbles/key"
 	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
@@ -143,12 +144,12 @@ func (o *ResearchOverlay) Update(msg tea.Msg) (*ResearchOverlay, tea.Cmd) {
 			}
 		}
 
-		switch msg.String() {
-		case "ctrl+r", "esc":
+		switch {
+		case msg.String() == "ctrl+r" || key.Matches(msg, commonKeys.Back):
 			o.Hide()
 			return o, nil
 
-		case "j", "down":
+		case key.Matches(msg, commonKeys.NavDown):
 			maxIdx := len(o.filteredIdx) - 1
 			if o.selected < maxIdx {
 				o.selected++
@@ -156,26 +157,26 @@ func (o *ResearchOverlay) Update(msg tea.Msg) (*ResearchOverlay, tea.Cmd) {
 			}
 			return o, nil
 
-		case "k", "up":
+		case key.Matches(msg, commonKeys.NavUp):
 			if o.selected > 0 {
 				o.selected--
 				o.ensureVisible()
 			}
 			return o, nil
 
-		case "enter":
+		case key.Matches(msg, commonKeys.Select):
 			if len(o.filteredIdx) > 0 && o.selected < len(o.filteredIdx) {
 				idx := o.filteredIdx[o.selected]
 				o.expanded[idx] = !o.expanded[idx]
 			}
 			return o, nil
 
-		case "/":
+		case key.Matches(msg, commonKeys.Search):
 			o.searchMode = true
 			o.searchInput.Focus()
 			return o, textinput.Blink
 
-		case "r":
+		case key.Matches(msg, commonKeys.Refresh):
 			return o, o.refresh()
 		}
 	}

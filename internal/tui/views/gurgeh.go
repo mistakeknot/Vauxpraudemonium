@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/charmbracelet/bubbles/key"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/mistakeknot/autarch/internal/tui"
@@ -23,6 +24,8 @@ type GurgehView struct {
 
 	// Shell layout for unified 3-pane layout
 	shell *pkgtui.ShellLayout
+	// Agent selector shown under chat pane
+	agentSelector *pkgtui.AgentSelector
 }
 
 // NewGurgehView creates a new Gurgeh view
@@ -31,6 +34,11 @@ func NewGurgehView(client *autarch.Client) *GurgehView {
 		client: client,
 		shell:  pkgtui.NewShellLayout(),
 	}
+}
+
+// SetAgentSelector sets the shared agent selector.
+func (v *GurgehView) SetAgentSelector(selector *pkgtui.AgentSelector) {
+	v.agentSelector = selector
 }
 
 // Compile-time interface assertion for SidebarProvider
@@ -84,6 +92,16 @@ func (v *GurgehView) Update(msg tea.Msg) (tui.View, tea.Cmd) {
 		return v, nil
 
 	case tea.KeyMsg:
+		if v.agentSelector != nil {
+			selectorMsg, selectorCmd := v.agentSelector.Update(msg)
+			if selectorMsg != nil {
+				return v, tea.Batch(selectorCmd, func() tea.Msg { return selectorMsg })
+			}
+			if v.agentSelector.Open || msg.Type == tea.KeyF2 {
+				return v, selectorCmd
+			}
+		}
+
 		// Let shell handle global keys first
 		v.shell, cmd = v.shell.Update(msg)
 		if cmd != nil {
@@ -95,16 +113,16 @@ func (v *GurgehView) Update(msg tea.Msg) (tui.View, tea.Cmd) {
 		case pkgtui.FocusSidebar:
 			// Navigation handled by shell/sidebar
 		case pkgtui.FocusDocument:
-			switch msg.String() {
-			case "j", "down":
+			switch {
+			case key.Matches(msg, commonKeys.NavDown):
 				if v.selected < len(v.specs)-1 {
 					v.selected++
 				}
-			case "k", "up":
+			case key.Matches(msg, commonKeys.NavUp):
 				if v.selected > 0 {
 					v.selected--
 				}
-			case "r":
+			case key.Matches(msg, commonKeys.Refresh):
 				v.loading = true
 				return v, v.loadSpecs()
 			}
@@ -246,6 +264,11 @@ func (v *GurgehView) renderChat() string {
 
 	lines = append(lines, hintStyle.Render("Tab to focus • Ctrl+B toggle sidebar"))
 
+	if v.agentSelector != nil {
+		lines = append(lines, "")
+		lines = append(lines, v.agentSelector.View())
+	}
+
 	return strings.Join(lines, "\n")
 }
 
@@ -264,7 +287,7 @@ func (v *GurgehView) Name() string {
 
 // ShortHelp implements View
 func (v *GurgehView) ShortHelp() string {
-	return "j/k navigate  r refresh  Tab focus  Ctrl+B sidebar"
+	return "j/k navigate  r refresh  F2 agent  Tab focus  Ctrl+B sidebar"
 }
 
 // Commands implements CommandProvider
