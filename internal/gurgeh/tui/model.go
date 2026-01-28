@@ -578,7 +578,18 @@ func newOrchestratorWithScanner(projectPath string) *arbiter.Orchestrator {
 
 func (m *Model) startSprint() {
 	orch := newOrchestratorWithScanner(m.root)
-	state, err := orch.Start(context.Background(), "")
+	ctx := context.Background()
+
+	var state *arbiter.SprintState
+	var err error
+
+	if specs.NeedsVisionSpec(m.summaries) {
+		state, err = orch.StartVision(ctx, "")
+		m.status = "Vision spec required before creating another PRD"
+	} else {
+		state, err = orch.Start(ctx, "")
+	}
+
 	if err != nil {
 		m.status = "Sprint failed: " + err.Error()
 		return

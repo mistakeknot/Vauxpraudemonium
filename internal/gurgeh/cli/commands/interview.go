@@ -106,6 +106,13 @@ The config file format:
 			// Determine if we're in non-interactive mode
 			nonInteractive := configFile != "" || vision != "" || users != "" || problem != "" || requirements != ""
 
+			// Check if vision spec is required before allowing another PRD
+			summaries, _ := specs.LoadSummaries(project.SpecsDir(root))
+			if specs.NeedsVisionSpec(summaries) {
+				fmt.Fprintln(cmd.OutOrStdout(), "Vision spec required before creating another PRD. Starting vision sprint...")
+				return runVisionSprint(cmd.OutOrStdout(), root, interviewCfg)
+			}
+
 			// Handle plan mode
 			if planMode {
 				return runInterviewPlan(cmd.OutOrStdout(), root, interviewCfg)
@@ -323,6 +330,51 @@ func runArbiterSprint(out io.Writer, root string, cfg InterviewConfig) error {
 		}
 	}
 	fmt.Fprintf(out, "Confidence: %.0f%%\n", state.Confidence.Total()*100)
+	return nil
+}
+
+// runVisionSprint runs an Arbiter sprint in vision mode.
+func runVisionSprint(out io.Writer, root string, cfg InterviewConfig) error {
+	orch := arbiter.NewOrchestrator(root)
+	orch.SetScanner(pollardquick.NewScanner())
+	ctx := context.Background()
+
+	state, err := orch.StartVision(ctx, cfg.Vision)
+	if err != nil {
+		return fmt.Errorf("starting vision sprint: %w", err)
+	}
+
+	state = orch.AcceptDraft(state)
+
+	for {
+		state, err = orch.Advance(ctx, state)
+		if err != nil {
+			return fmt.Errorf("advancing vision sprint: %w", err)
+		}
+		state = orch.AcceptDraft(state)
+
+		phases := arbiter.AllPhases()
+		if state.Phase == phases[len(phases)-1] {
+			break
+		}
+	}
+
+	spec, err := orch.ExportSpec(state)
+	if err != nil {
+		return fmt.Errorf("exporting vision spec: %w", err)
+	}
+
+	path, id, warnings, err := writeSpec(root, *spec)
+	if err != nil {
+		return err
+	}
+	fmt.Fprintf(out, "Created vision spec %s at %s\n", id, path)
+	if len(warnings) > 0 {
+		fmt.Fprintln(out, "Validation warnings:")
+		for _, w := range warnings {
+			fmt.Fprintln(out, "- "+w)
+		}
+	}
 	return nil
 }
 

@@ -11,6 +11,7 @@ import (
 func ExportToSpec(state *SprintState) (*specs.Spec, error) {
 	spec := &specs.Spec{
 		ID:     state.ID,
+		Type:   state.SpecType,
 		Status: "draft",
 	}
 

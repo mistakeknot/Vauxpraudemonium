@@ -125,6 +125,7 @@ type SprintState struct {
 	Findings        []ResearchFinding // Intermute research findings
 	DeepScan        DeepScanState     // Async deep scan tracking
 	VisionContext   *VisionContext    // loaded vision spec for vertical checks (nil if none)
+	SpecType        string            // "" for PRD, "vision" for vision specs
 	IsReview        bool              // true when reviewing an existing spec
 	ReviewingSpecID string            // ID of spec being reviewed
 	StartedAt       time.Time

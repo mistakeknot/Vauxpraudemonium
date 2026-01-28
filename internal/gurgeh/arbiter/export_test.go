@@ -88,6 +88,28 @@ func TestExportToSpec_NilSections(t *testing.T) {
 	}
 }
 
+func TestExportToSpec_PropagatesSpecType(t *testing.T) {
+	state := arbiter.NewSprintState("/tmp/test")
+	state.SpecType = "vision"
+	exported, err := arbiter.ExportToSpec(state)
+	if err != nil {
+		t.Fatalf("ExportToSpec failed: %v", err)
+	}
+	if exported.Type != "vision" {
+		t.Errorf("expected Type %q, got %q", "vision", exported.Type)
+	}
+
+	// Default (empty) SpecType should produce empty Type
+	state2 := arbiter.NewSprintState("/tmp/test2")
+	exported2, err := arbiter.ExportToSpec(state2)
+	if err != nil {
+		t.Fatalf("ExportToSpec failed: %v", err)
+	}
+	if exported2.Type != "" {
+		t.Errorf("expected empty Type for default sprint, got %q", exported2.Type)
+	}
+}
+
 func TestExportToSpec_WithFindings(t *testing.T) {
 	state := arbiter.NewSprintState("/tmp/test")
 	state.Findings = []arbiter.ResearchFinding{

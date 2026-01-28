@@ -247,6 +247,7 @@ func (o *Orchestrator) StartVision(ctx context.Context, userInput string) (*Spri
 		return nil, err
 	}
 	// Mark the sprint as producing a vision spec (used by ExportSpec)
+	state.SpecType = "vision"
 	state.IsReview = false
 	return state, nil
 }
