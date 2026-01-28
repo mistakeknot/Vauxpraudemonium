@@ -144,10 +144,16 @@ func (a *UnifiedApp) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		a.tabs.SetWidth(msg.Width)
 		a.palette.SetSize(msg.Width, msg.Height)
 
-		// Pass to current view
+		// Pass reduced size to current view (account for header + footer)
 		if a.currentView != nil {
+			headerHeight := 3
+			footerHeight := 3
+			contentMsg := tea.WindowSizeMsg{
+				Width:  msg.Width,
+				Height: msg.Height - headerHeight - footerHeight,
+			}
 			var cmd tea.Cmd
-			a.currentView, cmd = a.currentView.Update(msg)
+			a.currentView, cmd = a.currentView.Update(contentMsg)
 			return a, cmd
 		}
 		return a, nil
@@ -349,7 +355,34 @@ func (a *UnifiedApp) handleProjectCreated(msg ProjectCreatedMsg) tea.Cmd {
 		return tea.Batch(cmds...)
 	}
 
-	return nil
+	// No arbiter view — skip interview and go directly to spec summary
+	// using the project description and scan results as answers.
+	answers := map[string]string{
+		"vision": msg.Description,
+	}
+	if msg.ScanResult != nil {
+		if msg.ScanResult.Vision != "" {
+			answers["vision"] = msg.ScanResult.Vision
+		}
+		if msg.ScanResult.Users != "" {
+			answers["users"] = msg.ScanResult.Users
+		}
+		if msg.ScanResult.Problem != "" {
+			answers["problem"] = msg.ScanResult.Problem
+		}
+		if msg.ScanResult.Platform != "" {
+			answers["platform"] = msg.ScanResult.Platform
+		}
+		if msg.ScanResult.Language != "" {
+			answers["language"] = msg.ScanResult.Language
+		}
+		if len(msg.ScanResult.Requirements) > 0 {
+			answers["requirements"] = strings.Join(msg.ScanResult.Requirements, "\n")
+		}
+	}
+	return func() tea.Msg {
+		return InterviewCompleteMsg{Answers: answers}
+	}
 }
 
 func (a *UnifiedApp) generateSuggestions() tea.Cmd {

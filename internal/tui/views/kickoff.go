@@ -374,11 +374,14 @@ func (v *KickoffView) Update(msg tea.Msg) (tui.View, tea.Cmd) {
 
 			case "ctrl+g":
 				// Submit the project description (ctrl+g = "go")
-				if strings.TrimSpace(v.chatPanel.Value()) != "" {
+				val := v.chatPanel.Value()
+				if strings.TrimSpace(val) != "" {
 					v.loading = true
 					v.loadingMsg = "Creating project..."
-					return v, v.createProject(v.chatPanel.Value())
+					return v, v.createProject(val)
 				}
+				// Empty input — show hint
+				v.chatPanel.SetComposerHint("Type a description first, then ctrl+g")
 				return v, nil
 
 			case "ctrl+s":
