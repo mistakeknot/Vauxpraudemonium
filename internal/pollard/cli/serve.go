@@ -1,9 +1,13 @@
 package cli
 
 import (
+	"context"
 	"fmt"
 	"os"
+	"strings"
+	"time"
 
+	"github.com/mistakeknot/autarch/internal/pollard/inbox"
 	"github.com/mistakeknot/autarch/internal/pollard/server"
 	"github.com/spf13/cobra"
 )
@@ -23,6 +27,11 @@ func serveCmd() *cobra.Command {
 				return err
 			}
 			defer srv.Close()
+			if strings.TrimSpace(os.Getenv("INTERMUTE_URL")) != "" {
+				handler := inbox.NewHandler(srv.Scanner(), 2*time.Second)
+				go handler.Run(context.Background())
+				fmt.Fprintln(cmd.OutOrStdout(), "Intermute inbox polling enabled")
+			}
 			fmt.Fprintf(cmd.OutOrStdout(), "Pollard API listening on %s\n", addr)
 			return srv.ListenAndServe(addr)
 		},

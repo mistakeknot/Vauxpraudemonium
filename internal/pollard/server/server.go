@@ -54,6 +54,11 @@ func (s *Server) Close() error {
 	return nil
 }
 
+// Scanner exposes the underlying Pollard scanner for integrations.
+func (s *Server) Scanner() *api.Scanner {
+	return s.scanner
+}
+
 func (s *Server) ListenAndServe(addr string) error {
 	if err := netguard.EnsureLocalOnly(addr); err != nil {
 		return err

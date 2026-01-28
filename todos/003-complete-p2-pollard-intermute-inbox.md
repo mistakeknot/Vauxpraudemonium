@@ -1,5 +1,5 @@
 ---
-status: pending
+status: complete
 priority: p2
 issue_id: "003"
 tags: [pollard, intermute, coordination]
@@ -55,7 +55,7 @@ Phase 5 of the coordination plan (async agent-to-Pollard requests via Intermute)
 
 ## Recommended Action
 
-**To be filled during triage.**
+Implement a polling inbox handler that calls `Scanner.ProcessInbox()` and wire it into `pollard serve` when Intermute is configured. Re-export message protocol types for consumers.
 
 ## Technical Details
 
@@ -69,9 +69,9 @@ Phase 5 of the coordination plan (async agent-to-Pollard requests via Intermute)
 
 ## Acceptance Criteria
 
-- [ ] Inbox handler can parse research requests and reply with results
-- [ ] `pollard serve` starts inbox handler when Intermute is configured
-- [ ] Minimal protocol types defined for request/response payloads
+- [x] Inbox handler can parse research requests and reply with results
+- [x] `pollard serve` starts inbox handler when Intermute is configured
+- [x] Minimal protocol types defined for request/response payloads
 
 ## Work Log
 
@@ -85,3 +85,15 @@ Phase 5 of the coordination plan (async agent-to-Pollard requests via Intermute)
 
 **Learnings:**
 - Intermute request/response is still unimplemented in Autarch
+
+### 2026-01-28 - Implementation
+
+**By:** Codex
+
+**Actions:**
+- Added `internal/pollard/inbox` handler + protocol re-exports
+- Wired `pollard serve` to start inbox polling when `INTERMUTE_URL` is set
+- Added handler unit test
+
+**Learnings:**
+- Pollard scanner already implements Intermute message processing; it just needed a polling loop
