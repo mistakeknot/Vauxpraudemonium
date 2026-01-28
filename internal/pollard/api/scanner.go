@@ -31,11 +31,11 @@ import (
 
 // Scanner provides programmatic access to Pollard hunters.
 type Scanner struct {
-	projectPath  string
-	config       *config.Config
-	registry     *hunters.Registry
-	db           *state.DB
-	orchestrator *ResearchOrchestrator
+	projectPath     string
+	config          *config.Config
+	registry        *hunters.Registry
+	db              *state.DB
+	orchestrator    *ResearchOrchestrator
 	intermuteCursor uint64
 }
 
@@ -103,6 +103,15 @@ func (s *Scanner) Close() error {
 		return s.db.Close()
 	}
 	return nil
+}
+
+// AvailableHunters returns registered hunter names.
+func (s *Scanner) AvailableHunters() []string {
+	names := make([]string, 0)
+	for _, h := range s.registry.All() {
+		names = append(names, h.Name())
+	}
+	return names
 }
 
 // Scan runs the specified hunters (or all enabled hunters if none specified).

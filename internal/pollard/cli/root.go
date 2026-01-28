@@ -48,6 +48,7 @@ func init() {
 	rootCmd.AddCommand(suggestCmd)
 	rootCmd.AddCommand(hunterCmd)
 	rootCmd.AddCommand(proposeCmd)
+	rootCmd.AddCommand(serveCmd())
 }
 
 // runStatus shows Pollard status and suggests next actions.

@@ -60,6 +60,7 @@ func NewRoot() *cobra.Command {
 		commands.PrioritizeCmd(),
 		commands.SignalsCmd(),
 		commands.VisionReviewCmd(),
+		commands.ServeCmd(),
 	)
 	return root
 }

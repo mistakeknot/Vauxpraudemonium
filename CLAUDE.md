@@ -33,6 +33,7 @@ go run ./cmd/pollard watch           # Continuous monitoring
 # API servers (local-only by default)
 go run ./cmd/pollard serve --addr 127.0.0.1:8090   # Pollard research API
 go run ./cmd/gurgeh serve --addr 127.0.0.1:8091    # Gurgeh spec API (read-only)
+go run ./cmd/signals serve --addr 127.0.0.1:8092   # Signals WS server
 
 # Gurgeh spec quality
 go run ./cmd/gurgeh history <spec-id>       # Spec revision changelog
