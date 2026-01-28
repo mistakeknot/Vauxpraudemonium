@@ -18,6 +18,7 @@ type ChatMessage struct {
 type ChatPanel struct {
 	messages []ChatMessage
 	composer *Composer
+	selector *AgentSelector
 	width    int
 	height   int
 	scroll   int // Scroll offset for history (0 = bottom)
@@ -71,6 +72,17 @@ func (p *ChatPanel) SetSize(width, height int) {
 
 // Update handles tea.Msg for the chat panel.
 func (p *ChatPanel) Update(msg tea.Msg) (*ChatPanel, tea.Cmd) {
+	if keyMsg, ok := msg.(tea.KeyMsg); ok && p.selector != nil {
+		wasOpen := p.selector.Open
+		selectorMsg, selectorCmd := p.selector.Update(keyMsg)
+		if selectorMsg != nil {
+			return p, tea.Batch(selectorCmd, func() tea.Msg { return selectorMsg })
+		}
+		if p.selector.Open || wasOpen || keyMsg.Type == tea.KeyF2 {
+			return p, selectorCmd
+		}
+	}
+
 	// Pass messages to composer
 	var cmd tea.Cmd
 	p.composer, cmd = p.composer.Update(msg)
@@ -83,9 +95,14 @@ func (p *ChatPanel) View() string {
 		return ""
 	}
 
+	selectorHeight := 0
+	if p.selector != nil {
+		selectorHeight = 1
+	}
+
 	// Calculate heights
-	composerHeight := 8 // Fixed height for composer area
-	historyHeight := p.height - composerHeight - 1 // -1 for separator
+	composerHeight := 8                                             // Fixed height for composer area
+	historyHeight := p.height - composerHeight - 1 - selectorHeight // -1 for separator
 	if historyHeight < 1 {
 		historyHeight = 1
 	}
@@ -103,11 +120,17 @@ func (p *ChatPanel) View() string {
 
 	// Join vertically - don't add Width constraints here
 	// The SplitLayout.ensureSize() handles width normalization
-	return lipgloss.JoinVertical(lipgloss.Left,
+	sections := []string{
 		historyView,
 		separator,
 		composerView,
-	)
+	}
+
+	if p.selector != nil {
+		sections = append(sections, p.selector.View())
+	}
+
+	return lipgloss.JoinVertical(lipgloss.Left, sections...)
 }
 
 // renderHistory renders the chat history area.
@@ -245,6 +268,11 @@ func (p *ChatPanel) SetComposerHint(hint string) {
 // SetComposerPlaceholder sets the placeholder text for the composer.
 func (p *ChatPanel) SetComposerPlaceholder(placeholder string) {
 	p.composer.SetPlaceholder(placeholder)
+}
+
+// SetAgentSelector sets the selector rendered under the composer.
+func (p *ChatPanel) SetAgentSelector(selector *AgentSelector) {
+	p.selector = selector
 }
 
 // ScrollUp scrolls the history up (shows older messages).

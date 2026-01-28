@@ -192,6 +192,7 @@ When adding or editing shortcuts, review
 | `j` / `k` | Navigate down/up |
 | `enter` | Select/expand |
 | `esc` / `b` / `backspace` | Go back |
+| `F2` | Agent selector |
 | `1-4` | Switch tabs |
 
 ### Review Views (Epic/Task Review)

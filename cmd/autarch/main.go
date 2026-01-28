@@ -26,14 +26,15 @@ import (
 	coldwineCli "github.com/mistakeknot/autarch/internal/coldwine/cli"
 	"github.com/mistakeknot/autarch/internal/coldwine/epics"
 	"github.com/mistakeknot/autarch/internal/coldwine/tasks"
+	gurgehCli "github.com/mistakeknot/autarch/internal/gurgeh/cli"
 	internalIntermute "github.com/mistakeknot/autarch/internal/intermute"
+	pollardCli "github.com/mistakeknot/autarch/internal/pollard/cli"
 	"github.com/mistakeknot/autarch/internal/pollard/research"
 	"github.com/mistakeknot/autarch/internal/tui"
 	"github.com/mistakeknot/autarch/internal/tui/views"
-	gurgehCli "github.com/mistakeknot/autarch/internal/gurgeh/cli"
 	"github.com/mistakeknot/autarch/pkg/autarch"
 	"github.com/mistakeknot/autarch/pkg/intermute"
-	pollardCli "github.com/mistakeknot/autarch/internal/pollard/cli"
+	pkgtui "github.com/mistakeknot/autarch/pkg/tui"
 )
 
 func main() {
@@ -63,8 +64,8 @@ Available tools:
 
 func tuiCmd() *cobra.Command {
 	var (
-		port      int
-		dataDir   string
+		port        int
+		dataDir     string
 		skipOnboard bool
 	)
 
@@ -131,11 +132,39 @@ Navigation:
 			client := autarch.NewClient(mgr.URL())
 
 			if skipOnboard {
+				var selector *pkgtui.AgentSelector
+				if cwd, err := os.Getwd(); err == nil {
+					if options, err := tui.LoadAgentOptions(cwd); err == nil {
+						filtered := make([]pkgtui.AgentOption, 0, len(options))
+						for _, opt := range options {
+							switch strings.ToLower(opt.Name) {
+							case "codex", "claude":
+								filtered = append(filtered, opt)
+							}
+						}
+						if len(filtered) > 0 {
+							selector = pkgtui.NewAgentSelector(filtered)
+						}
+					}
+				}
+
 				// Skip onboarding, go directly to dashboard
 				bigendView := views.NewBigendView(client)
 				gurgehView := views.NewGurgehView(client)
 				coldwineView := views.NewColdwineView(client)
 				pollardView := views.NewPollardView(client)
+
+				if selector != nil {
+					if setter, ok := any(gurgehView).(interface{ SetAgentSelector(*pkgtui.AgentSelector) }); ok {
+						setter.SetAgentSelector(selector)
+					}
+					if setter, ok := any(coldwineView).(interface{ SetAgentSelector(*pkgtui.AgentSelector) }); ok {
+						setter.SetAgentSelector(selector)
+					}
+					if setter, ok := any(pollardView).(interface{ SetAgentSelector(*pkgtui.AgentSelector) }); ok {
+						setter.SetAgentSelector(selector)
+					}
+				}
 
 				return tui.Run(client,
 					bigendView,

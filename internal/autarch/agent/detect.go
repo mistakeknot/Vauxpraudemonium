@@ -54,6 +54,36 @@ func DetectAgent() (*Agent, error) {
 	return nil, &NoAgentError{}
 }
 
+// DetectAgentByName finds the requested agent by name.
+func DetectAgentByName(name string, lookPath func(string) (string, error)) (*Agent, error) {
+	switch strings.ToLower(name) {
+	case "claude":
+		path, err := lookPath("claude")
+		if err != nil {
+			return nil, err
+		}
+		version := getVersion(path, "--version")
+		return &Agent{
+			Type:    TypeClaude,
+			Path:    path,
+			Version: version,
+		}, nil
+	case "codex":
+		path, err := lookPath("codex")
+		if err != nil {
+			return nil, err
+		}
+		version := getVersion(path, "--version")
+		return &Agent{
+			Type:    TypeCodex,
+			Path:    path,
+			Version: version,
+		}, nil
+	default:
+		return nil, fmt.Errorf("unsupported agent %q", name)
+	}
+}
+
 // NoAgentError indicates no coding agent was found
 type NoAgentError struct{}
 

@@ -12,6 +12,7 @@ behavior consistent across tools.
 - Navigation: arrows, PageUp/PageDown, Home/End
 - Actions: Enter (activate), Esc (cancel/back), Tab/Shift+Tab (focus),
   Space (toggle), Backspace (go back/delete)
+- Function keys: F1–F12 (e.g., F2 for agent selector)
 
 ## Common Letter Bindings (Only When Not in Text Input)
 - `?` help

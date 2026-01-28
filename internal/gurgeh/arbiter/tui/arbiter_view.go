@@ -78,6 +78,11 @@ func NewArbiterView(projectPath string, coordinator *research.Coordinator) *Arbi
 	}
 }
 
+// SetAgentSelector sets the shared agent selector.
+func (v *ArbiterView) SetAgentSelector(selector *pkgtui.AgentSelector) {
+	v.chatPanel.SetAgentSelector(selector)
+}
+
 // SetOnComplete sets the callback for when the sprint finishes.
 func (v *ArbiterView) SetOnComplete(cb func(*arbiter.SprintState) tea.Cmd) {
 	v.onComplete = cb
@@ -406,7 +411,7 @@ func (v *ArbiterView) Name() string {
 // ShortHelp implements pkgtui.View.
 func (v *ArbiterView) ShortHelp() string {
 	if v.handoffMode {
-		return "j/k navigate  enter select  esc back"
+		return "j/k navigate  enter select  esc back  F2 agent"
 	}
-	return "a accept  e edit  1-3 alternatives  enter submit  esc cancel"
+	return "a accept  e edit  1-3 alternatives  enter submit  esc cancel  F2 agent"
 }
