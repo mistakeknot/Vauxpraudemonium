@@ -16,9 +16,6 @@ func TestServerPublishHappyPath(t *testing.T) {
 	srv := NewServer(broker)
 	srv.routes()
 
-	ts := httptest.NewServer(srv.mux)
-	defer ts.Close()
-
 	sub := broker.Subscribe(nil)
 	defer sub.Close()
 
@@ -33,10 +30,12 @@ func TestServerPublishHappyPath(t *testing.T) {
 		t.Fatalf("marshal signal: %v", err)
 	}
 
-	resp, err := http.Post(ts.URL+"/api/signals", "application/json", bytes.NewReader(body))
-	if err != nil {
-		t.Fatalf("post: %v", err)
-	}
+	req := httptest.NewRequest(http.MethodPost, "/api/signals", bytes.NewReader(body))
+	req.Header.Set("Content-Type", "application/json")
+	rec := httptest.NewRecorder()
+	srv.mux.ServeHTTP(rec, req)
+
+	resp := rec.Result()
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusAccepted {
@@ -67,13 +66,12 @@ func TestServerPublishHappyPath(t *testing.T) {
 func TestServerPublishRejectsInvalidJSON(t *testing.T) {
 	srv := NewServer(NewBroker())
 	srv.routes()
-	ts := httptest.NewServer(srv.mux)
-	defer ts.Close()
+	req := httptest.NewRequest(http.MethodPost, "/api/signals", bytes.NewBufferString("{bad json"))
+	req.Header.Set("Content-Type", "application/json")
+	rec := httptest.NewRecorder()
+	srv.mux.ServeHTTP(rec, req)
 
-	resp, err := http.Post(ts.URL+"/api/signals", "application/json", bytes.NewBufferString("{bad json"))
-	if err != nil {
-		t.Fatalf("post: %v", err)
-	}
+	resp := rec.Result()
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusBadRequest {
@@ -84,13 +82,12 @@ func TestServerPublishRejectsInvalidJSON(t *testing.T) {
 func TestServerPublishRejectsMissingFields(t *testing.T) {
 	srv := NewServer(NewBroker())
 	srv.routes()
-	ts := httptest.NewServer(srv.mux)
-	defer ts.Close()
+	req := httptest.NewRequest(http.MethodPost, "/api/signals", bytes.NewBufferString(`{}`))
+	req.Header.Set("Content-Type", "application/json")
+	rec := httptest.NewRecorder()
+	srv.mux.ServeHTTP(rec, req)
 
-	resp, err := http.Post(ts.URL+"/api/signals", "application/json", bytes.NewBufferString(`{}`))
-	if err != nil {
-		t.Fatalf("post: %v", err)
-	}
+	resp := rec.Result()
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusBadRequest {

@@ -86,7 +86,10 @@ func TestManagerLogTailUpdates(t *testing.T) {
 
 	waitFor(t, func() bool {
 		status := m.Status("/root/projects/demo", "server")
-		return status != nil && len(status.LogTail) >= 1
+		if status == nil || len(status.LogTail) == 0 {
+			return false
+		}
+		return status.LogTail[len(status.LogTail)-1] == "line-59"
 	})
 
 	status := m.Status("/root/projects/demo", "server")

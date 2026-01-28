@@ -638,7 +638,7 @@ func intermuteEnabled() bool {
 	return intermuteURL() != ""
 }
 
-func intermuteClient() (*ic.Client, error) {
+var intermuteClient = func() (*ic.Client, error) {
 	apiKey := strings.TrimSpace(os.Getenv("INTERMUTE_API_KEY"))
 	project := strings.TrimSpace(os.Getenv("INTERMUTE_PROJECT"))
 	if apiKey != "" && project == "" {

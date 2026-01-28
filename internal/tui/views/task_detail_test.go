@@ -15,7 +15,7 @@ func TestTaskDetailBackUsesCommonBack(t *testing.T) {
 		return nil
 	})
 
-	_, _ = view.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'h'}})
+	_, _ = view.Update(tea.KeyMsg{Type: tea.KeyEsc})
 	if !called {
 		t.Fatalf("expected back handler on common back key")
 	}
