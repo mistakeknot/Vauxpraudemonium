@@ -3,6 +3,7 @@ package tui
 import (
 	"strings"
 
+	"github.com/charmbracelet/bubbles/key"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 	pkgtui "github.com/mistakeknot/autarch/pkg/tui"
@@ -22,6 +23,7 @@ type Breadcrumb struct {
 	current  int
 	selected int // For keyboard navigation (-1 means not navigating)
 	width    int
+	keys     pkgtui.CommonKeys
 }
 
 // NewBreadcrumb creates a new breadcrumb with the onboarding steps
@@ -42,6 +44,7 @@ func NewBreadcrumb() *Breadcrumb {
 		steps:    steps,
 		current:  0,
 		selected: -1,
+		keys:     pkgtui.NewCommonKeys(),
 	}
 }
 
@@ -88,8 +91,8 @@ func (b *Breadcrumb) Update(msg tea.Msg) (*Breadcrumb, tea.Cmd) {
 
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
-		switch msg.String() {
-		case "left", "h":
+		switch {
+		case msg.String() == "left":
 			// Find previous unlocked step
 			for i := b.selected - 1; i >= 0; i-- {
 				if b.steps[i].Unlocked {
@@ -97,7 +100,7 @@ func (b *Breadcrumb) Update(msg tea.Msg) (*Breadcrumb, tea.Cmd) {
 					break
 				}
 			}
-		case "right", "l":
+		case msg.String() == "right":
 			// Find next unlocked step
 			for i := b.selected + 1; i < len(b.steps); i++ {
 				if b.steps[i].Unlocked {
@@ -105,7 +108,7 @@ func (b *Breadcrumb) Update(msg tea.Msg) (*Breadcrumb, tea.Cmd) {
 					break
 				}
 			}
-		case "enter":
+		case key.Matches(msg, b.keys.Select):
 			if b.selected >= 0 && b.selected < len(b.steps) && b.steps[b.selected].Unlocked {
 				targetState := b.steps[b.selected].State
 				b.selected = -1
@@ -113,7 +116,7 @@ func (b *Breadcrumb) Update(msg tea.Msg) (*Breadcrumb, tea.Cmd) {
 					return NavigateToStepMsg{State: targetState}
 				}
 			}
-		case "esc":
+		case key.Matches(msg, b.keys.Back):
 			b.selected = -1
 		}
 	}
