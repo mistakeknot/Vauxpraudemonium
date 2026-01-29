@@ -119,3 +119,14 @@ func TestScanSignoffCompletesToSpecSummary(t *testing.T) {
 		t.Fatalf("expected to enter spec summary after scan signoff")
 	}
 }
+
+func TestScanResultSetsInterviewBreadcrumb(t *testing.T) {
+	app := NewUnifiedApp(nil)
+	app.onboardingState = OnboardingKickoff
+
+	_, _ = app.Update(CodebaseScanResultMsg{})
+
+	if app.onboardingState != OnboardingInterview {
+		t.Fatalf("expected onboarding to move to interview after scan")
+	}
+}

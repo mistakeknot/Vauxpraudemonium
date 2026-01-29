@@ -461,8 +461,8 @@ func (a *UnifiedApp) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case CodebaseScanResultMsg:
 		// Pass to kickoff view - it will handle the result
 		if a.mode == ModeOnboarding {
-			a.onboardingState = OnboardingScanVision
-			a.breadcrumb.SetCurrent(OnboardingScanVision)
+			a.onboardingState = OnboardingInterview
+			a.breadcrumb.SetCurrent(OnboardingInterview)
 		}
 
 	case scanProgressWithContinuation:
@@ -1335,9 +1335,7 @@ func (a *UnifiedApp) onboardingHeader() string {
 	switch a.onboardingState {
 	case OnboardingKickoff:
 		return "New Project"
-	case OnboardingScanVision, OnboardingScanProblem, OnboardingScanUsers:
-		return "Scan Review"
-	case OnboardingInterview:
+	case OnboardingScanVision, OnboardingScanProblem, OnboardingScanUsers, OnboardingInterview:
 		return "Project Setup"
 	case OnboardingSpecSummary:
 		return "Review Spec"

@@ -28,9 +28,6 @@ const (
 func AllOnboardingStates() []OnboardingState {
 	return []OnboardingState{
 		OnboardingKickoff,
-		OnboardingScanVision,
-		OnboardingScanProblem,
-		OnboardingScanUsers,
 		OnboardingInterview,
 		OnboardingSpecSummary,
 		OnboardingEpicReview,

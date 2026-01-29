@@ -360,9 +360,6 @@ func (v *KickoffView) acceptScanStep() tea.Cmd {
 		}
 		v.scanStep = next
 		v.updateDocPanel()
-		cmds = append(cmds, func() tea.Msg {
-			return tui.NavigateToStepMsg{State: next}
-		})
 	} else {
 		answers := v.buildSignoffAnswers()
 		cmds = append(cmds, func() tea.Msg {
@@ -382,9 +379,7 @@ func (v *KickoffView) moveScanStepBack() tea.Cmd {
 	}
 	v.scanStep = prev
 	v.updateDocPanel()
-	return func() tea.Msg {
-		return tui.NavigateToStepMsg{State: prev}
-	}
+	return nil
 }
 
 func (v *KickoffView) applyAcceptedToScanResult(msg *tui.CodebaseScanResultMsg) *tui.CodebaseScanResultMsg {

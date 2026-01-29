@@ -22,10 +22,10 @@ func TestBreadcrumbBackExitsNavigation(t *testing.T) {
 	}
 }
 
-func TestBreadcrumbIncludesScanSteps(t *testing.T) {
+func TestBreadcrumbDoesNotIncludeScanSteps(t *testing.T) {
 	b := NewBreadcrumb()
 	labels := b.LabelsForTest()
-	want := []string{"Project", "Vision", "Problem", "Users"}
+	want := []string{"Project", "Interview", "Spec", "Epics", "Tasks", "Dashboard"}
 	for _, w := range want {
 		found := false
 		for _, label := range labels {
@@ -36,6 +36,11 @@ func TestBreadcrumbIncludesScanSteps(t *testing.T) {
 		}
 		if !found {
 			t.Fatalf("expected breadcrumb to include %q", w)
+		}
+	}
+	for _, label := range labels {
+		if label == "Vision" || label == "Problem" || label == "Users" {
+			t.Fatalf("did not expect scan step label %q", label)
 		}
 	}
 }

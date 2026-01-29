@@ -105,3 +105,20 @@ func TestKickoffCtrlLeftMovesBackWithoutResuggest(t *testing.T) {
 		t.Fatalf("did not expect resuggest when moving back")
 	}
 }
+
+func TestKickoffAcceptDoesNotNavigateBreadcrumb(t *testing.T) {
+	v := NewKickoffView()
+	v.scanResult = &tui.CodebaseScanResultMsg{Vision: "Vision text"}
+	v.SetScanStepForTest(tui.OnboardingScanVision)
+	v.SetScanCodebaseCallback(nil)
+
+	_, cmd := v.Update(tea.KeyMsg{Type: tea.KeyCtrlRight})
+	if cmd == nil {
+		return
+	}
+	if msg := cmd(); msg != nil {
+		if _, ok := msg.(tui.NavigateToStepMsg); ok {
+			t.Fatalf("did not expect NavigateToStepMsg during scan review")
+		}
+	}
+}
