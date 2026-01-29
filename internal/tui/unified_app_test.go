@@ -36,7 +36,7 @@ func (v *chatStreamView) AppendChatLine(line string) {
 	v.last = line
 }
 
-func TestUnifiedAppShiftTabCyclesBack(t *testing.T) {
+func TestUnifiedAppCtrlLeftCyclesBack(t *testing.T) {
 	app := NewUnifiedApp(nil)
 	app.mode = ModeDashboard
 	app.dashViews = []View{
@@ -46,7 +46,7 @@ func TestUnifiedAppShiftTabCyclesBack(t *testing.T) {
 	app.tabs = NewTabBar([]string{"A", "B"})
 	app.tabs.SetActive(1)
 
-	updated, _ := app.Update(tea.KeyMsg{Type: tea.KeyShiftTab})
+	updated, _ := app.Update(tea.KeyMsg{Type: tea.KeyCtrlLeft})
 	app = updated.(*UnifiedApp)
 
 	if app.tabs.Active() != 0 {

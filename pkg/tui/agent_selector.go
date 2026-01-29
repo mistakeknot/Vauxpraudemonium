@@ -59,14 +59,6 @@ func (s *AgentSelector) Update(msg tea.KeyMsg) (tea.Msg, tea.Cmd) {
 			s.Open = false
 			return AgentSelectedMsg{Name: opt.Name}, nil
 		}
-	case "1", "2", "3", "4", "5", "6", "7", "8", "9":
-		idx := int(msg.String()[0] - '1')
-		if idx >= 0 && idx < len(s.Options) {
-			s.Index = idx
-			opt := s.Options[idx]
-			s.Open = false
-			return AgentSelectedMsg{Name: opt.Name}, nil
-		}
 	}
 
 	return nil, nil
@@ -84,9 +76,9 @@ func (s *AgentSelector) View() string {
 
 	var parts []string
 	for i, opt := range s.Options {
-		label := fmt.Sprintf("[%d] %s", i+1, opt.Name)
+		label := fmt.Sprintf("  %s", opt.Name)
 		if i == s.Index {
-			label = SelectedStyle.Render(label)
+			label = SelectedStyle.Render("> " + opt.Name)
 		} else {
 			label = UnselectedStyle.Render(label)
 		}

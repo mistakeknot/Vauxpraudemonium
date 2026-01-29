@@ -46,10 +46,6 @@ func commonBindings(keys CommonKeys) []HelpBinding {
 		HelpBindingFromKey(keys.Refresh),
 		HelpBindingFromKey(keys.TabCycle),
 		HelpBindingFromKey(keys.Select),
-		HelpBindingFromKey(keys.Toggle),
-	}
-	if len(keys.Sections) > 0 {
-		bindings = append(bindings, HelpBinding{Key: "1-9", Description: "sections"})
 	}
 	return bindings
 }

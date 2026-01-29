@@ -15,7 +15,7 @@ func TestTradeoffNavDownSelectsFirst(t *testing.T) {
 		t.Fatalf("expected initial selection -1, got %d", tradeoff.selected)
 	}
 
-	tradeoff, _ = tradeoff.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("j")})
+	tradeoff, _ = tradeoff.Update(tea.KeyMsg{Type: tea.KeyDown})
 
 	if tradeoff.selected != 0 {
 		t.Fatalf("expected selection 0 after nav down, got %d", tradeoff.selected)

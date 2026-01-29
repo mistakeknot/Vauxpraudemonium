@@ -12,7 +12,7 @@ func TestReviewSelectionMovesDown(t *testing.T) {
 	m.Review.Queue = []string{"T1", "T2"}
 	m.Review.Selected = 0
 
-	next, _ := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'j'}})
+	next, _ := m.Update(tea.KeyMsg{Type: tea.KeyDown})
 	updated := next.(Model)
 	if updated.Review.Selected != 1 {
 		t.Fatalf("expected selection 1, got %d", updated.Review.Selected)

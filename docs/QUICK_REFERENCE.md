@@ -39,8 +39,8 @@
 | `d` | Delete PRD |
 | `r` | Refresh list |
 | `Enter` | View PRD details |
-| `?` | Show help |
-| `q` | Quit |
+| `F1` | Show help |
+| `Ctrl+C` | Quit |
 
 ---
 
@@ -70,8 +70,8 @@
 | `g` | Toggle grouped view |
 | `tab` | Cycle task type |
 | `R` | Regenerate proposals |
-| `?` | Show help |
-| `q` | Quit |
+| `F1` | Show help |
+| `Ctrl+C` | Quit |
 
 ### Task States
 
@@ -129,14 +129,14 @@ todo → in_progress → review → done
 
 | Key | Action |
 |-----|--------|
-| `j`/`k` | Navigate |
+| `↑`/`↓` | Navigate |
 | `Enter` | View details |
 | `a` | Attach to session |
 | `k` | Kill session |
-| `r` | Refresh |
-| `1-4` | Switch tabs |
-| `?` | Show help |
-| `q` | Quit |
+| `Ctrl+R` | Refresh |
+| `Tab` / `Ctrl+Left/Right` | Switch tabs |
+| `F1` | Show help |
+| `Ctrl+C` | Quit |
 
 ### Web Routes
 
@@ -155,19 +155,19 @@ todo → in_progress → review → done
 
 | Key | Action |
 |-----|--------|
-| `?` | Show help overlay |
-| `q` | Quit |
-| `Ctrl+C` | Force quit |
-| `j` / `↓` | Move down |
-| `k` / `↑` | Move up |
+| `F1` | Show help overlay |
+| `Ctrl+C` | Quit |
+| `↓` | Move down |
+| `↑` | Move up |
 | `Enter` | Select / confirm |
 | `Esc` | Cancel / go back |
-| `b` | Go back |
-| `Backspace` | Go back |
-| `Space` | Toggle expand |
-| `Tab` | Next focus / tab |
-| `1-4` | Switch tabs |
+| `Tab` / `Shift+Tab` | Cycle pane focus |
+| `Ctrl+Left/Right` | Switch tabs |
+| `Ctrl+PgUp/PgDn` | Switch tabs (fallback) |
+| `Ctrl+F` | Search |
+| `Ctrl+R` | Refresh |
 | `Ctrl+P` | Command palette |
+| `F2` | Model selector |
 
 ---
 

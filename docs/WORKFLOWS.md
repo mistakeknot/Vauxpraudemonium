@@ -482,7 +482,7 @@ If agents need the same file:
 |-----|--------|
 | `a` | Attach to session |
 | `k` | Kill session |
-| `1-4` | Switch tabs |
+| `Tab` / `Ctrl+Left/Right` | Switch tabs |
 
 ---
 

@@ -32,44 +32,44 @@ func NewCommonKeys() CommonKeys {
 			key.WithHelp("ctrl+c", "quit"),
 		),
 		Help: key.NewBinding(
-			key.WithKeys("?"),
-			key.WithHelp("?", "help"),
+			key.WithKeys("f1"),
+			key.WithHelp("f1", "help"),
 		),
 		Search: key.NewBinding(
-			key.WithKeys("/"),
-			key.WithHelp("/", "search"),
+			key.WithKeys("ctrl+f"),
+			key.WithHelp("ctrl+f", "search"),
 		),
 		Back: key.NewBinding(
 			key.WithKeys("esc"),
 			key.WithHelp("esc", "back"),
 		),
 		NavUp: key.NewBinding(
-			key.WithKeys("k", "up"),
-			key.WithHelp("k/up", "up"),
+			key.WithKeys("up"),
+			key.WithHelp("up", "up"),
 		),
 		NavDown: key.NewBinding(
-			key.WithKeys("j", "down"),
-			key.WithHelp("j/down", "down"),
+			key.WithKeys("down"),
+			key.WithHelp("down", "down"),
 		),
 		Top: key.NewBinding(
-			key.WithKeys("g", "home"),
-			key.WithHelp("g/home", "top"),
+			key.WithKeys("home"),
+			key.WithHelp("home", "top"),
 		),
 		Bottom: key.NewBinding(
-			key.WithKeys("G", "end"),
-			key.WithHelp("G/end", "bottom"),
+			key.WithKeys("end"),
+			key.WithHelp("end", "bottom"),
 		),
 		Next: key.NewBinding(
-			key.WithKeys("n"),
-			key.WithHelp("n", "next"),
+			key.WithKeys("pgdown"),
+			key.WithHelp("pgdn", "next"),
 		),
 		Prev: key.NewBinding(
-			key.WithKeys("p"),
-			key.WithHelp("p", "prev"),
+			key.WithKeys("pgup"),
+			key.WithHelp("pgup", "prev"),
 		),
 		Refresh: key.NewBinding(
-			key.WithKeys("r"),
-			key.WithHelp("r", "refresh"),
+			key.WithKeys("ctrl+r"),
+			key.WithHelp("ctrl+r", "refresh"),
 		),
 		TabCycle: key.NewBinding(
 			key.WithKeys("tab", "shift+tab"),
@@ -80,20 +80,10 @@ func NewCommonKeys() CommonKeys {
 			key.WithHelp("enter", "select"),
 		),
 		Toggle: key.NewBinding(
-			key.WithKeys(" "),
-			key.WithHelp("space", "toggle"),
+			key.WithKeys("enter"),
+			key.WithHelp("enter", "toggle"),
 		),
-		Sections: []key.Binding{
-			key.NewBinding(key.WithKeys("1"), key.WithHelp("1", "section 1")),
-			key.NewBinding(key.WithKeys("2"), key.WithHelp("2", "section 2")),
-			key.NewBinding(key.WithKeys("3"), key.WithHelp("3", "section 3")),
-			key.NewBinding(key.WithKeys("4"), key.WithHelp("4", "section 4")),
-			key.NewBinding(key.WithKeys("5"), key.WithHelp("5", "section 5")),
-			key.NewBinding(key.WithKeys("6"), key.WithHelp("6", "section 6")),
-			key.NewBinding(key.WithKeys("7"), key.WithHelp("7", "section 7")),
-			key.NewBinding(key.WithKeys("8"), key.WithHelp("8", "section 8")),
-			key.NewBinding(key.WithKeys("9"), key.WithHelp("9", "section 9")),
-		},
+		Sections: nil,
 	}
 }
 

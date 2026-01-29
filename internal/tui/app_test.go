@@ -22,7 +22,7 @@ func TestAppHelpOverlayToggles(t *testing.T) {
 	app := NewApp(nil, &noopView{})
 	_, _ = app.Update(tea.WindowSizeMsg{Width: 120, Height: 40})
 
-	updated, cmd := app.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'?'}})
+	updated, cmd := app.Update(tea.KeyMsg{Type: tea.KeyF1})
 	app = updated.(*App)
 	if cmd == nil {
 		t.Fatalf("expected help command")

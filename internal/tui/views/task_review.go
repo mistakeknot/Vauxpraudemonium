@@ -117,28 +117,23 @@ func (v *TaskReviewView) Update(msg tea.Msg) (tui.View, tea.Cmd) {
 		}
 		switch {
 		case key.Matches(msg, commonKeys.Select) || key.Matches(msg, commonKeys.Toggle):
-			// Toggle expand selected (same as space for consistency)
+			// Toggle expand selected (enter)
 			v.expanded[v.selected] = !v.expanded[v.selected]
 			return v, nil
 
-		case msg.String() == "A":
+		case msg.Type == tea.KeyF7:
 			// Accept ALL tasks (uppercase A for intentional action)
 			if v.onAccept != nil {
 				return v, v.onAccept(v.tasks)
 			}
 			return v, nil
 
-		case msg.String() == "g":
+		case msg.Type == tea.KeyF3:
 			// Toggle grouped view
 			v.groupedView = !v.groupedView
 			return v, nil
 
-		case msg.String() == "e":
-			// Edit selected
-			// TODO: Add inline editing
-			return v, nil
-
-		case msg.String() == "d":
+		case msg.Type == tea.KeyF8:
 			// Delete selected
 			if v.selected >= 0 && v.selected < len(v.tasks) {
 				v.tasks = append(v.tasks[:v.selected], v.tasks[v.selected+1:]...)
@@ -164,13 +159,13 @@ func (v *TaskReviewView) Update(msg tea.Msg) (tui.View, tea.Cmd) {
 			}
 			return v, nil
 
-		case key.Matches(msg, commonKeys.Back) || msg.String() == "backspace" || msg.String() == "b":
+		case key.Matches(msg, commonKeys.Back):
 			if v.onBack != nil {
 				return v, v.onBack()
 			}
 			return v, nil
 
-		case msg.String() == "tab":
+		case msg.Type == tea.KeyF4:
 			// Cycle through types
 			if v.selected >= 0 && v.selected < len(v.tasks) {
 				v.tasks[v.selected].Edited = true
@@ -220,7 +215,7 @@ func (v *TaskReviewView) renderDocument() string {
 		emptyStyle := lipgloss.NewStyle().
 			Foreground(pkgtui.ColorMuted).
 			Italic(true)
-		return emptyStyle.Render("No tasks proposed. Press b to go back.")
+		return emptyStyle.Render("No tasks proposed. Press esc to go back.")
 	}
 
 	var sections []string
@@ -453,7 +448,7 @@ func (v *TaskReviewView) renderActions() string {
 	descStyle := pkgtui.HelpDescStyle
 
 	actions = append(actions, fmt.Sprintf("%s %s",
-		keyStyle.Render("A"),
+		keyStyle.Render("F7"),
 		descStyle.Render("accept all")))
 
 	actions = append(actions, fmt.Sprintf("%s %s",
@@ -461,24 +456,16 @@ func (v *TaskReviewView) renderActions() string {
 		descStyle.Render("expand")))
 
 	actions = append(actions, fmt.Sprintf("%s %s",
-		keyStyle.Render("e"),
-		descStyle.Render("edit")))
-
-	actions = append(actions, fmt.Sprintf("%s %s",
-		keyStyle.Render("d"),
+		keyStyle.Render("F8"),
 		descStyle.Render("delete")))
 
 	actions = append(actions, fmt.Sprintf("%s %s",
-		keyStyle.Render("tab"),
+		keyStyle.Render("F4"),
 		descStyle.Render("change type")))
 
 	actions = append(actions, fmt.Sprintf("%s %s",
-		keyStyle.Render("g"),
+		keyStyle.Render("F3"),
 		descStyle.Render("toggle grouping")))
-
-	actions = append(actions, fmt.Sprintf("%s %s",
-		keyStyle.Render("space"),
-		descStyle.Render("expand")))
 
 	return strings.Join(actions, "  ")
 }
@@ -498,23 +485,19 @@ func (v *TaskReviewView) Name() string {
 
 // ShortHelp implements View
 func (v *TaskReviewView) ShortHelp() string {
-	return "A accept  b back  d delete  g group  F2 model  Tab focus"
+	return "F3 group  F4 type  F7 accept all  F8 delete  F2 model  Tab focus"
 }
 
 // FullHelp implements FullHelpProvider
 func (v *TaskReviewView) FullHelp() []tui.HelpBinding {
 	return []tui.HelpBinding{
-		{Key: "j/k", Description: "Navigate down/up"},
+		{Key: "up/down", Description: "Navigate"},
 		{Key: "enter", Description: "Toggle expand selected"},
-		{Key: "space", Description: "Toggle expand selected"},
-		{Key: "A", Description: "Accept ALL tasks"},
-		{Key: "e", Description: "Edit selected task"},
-		{Key: "d", Description: "Delete selected task"},
-		{Key: "tab", Description: "Cycle task type"},
-		{Key: "g", Description: "Toggle grouped view"},
-		{Key: "b", Description: "Go back"},
+		{Key: "F3", Description: "Toggle grouped view"},
+		{Key: "F4", Description: "Cycle task type"},
+		{Key: "F7", Description: "Accept ALL tasks"},
+		{Key: "F8", Description: "Delete selected task"},
 		{Key: "esc", Description: "Go back"},
-		{Key: "backspace", Description: "Go back"},
 	}
 }
 

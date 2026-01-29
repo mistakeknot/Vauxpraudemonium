@@ -72,7 +72,7 @@ func TestRefreshKeyTriggersAction(t *testing.T) {
 	agg := &fakeAgg{}
 	m := New(agg, "")
 
-	_, cmd := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'r'}})
+	_, cmd := m.Update(tea.KeyMsg{Type: tea.KeyCtrlR})
 	if cmd == nil {
 		t.Fatalf("expected refresh command")
 	}

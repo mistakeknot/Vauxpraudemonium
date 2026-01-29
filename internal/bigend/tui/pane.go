@@ -145,14 +145,25 @@ func (p *VauxhallPane) Update(msg tea.Msg, ctx toolpane.Context) (toolpane.Pane,
 			}
 			return p, nil
 
-		case len(p.keys.Sections) >= 3 && key.Matches(msg, p.keys.Sections[0]):
-			p.activeTab = TabDashboard
+		case msg.String() == "ctrl+left" || msg.String() == "ctrl+pgup":
+			switch p.activeTab {
+			case TabDashboard:
+				p.activeTab = TabAgents
+			case TabSessions:
+				p.activeTab = TabDashboard
+			case TabAgents:
+				p.activeTab = TabSessions
+			}
 			return p, nil
-		case len(p.keys.Sections) >= 3 && key.Matches(msg, p.keys.Sections[1]):
-			p.activeTab = TabSessions
-			return p, nil
-		case len(p.keys.Sections) >= 3 && key.Matches(msg, p.keys.Sections[2]):
-			p.activeTab = TabAgents
+		case msg.String() == "ctrl+right" || msg.String() == "ctrl+pgdown":
+			switch p.activeTab {
+			case TabDashboard:
+				p.activeTab = TabSessions
+			case TabSessions:
+				p.activeTab = TabAgents
+			case TabAgents:
+				p.activeTab = TabDashboard
+			}
 			return p, nil
 		}
 

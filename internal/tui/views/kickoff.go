@@ -80,7 +80,7 @@ func NewKickoffView() *KickoffView {
 	// Create shared components
 	chatPanel := pkgtui.NewChatPanel()
 	chatPanel.SetComposerPlaceholder("Describe what you want to build...")
-	chatPanel.SetComposerHint("ctrl+g: create  ctrl+s: scan")
+	chatPanel.SetComposerHint("F3 create  F4 scan")
 
 	docPanel := pkgtui.NewDocPanel()
 	docPanel.SetTitle("What do you want to build?")
@@ -125,7 +125,7 @@ func (v *KickoffView) seedChat() {
 	}
 	v.chatPanel.AddMessage("system", "What do you want to build?")
 	v.chatPanel.AddMessage("system", "Tips:\n• Be specific about what you're building\n• Include key features or requirements\n• Mention any constraints or preferences")
-	v.chatPanel.AddMessage("system", "Shortcuts:\n• Ctrl+G → Create project\n• Ctrl+S → Scan current directory\n• Tab → Switch between panels\n• F2 → Model selector")
+	v.chatPanel.AddMessage("system", "Shortcuts:\n• F3 → Create project\n• F4 → Scan current directory\n• F5 → Toggle input/recents\n• Tab → Switch panes\n• F2 → Model selector")
 }
 
 // ChatMessagesForTest exposes chat history for tests.
@@ -259,7 +259,7 @@ func (v *KickoffView) updateDocPanel() {
 		// Add keyboard shortcuts section
 		v.docPanel.AddSection(pkgtui.DocSection{
 			Title:   "Shortcuts",
-			Content: "Ctrl+G → Create project\nCtrl+S → Scan current directory\nTab → Switch between panels",
+			Content: "F3 → Create project\nF4 → Scan current directory\nF5 → Toggle input/recents\nTab → Switch panes",
 			Style:   lipgloss.NewStyle().Foreground(pkgtui.ColorFgDim),
 		})
 	}
@@ -698,7 +698,7 @@ func (v *KickoffView) Update(msg tea.Msg) (tui.View, tea.Cmd) {
 					v.chatPanel.AddMessage("system", fmt.Sprintf("- %s", err.Message))
 				}
 			}
-			v.chatPanel.AddMessage("system", "Press ctrl+s to rescan.")
+			v.chatPanel.AddMessage("system", "Press F4 to rescan.")
 			return v, nil
 		}
 		// Store scan result and pre-fill the description
@@ -740,7 +740,7 @@ func (v *KickoffView) Update(msg tea.Msg) (tui.View, tea.Cmd) {
 		// Handle delete confirmation first
 		if v.confirmingDelete {
 			switch {
-			case msg.String() == "y" || msg.String() == "Y":
+			case key.Matches(msg, commonKeys.Select):
 				// Confirmed - delete the project
 				if v.deleteTarget != nil {
 					target := *v.deleteTarget
@@ -751,7 +751,7 @@ func (v *KickoffView) Update(msg tea.Msg) (tui.View, tea.Cmd) {
 				v.confirmingDelete = false
 				v.deleteTarget = nil
 				return v, nil
-			case msg.String() == "n" || msg.String() == "N" || key.Matches(msg, commonKeys.Back):
+			case key.Matches(msg, commonKeys.Back):
 				// Cancelled
 				v.confirmingDelete = false
 				v.deleteTarget = nil
@@ -770,7 +770,7 @@ func (v *KickoffView) Update(msg tea.Msg) (tui.View, tea.Cmd) {
 			case v.scanReview && msg.Type == tea.KeyCtrlLeft:
 				return v, v.moveScanStepBack()
 
-			case key.Matches(msg, commonKeys.TabCycle):
+			case msg.Type == tea.KeyF5:
 				// Toggle focus to recents
 				if len(v.recents) > 0 {
 					v.focusInput = false
@@ -778,11 +778,11 @@ func (v *KickoffView) Update(msg tea.Msg) (tui.View, tea.Cmd) {
 				}
 				return v, nil
 
-			case msg.String() == "ctrl+g":
+			case msg.Type == tea.KeyF3:
 				if v.scanReview {
 					return v, nil
 				}
-				// Submit the project description (ctrl+g = "go")
+				// Submit the project description
 				val := v.chatPanel.Value()
 				if strings.TrimSpace(val) != "" {
 					v.loading = true
@@ -790,10 +790,10 @@ func (v *KickoffView) Update(msg tea.Msg) (tui.View, tea.Cmd) {
 					return v, v.createProject(val)
 				}
 				// Empty input — show hint
-				v.chatPanel.SetComposerHint("Type a description first, then ctrl+g")
+				v.chatPanel.SetComposerHint("Type a description first, then F3")
 				return v, nil
 
-			case msg.String() == "ctrl+s":
+			case msg.Type == tea.KeyF4:
 				// Scan current directory
 				if v.onScanCodebase != nil {
 					cwd, _ := os.Getwd()
@@ -828,7 +828,7 @@ func (v *KickoffView) Update(msg tea.Msg) (tui.View, tea.Cmd) {
 
 		// Recents list is focused - handle navigation
 		switch {
-		case key.Matches(msg, commonKeys.TabCycle):
+		case msg.Type == tea.KeyF5:
 			// Toggle focus to input
 			v.focusInput = true
 			return v, v.chatPanel.Focus()
@@ -861,7 +861,7 @@ func (v *KickoffView) Update(msg tea.Msg) (tui.View, tea.Cmd) {
 			}
 			return v, nil
 
-		case msg.String() == "d" || msg.String() == "delete":
+		case msg.Type == tea.KeyF8:
 			// Show delete confirmation
 			if len(v.recents) > 0 && v.selected >= 0 && v.selected < len(v.recents) {
 				v.confirmingDelete = true
@@ -1121,7 +1121,7 @@ func (v *KickoffView) renderRightPane() string {
 			Border(lipgloss.RoundedBorder()).
 			BorderForeground(pkgtui.ColorWarning)
 		sections = append(sections, confirmBox.Render(
-			fmt.Sprintf("Delete \"%s\"? y/n", v.deleteTarget.Name),
+			fmt.Sprintf("Delete \"%s\"? Enter to confirm / Esc to cancel", v.deleteTarget.Name),
 		))
 	}
 
@@ -1206,15 +1206,15 @@ func (v *KickoffView) Name() string {
 func (v *KickoffView) ShortHelp() string {
 	if v.focusInput {
 		if v.scanReview {
-			return "ctrl+left back  ctrl+right next  F2 model  tab switch"
+			return "ctrl+left back  ctrl+right next  F2 model  F5 focus"
 		}
 		if v.onScanCodebase != nil {
-			return "ctrl+g create  ctrl+s scan  F2 model  tab switch"
+			return "F3 create  F4 scan  F2 model  F5 focus"
 		}
-		return "ctrl+g create  F2 model  tab switch"
+		return "F3 create  F2 model  F5 focus"
 	}
 	// Recents list focused
-	return "enter open  d delete  F2 model  tab switch"
+	return "enter open  F8 delete  F2 model  F5 focus"
 }
 
 // FullHelp implements FullHelpProvider
@@ -1223,19 +1223,19 @@ func (v *KickoffView) FullHelp() []tui.HelpBinding {
 		return []tui.HelpBinding{
 			{Key: "ctrl+right", Description: "Accept and advance to next step"},
 			{Key: "ctrl+left", Description: "Go back to previous step"},
-			{Key: "tab", Description: "Switch between input and recent projects"},
-			{Key: "j/k", Description: "Navigate recent projects list"},
+			{Key: "F5", Description: "Toggle input/recents focus"},
+			{Key: "up/down", Description: "Navigate recent projects list"},
 			{Key: "enter", Description: "Send message to agent"},
 			{Key: "esc", Description: "Switch to recent projects list"},
 		}
 	}
 	return []tui.HelpBinding{
-		{Key: "ctrl+g", Description: "Create new project from description"},
-		{Key: "ctrl+s", Description: "Scan current directory for existing project"},
-		{Key: "tab", Description: "Switch between input and recent projects"},
-		{Key: "j/k", Description: "Navigate recent projects list"},
+		{Key: "F3", Description: "Create new project from description"},
+		{Key: "F4", Description: "Scan current directory for existing project"},
+		{Key: "F5", Description: "Toggle input/recents focus"},
+		{Key: "up/down", Description: "Navigate recent projects list"},
 		{Key: "enter", Description: "Open selected project"},
-		{Key: "d", Description: "Delete selected project"},
+		{Key: "F8", Description: "Delete selected project"},
 		{Key: "esc", Description: "Switch to recent projects list"},
 	}
 }

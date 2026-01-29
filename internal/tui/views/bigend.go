@@ -128,7 +128,7 @@ func (v *BigendView) Update(msg tea.Msg) (tui.View, tea.Cmd) {
 					v.taskSelected--
 				}
 			}
-		case key.Matches(msg, commonKeys.TabCycle):
+		case msg.Type == tea.KeyF3:
 			// Toggle focus between panes
 			if v.focusPane == FocusSessions {
 				v.focusPane = FocusTasks
@@ -140,9 +140,6 @@ func (v *BigendView) Update(msg tea.Msg) (tui.View, tea.Cmd) {
 			if v.focusPane == FocusTasks && len(v.readyTasks) > 0 && v.onTaskSelect != nil {
 				return v, v.onTaskSelect(v.readyTasks[v.taskSelected])
 			}
-		case msg.String() == "n":
-			// New session
-			// TODO: implement
 		case key.Matches(msg, commonKeys.Refresh):
 			v.loading = true
 			return v, v.loadSessions()
@@ -448,7 +445,7 @@ func (v *BigendView) Name() string {
 
 // ShortHelp implements View
 func (v *BigendView) ShortHelp() string {
-	return "j/k navigate  tab switch  enter select  r refresh"
+	return "↑/↓ navigate  F3 switch pane  enter select  ctrl+r refresh"
 }
 
 // Commands implements CommandProvider

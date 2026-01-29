@@ -205,7 +205,7 @@ func (v *GurgehView) renderDocument() string {
 	if len(v.specs) == 0 {
 		lines = append(lines, pkgtui.LabelStyle.Render("No specs found"))
 		lines = append(lines, "")
-		lines = append(lines, pkgtui.LabelStyle.Render("Create a new spec with 'n' or use the command palette."))
+		lines = append(lines, pkgtui.LabelStyle.Render("Use the command palette (ctrl+p) to create a new spec."))
 		return strings.Join(lines, "\n")
 	}
 
@@ -287,7 +287,7 @@ func (v *GurgehView) Name() string {
 
 // ShortHelp implements View
 func (v *GurgehView) ShortHelp() string {
-	return "j/k navigate  r refresh  F2 model  Tab focus  Ctrl+B sidebar"
+	return "↑/↓ navigate  ctrl+r refresh  F2 model  Tab focus  ctrl+b sidebar"
 }
 
 // Commands implements CommandProvider

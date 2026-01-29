@@ -48,14 +48,14 @@ func TestSprintViewHandlesNavigation(t *testing.T) {
 	view := NewSprintView(state)
 
 	// Navigate down
-	newView, _ := view.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'j'}})
+	newView, _ := view.Update(tea.KeyMsg{Type: tea.KeyDown})
 	sv := newView.(*SprintView)
 	if sv.optionIndex != 1 {
 		t.Errorf("expected optionIndex 1 after j, got %d", sv.optionIndex)
 	}
 
 	// Navigate up
-	newView, _ = sv.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'k'}})
+	newView, _ = sv.Update(tea.KeyMsg{Type: tea.KeyUp})
 	sv = newView.(*SprintView)
 	if sv.optionIndex != 0 {
 		t.Errorf("expected optionIndex 0 after k, got %d", sv.optionIndex)
@@ -109,7 +109,7 @@ func TestSprintViewSelectOption(t *testing.T) {
 	state.Sections[arbiter.PhaseProblem].Status = arbiter.DraftProposed
 	view := NewSprintView(state)
 
-	newView, _ := view.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'1'}})
+	newView, _ := view.Update(tea.KeyMsg{Type: tea.KeyEnter})
 	sv := newView.(*SprintView)
 	if sv.state.Sections[arbiter.PhaseProblem].Content != "Alt A" {
 		t.Errorf("expected content 'Alt A', got %q", sv.state.Sections[arbiter.PhaseProblem].Content)

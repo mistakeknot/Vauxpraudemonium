@@ -30,13 +30,13 @@ type View interface {
 
 // HelpBinding represents a single keybinding for the help overlay
 type HelpBinding struct {
-	Key         string // The key(s) to press (e.g., "j/k", "enter", "A")
+	Key         string // The key(s) to press (e.g., "up/down", "enter", "F3")
 	Description string // What the key does
 }
 
 // FullHelpProvider can provide complete keybinding documentation.
 // Views that implement this interface can display detailed help
-// when the user presses '?'.
+// when the user presses F1.
 type FullHelpProvider interface {
 	// FullHelp returns all available keybindings for the help overlay
 	FullHelp() []HelpBinding

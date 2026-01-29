@@ -364,18 +364,9 @@ func (a *UnifiedApp) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		// In dashboard mode, handle tab switching
 		if a.mode == ModeDashboard {
 			switch {
-			case len(a.keys.Sections) >= 4 && key.Matches(msg, a.keys.Sections[0]):
-				return a, a.switchDashboardTab(0)
-			case len(a.keys.Sections) >= 4 && key.Matches(msg, a.keys.Sections[1]):
-				return a, a.switchDashboardTab(1)
-			case len(a.keys.Sections) >= 4 && key.Matches(msg, a.keys.Sections[2]):
-				return a, a.switchDashboardTab(2)
-			case len(a.keys.Sections) >= 4 && key.Matches(msg, a.keys.Sections[3]):
-				return a, a.switchDashboardTab(3)
-			case key.Matches(msg, a.keys.TabCycle):
-				if msg.String() == "shift+tab" {
-					return a, a.switchDashboardTab((a.tabs.Active() - 1 + len(a.dashViews)) % len(a.dashViews))
-				}
+			case msg.String() == "ctrl+left" || msg.String() == "ctrl+pgup":
+				return a, a.switchDashboardTab((a.tabs.Active() - 1 + len(a.dashViews)) % len(a.dashViews))
+			case msg.String() == "ctrl+right" || msg.String() == "ctrl+pgdown":
 				return a, a.switchDashboardTab((a.tabs.Active() + 1) % len(a.dashViews))
 			}
 		}
@@ -1473,12 +1464,12 @@ func (a *UnifiedApp) renderFooterContent() string {
 	}
 
 	if a.mode == ModeDashboard {
-		help += "  │  1-4 tabs  ctrl+p palette  , settings  F2 model  ctrl+c quit"
+		help += "  │  ctrl+left/right tabs  ctrl+pgup/pgdn tabs  ctrl+p palette  , settings  F1 help  F2 model  ctrl+c quit"
 	} else {
 		if a.breadcrumb.IsNavigating() {
-			help = "←/→ navigate  enter select  esc cancel  , settings  F2 model"
+			help = "←/→ navigate  enter select  esc cancel  , settings  F1 help  F2 model"
 		} else {
-			help += "  │  ctrl+b jump  , settings  F2 model  ctrl+c quit"
+			help += "  │  ctrl+b jump  , settings  F1 help  F2 model  ctrl+c quit"
 		}
 	}
 
@@ -1530,15 +1521,15 @@ func (a *UnifiedApp) renderHelpOverlay() string {
 	lines = append(lines, titleStyle.Render("Global"))
 
 	globalBindings := []HelpBinding{
-		{Key: "?", Description: "Show this help"},
+		{Key: "F1", Description: "Show this help"},
 		{Key: "ctrl+c", Description: "Quit"},
 		{Key: "F2", Description: "Agent selector"},
 	}
 
 	if a.mode == ModeDashboard {
 		globalBindings = append(globalBindings,
-			HelpBinding{Key: "1-4", Description: "Switch tabs"},
-			HelpBinding{Key: "tab", Description: "Next tab"},
+			HelpBinding{Key: "ctrl+left/right", Description: "Switch tabs"},
+			HelpBinding{Key: "ctrl+pgup/pgdn", Description: "Switch tabs (fallback)"},
 			HelpBinding{Key: "ctrl+p", Description: "Command palette"},
 		)
 	} else {
@@ -1553,7 +1544,7 @@ func (a *UnifiedApp) renderHelpOverlay() string {
 	}
 
 	lines = append(lines, "")
-	lines = append(lines, pkgtui.LabelStyle.Render("Press any key to close"))
+	lines = append(lines, pkgtui.LabelStyle.Render("Press F1 or Esc to close"))
 
 	content := lipgloss.JoinVertical(lipgloss.Left, lines...)
 
@@ -1572,11 +1563,9 @@ func (a *UnifiedApp) renderHelpOverlay() string {
 // defaultHelpBindings returns generic navigation help
 func (a *UnifiedApp) defaultHelpBindings() []HelpBinding {
 	return []HelpBinding{
-		{Key: "j/k", Description: "Navigate down/up"},
+		{Key: "up/down", Description: "Navigate"},
 		{Key: "enter", Description: "Select/expand"},
-		{Key: "space", Description: "Toggle expand"},
 		{Key: "esc", Description: "Back/cancel"},
-		{Key: "b", Description: "Go back"},
 	}
 }
 

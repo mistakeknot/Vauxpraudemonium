@@ -3,6 +3,7 @@ package tui
 import (
 	"testing"
 
+	tea "github.com/charmbracelet/bubbletea"
 	"github.com/mistakeknot/autarch/internal/gurgeh/specs"
 )
 
@@ -22,7 +23,8 @@ func TestSearchFiltersList(t *testing.T) {
 func TestSearchModalConsumesKeys(t *testing.T) {
 	withTempRoot(t, func(root string) {
 		m := NewModel()
-		m = pressKey(m, "/")
+		updated, _ := m.Update(tea.KeyMsg{Type: tea.KeyCtrlF})
+		m = updated.(Model)
 		if m.searchOverlay == nil || !m.searchOverlay.Visible() {
 			t.Fatalf("expected search overlay visible")
 		}

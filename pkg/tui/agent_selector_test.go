@@ -27,13 +27,13 @@ func TestAgentSelectorToggleAndSelect(t *testing.T) {
 	}
 }
 
-func TestAgentSelectorQuickPick(t *testing.T) {
+func TestAgentSelectorIgnoresNumericPick(t *testing.T) {
 	s := NewAgentSelector([]AgentOption{{Name: "codex"}, {Name: "claude"}})
 	_, _ = s.Update(tea.KeyMsg{Type: tea.KeyF2})
 
 	msg, _ := s.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'2'}})
-	if sel, ok := msg.(AgentSelectedMsg); !ok || sel.Name != "claude" {
-		t.Fatalf("expected selection of claude, got %#v", msg)
+	if msg != nil {
+		t.Fatalf("expected no selection on numeric key, got %#v", msg)
 	}
 }
 

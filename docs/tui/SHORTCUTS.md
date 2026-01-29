@@ -10,19 +10,13 @@ behavior consistent across tools.
 
 ## Safe Defaults (Low Collision Risk)
 - Navigation: arrows, PageUp/PageDown, Home/End
-- Actions: Enter (activate), Esc (cancel/back), Tab/Shift+Tab (focus),
-  Space (toggle), Backspace (go back/delete)
+- Actions: Enter (activate), Esc (cancel/back), Tab/Shift+Tab (focus)
 - Function keys: F1–F12 (e.g., F2 for model selector)
 
-## Common Letter Bindings (Only When Not in Text Input)
-- `?` help
-- `j`/`k` down/up
-- `l` forward
-- `g`/`G` top/bottom
-- `/` search
-- `n`/`p` next/prev
-- `r` refresh
-- `1-9` tabs or sections
+## Printable Key Policy (Unified UI)
+- Printable keys (letters, digits, symbols, space) are **not** bound anywhere
+  in the unified three-pane UI.
+- Use function keys and modifier combos for view-specific actions.
 
 ## Avoid or Handle Carefully
 - `ctrl+z`, `ctrl+\`: terminal signals
@@ -34,6 +28,7 @@ behavior consistent across tools.
 
 ## Text Input Rules
 - Do not capture printable characters when an input is focused.
+- In the unified UI, printable keys are never bound globally or per-view.
 - Keep standard editing keys working (arrows, backspace, delete).
 - Enter should submit/accept; Esc should cancel/blur.
 - `ctrl+c` should always quit from any screen.

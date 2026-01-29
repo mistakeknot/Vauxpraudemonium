@@ -19,7 +19,7 @@ func TestCoordSelectionMoves(t *testing.T) {
 	m.CoordLocks = []storage.Reservation{}
 	m.CoordSelected = 0
 
-	updated, _ := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("j")})
+	updated, _ := m.Update(tea.KeyMsg{Type: tea.KeyDown})
 	next := updated.(Model)
 	if next.CoordSelected != 1 {
 		t.Fatalf("expected selection 1, got %d", next.CoordSelected)

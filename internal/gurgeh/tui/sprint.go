@@ -66,12 +66,8 @@ func (v *SprintView) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case keyStr == "e" || keyStr == "E":
 			// Edit stub - future implementation
 			return v, nil
-		case len(v.keys.Sections) > 0 && key.Matches(msg, v.keys.Sections[0]):
-			v.selectOption(0)
-		case len(v.keys.Sections) > 1 && key.Matches(msg, v.keys.Sections[1]):
-			v.selectOption(1)
-		case len(v.keys.Sections) > 2 && key.Matches(msg, v.keys.Sections[2]):
-			v.selectOption(2)
+		case key.Matches(msg, v.keys.Select):
+			v.selectOption(v.optionIndex)
 		case key.Matches(msg, v.keys.NavDown):
 			section := v.currentSection()
 			if section != nil && v.optionIndex < len(section.Options)-1 {
@@ -188,6 +184,7 @@ func (v *SprintView) renderOptions() string {
 	acceptStyle := lipgloss.NewStyle().Foreground(pkgtui.ColorSuccess)
 	editStyle := lipgloss.NewStyle().Foreground(pkgtui.ColorWarning)
 	optStyle := lipgloss.NewStyle().Foreground(pkgtui.ColorFg)
+	selectedStyle := optStyle.Copy().Foreground(pkgtui.ColorPrimary).Bold(true)
 
 	lines = append(lines, acceptStyle.Render("[a] Accept")+"  "+editStyle.Render("[e] Edit"))
 
@@ -197,8 +194,13 @@ func (v *SprintView) renderOptions() string {
 		mutedStyle := lipgloss.NewStyle().Foreground(pkgtui.ColorMuted)
 		lines = append(lines, mutedStyle.Render("Alternatives:"))
 		for i, opt := range section.Options {
-			prefix := fmt.Sprintf("[%d] ", i+1)
-			lines = append(lines, optStyle.Render(prefix+opt))
+			prefix := "  "
+			style := optStyle
+			if i == v.optionIndex {
+				prefix = "> "
+				style = selectedStyle
+			}
+			lines = append(lines, style.Render(prefix+opt))
 		}
 	}
 
@@ -226,7 +228,7 @@ func (v *SprintView) renderConflicts() string {
 
 func (v *SprintView) renderHelp() string {
 	helpStyle := lipgloss.NewStyle().Foreground(pkgtui.ColorMuted)
-	return helpStyle.Render("a accept  e edit  r research  1-3 alternatives  j/k navigate  ctrl+c quit")
+	return helpStyle.Render("a accept  e edit  R research  up/down navigate  enter select  ctrl+c quit")
 }
 
 func (v *SprintView) renderResearchPanel() string {

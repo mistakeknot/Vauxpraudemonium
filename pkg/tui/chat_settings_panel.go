@@ -23,15 +23,15 @@ func NewChatSettingsPanel(settings ChatSettings) *ChatSettingsPanel {
 func (p *ChatSettingsPanel) Update(msg tea.KeyMsg) bool {
 	changed := false
 	switch msg.String() {
-	case "j", "down":
+	case "down":
 		if p.Index < 2 {
 			p.Index++
 		}
-	case "k", "up":
+	case "up":
 		if p.Index > 0 {
 			p.Index--
 		}
-	case " ", "enter":
+	case "enter":
 		changed = p.toggleCurrent()
 	}
 	return changed
@@ -81,7 +81,7 @@ func (p *ChatSettingsPanel) View() string {
 
 	lines = append(lines, "")
 	hintStyle := lipgloss.NewStyle().Foreground(ColorMuted).Italic(true)
-	lines = append(lines, hintStyle.Render("j/k move  space toggle  esc close"))
+	lines = append(lines, hintStyle.Render("↑/↓ move  enter toggle  esc close"))
 
 	return strings.Join(lines, "\n")
 }

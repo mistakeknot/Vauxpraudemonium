@@ -164,18 +164,18 @@ func (v *EpicReviewView) Update(msg tea.Msg) (tui.View, tea.Cmd) {
 
 		switch {
 		case key.Matches(msg, commonKeys.Select) || key.Matches(msg, commonKeys.Toggle):
-			// Toggle expand selected (same as space for consistency)
+			// Toggle expand selected (enter)
 			v.expanded[v.selected] = !v.expanded[v.selected]
 			return v, nil
 
-		case msg.String() == "A":
+		case msg.Type == tea.KeyF7:
 			// Accept ALL proposals (uppercase A for intentional action)
 			if v.onAccept != nil {
 				return v, v.onAccept(v.proposals)
 			}
 			return v, nil
 
-		case msg.String() == "R":
+		case msg.Type == tea.KeyF5:
 			// Regenerate (uppercase R to differentiate from refresh)
 			// Warning: destructive if user has edits
 			if v.hasEdits() {
@@ -187,12 +187,12 @@ func (v *EpicReviewView) Update(msg tea.Msg) (tui.View, tea.Cmd) {
 			}
 			return v, nil
 
-		case msg.String() == "e":
+		case msg.Type == tea.KeyF4:
 			// Edit selected
 			v.editing = true
 			return v, nil
 
-		case msg.String() == "d":
+		case msg.Type == tea.KeyF8:
 			// Delete selected
 			if v.selected >= 0 && v.selected < len(v.proposals) {
 				v.proposals = append(v.proposals[:v.selected], v.proposals[v.selected+1:]...)
@@ -222,13 +222,7 @@ func (v *EpicReviewView) Update(msg tea.Msg) (tui.View, tea.Cmd) {
 			}
 			return v, nil
 
-		case msg.String() == "backspace" || msg.String() == "b":
-			if !v.editing && v.onBack != nil {
-				return v, v.onBack()
-			}
-			return v, nil
-
-		case msg.String() == "+":
+		case msg.String() == "right":
 			// Increase priority
 			if v.selected >= 0 && v.selected < len(v.proposals) {
 				v.proposals[v.selected].Edited = true
@@ -243,7 +237,7 @@ func (v *EpicReviewView) Update(msg tea.Msg) (tui.View, tea.Cmd) {
 			}
 			return v, nil
 
-		case msg.String() == "-":
+		case msg.String() == "left":
 			// Decrease priority
 			if v.selected >= 0 && v.selected < len(v.proposals) {
 				v.proposals[v.selected].Edited = true
@@ -290,7 +284,7 @@ func (v *EpicReviewView) renderDocument() string {
 		emptyStyle := lipgloss.NewStyle().
 			Foreground(pkgtui.ColorMuted).
 			Italic(true)
-		return emptyStyle.Render("No epics proposed. Press b to go back and try a different description.")
+		return emptyStyle.Render("No epics proposed. Press esc to go back and try a different description.")
 	}
 
 	var sections []string
@@ -544,7 +538,7 @@ func (v *EpicReviewView) renderActions() string {
 	descStyle := pkgtui.HelpDescStyle
 
 	actions = append(actions, fmt.Sprintf("%s %s",
-		keyStyle.Render("A"),
+		keyStyle.Render("F7"),
 		descStyle.Render("accept all")))
 
 	actions = append(actions, fmt.Sprintf("%s %s",
@@ -552,24 +546,20 @@ func (v *EpicReviewView) renderActions() string {
 		descStyle.Render("expand")))
 
 	actions = append(actions, fmt.Sprintf("%s %s",
-		keyStyle.Render("e"),
+		keyStyle.Render("F4"),
 		descStyle.Render("edit")))
 
 	actions = append(actions, fmt.Sprintf("%s %s",
-		keyStyle.Render("d"),
+		keyStyle.Render("F8"),
 		descStyle.Render("delete")))
 
 	actions = append(actions, fmt.Sprintf("%s %s",
-		keyStyle.Render("+/-"),
+		keyStyle.Render("←/→"),
 		descStyle.Render("priority")))
 
 	actions = append(actions, fmt.Sprintf("%s %s",
-		keyStyle.Render("R"),
+		keyStyle.Render("F5"),
 		descStyle.Render("regenerate")))
-
-	actions = append(actions, fmt.Sprintf("%s %s",
-		keyStyle.Render("space"),
-		descStyle.Render("expand")))
 
 	return strings.Join(actions, "  ")
 }
@@ -589,23 +579,20 @@ func (v *EpicReviewView) Name() string {
 
 // ShortHelp implements View
 func (v *EpicReviewView) ShortHelp() string {
-	return "A accept  b back  d delete  +/- priority  space expand  F2 model  Tab focus"
+	return "F4 edit  F5 regen  F7 accept  F8 delete  ←/→ priority  F2 model  Tab focus"
 }
 
 // FullHelp implements FullHelpProvider
 func (v *EpicReviewView) FullHelp() []tui.HelpBinding {
 	return []tui.HelpBinding{
-		{Key: "j/k", Description: "Navigate down/up"},
+		{Key: "up/down", Description: "Navigate"},
 		{Key: "enter", Description: "Toggle expand selected"},
-		{Key: "space", Description: "Toggle expand selected"},
-		{Key: "A", Description: "Accept ALL proposals"},
-		{Key: "e", Description: "Edit selected epic"},
-		{Key: "d", Description: "Delete selected epic"},
-		{Key: "+/-", Description: "Increase/decrease priority"},
-		{Key: "R", Description: "Regenerate proposals"},
-		{Key: "b", Description: "Go back"},
+		{Key: "F4", Description: "Edit selected epic"},
+		{Key: "F5", Description: "Regenerate proposals"},
+		{Key: "F7", Description: "Accept ALL proposals"},
+		{Key: "F8", Description: "Delete selected epic"},
+		{Key: "←/→", Description: "Increase/decrease priority"},
 		{Key: "esc", Description: "Cancel edit / go back"},
-		{Key: "backspace", Description: "Go back"},
 	}
 }
 

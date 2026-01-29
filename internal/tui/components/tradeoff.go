@@ -125,21 +125,6 @@ func (t *Tradeoff) Update(msg tea.Msg) (*Tradeoff, tea.Cmd) {
 				return t, t.createSelectedCmd(t.selected)
 			}
 			return t, nil
-		case msg.String() == "1":
-			if len(t.options) >= 1 {
-				t.selected = 0
-				return t, t.createSelectedCmd(0)
-			}
-		case msg.String() == "2":
-			if len(t.options) >= 2 {
-				t.selected = 1
-				return t, t.createSelectedCmd(1)
-			}
-		case msg.String() == "3":
-			if len(t.options) >= 3 {
-				t.selected = 2
-				return t, t.createSelectedCmd(2)
-			}
 		}
 	}
 	return t, nil
@@ -196,7 +181,7 @@ func (t *Tradeoff) View() string {
 
 	// Help text
 	helpStyle := pkgtui.LabelStyle
-	help := "Press 1-3 to adopt suggestion, or type custom answer"
+	help := "Use ↑/↓ and Enter to adopt a suggestion"
 	sections = append(sections, helpStyle.Render(help))
 
 	return lipgloss.JoinVertical(lipgloss.Left, sections...)

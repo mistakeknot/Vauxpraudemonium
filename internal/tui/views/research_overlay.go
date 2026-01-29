@@ -296,7 +296,7 @@ func (o *ResearchOverlay) View() string {
 
 	// Footer help
 	footerStyle := pkgtui.LabelStyle
-	footer := footerStyle.Render("j/k scroll  Enter expand  / search  r refresh")
+	footer := footerStyle.Render("↑/↓ scroll  Enter expand  ctrl+f search  ctrl+r refresh")
 	sections = append(sections, footer)
 
 	content := lipgloss.JoinVertical(lipgloss.Left, sections...)

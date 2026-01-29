@@ -923,21 +923,29 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 			return m, nil
 
-		case len(m.keys.Sections) >= 3 && key.Matches(msg, m.keys.Sections[0]):
+		case msg.String() == "ctrl+left" || msg.String() == "ctrl+pgup":
 			m.stopFilterEditing()
-			m.activeTab = TabDashboard
+			switch m.activeTab {
+			case TabDashboard:
+				m.activeTab = TabAgents
+			case TabSessions:
+				m.activeTab = TabDashboard
+			case TabAgents:
+				m.activeTab = TabSessions
+			}
 			m.activePane = PaneMain
 			m.syncFilterInputForTab(m.activeTab)
 			return m, nil
-		case len(m.keys.Sections) >= 3 && key.Matches(msg, m.keys.Sections[1]):
+		case msg.String() == "ctrl+right" || msg.String() == "ctrl+pgdown":
 			m.stopFilterEditing()
-			m.activeTab = TabSessions
-			m.activePane = PaneMain
-			m.syncFilterInputForTab(m.activeTab)
-			return m, nil
-		case len(m.keys.Sections) >= 3 && key.Matches(msg, m.keys.Sections[2]):
-			m.stopFilterEditing()
-			m.activeTab = TabAgents
+			switch m.activeTab {
+			case TabDashboard:
+				m.activeTab = TabSessions
+			case TabSessions:
+				m.activeTab = TabAgents
+			case TabAgents:
+				m.activeTab = TabDashboard
+			}
 			m.activePane = PaneMain
 			m.syncFilterInputForTab(m.activeTab)
 			return m, nil
@@ -1234,7 +1242,7 @@ func (m Model) renderFilterLine() string {
 
 func (m Model) renderFooter() string {
 	help := HelpKeyStyle.Render("tab") + HelpDescStyle.Render(" switch • ") +
-		HelpKeyStyle.Render("r") + HelpDescStyle.Render(" refresh • ") +
+		HelpKeyStyle.Render("ctrl+r") + HelpDescStyle.Render(" refresh • ") +
 		HelpKeyStyle.Render("n") + HelpDescStyle.Render(" new • ") +
 		HelpKeyStyle.Render("e") + HelpDescStyle.Render(" rename • ") +
 		HelpKeyStyle.Render("k") + HelpDescStyle.Render(" restart • ") +
@@ -1242,7 +1250,7 @@ func (m Model) renderFooter() string {
 		HelpKeyStyle.Render("a") + HelpDescStyle.Render(" attach • ") +
 		HelpKeyStyle.Render("p") + HelpDescStyle.Render(" preview • ") +
 		HelpKeyStyle.Render("m") + HelpDescStyle.Render(" mcp • ") +
-		HelpKeyStyle.Render("space") + HelpDescStyle.Render(" toggle • ") +
+		HelpKeyStyle.Render("enter") + HelpDescStyle.Render(" toggle • ") +
 		HelpKeyStyle.Render("ctrl+c") + HelpDescStyle.Render(" quit")
 	if m.filterActive {
 		help += HelpDescStyle.Render(" • ") + HelpKeyStyle.Render("esc/enter") + HelpDescStyle.Render(" exit filter")

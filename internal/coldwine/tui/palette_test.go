@@ -33,7 +33,7 @@ func TestSettingsOpensOnComma(t *testing.T) {
 
 func TestHelpOpensOnQuestion(t *testing.T) {
 	m := NewModel()
-	updated, _ := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("?")})
+	updated, _ := m.Update(tea.KeyMsg{Type: tea.KeyF1})
 	got := updated.(Model)
 	if !got.helpOverlay.Visible {
 		t.Fatal("expected help to open")

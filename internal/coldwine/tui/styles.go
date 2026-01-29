@@ -77,7 +77,7 @@ func renderHelpOverlay() string {
 			HelpDescStyle.Render(" • ") +
 			HelpKeyStyle.Render("tab") + HelpDescStyle.Render(" switch focus") +
 			HelpDescStyle.Render(" • ") +
-			HelpKeyStyle.Render("/") + HelpDescStyle.Render(" search"),
+			HelpKeyStyle.Render("ctrl+f") + HelpDescStyle.Render(" search"),
 		HelpKeyStyle.Render("n") + HelpDescStyle.Render(" new task") +
 			HelpDescStyle.Render(" • ") +
 			HelpKeyStyle.Render("s") + HelpDescStyle.Render(" start") +
@@ -92,7 +92,7 @@ func renderHelpOverlay() string {
 			HelpDescStyle.Render(" • ") +
 			HelpKeyStyle.Render("i") + HelpDescStyle.Render(" init") +
 			HelpDescStyle.Render(" • ") +
-			HelpKeyStyle.Render("?") + HelpDescStyle.Render(" help"),
+			HelpKeyStyle.Render("F1") + HelpDescStyle.Render(" help"),
 		HelpKeyStyle.Render("ctrl+c") + HelpDescStyle.Render(" quit") +
 			HelpDescStyle.Render(" • ") +
 			HelpKeyStyle.Render("ctrl+k") + HelpDescStyle.Render(" palette") +

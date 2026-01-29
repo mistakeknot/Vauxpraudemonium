@@ -169,18 +169,9 @@ func (a *App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 		default:
 			switch {
-			case len(a.keys.Sections) >= 4 && key.Matches(msg, a.keys.Sections[0]):
-				return a, a.doSwitchTab(0)
-			case len(a.keys.Sections) >= 4 && key.Matches(msg, a.keys.Sections[1]):
-				return a, a.doSwitchTab(1)
-			case len(a.keys.Sections) >= 4 && key.Matches(msg, a.keys.Sections[2]):
-				return a, a.doSwitchTab(2)
-			case len(a.keys.Sections) >= 4 && key.Matches(msg, a.keys.Sections[3]):
-				return a, a.doSwitchTab(3)
-			case key.Matches(msg, a.keys.TabCycle):
-				if msg.String() == "shift+tab" {
-					return a, a.doSwitchTab((a.tabs.Active() - 1 + len(a.views)) % len(a.views))
-				}
+			case msg.String() == "ctrl+left" || msg.String() == "ctrl+pgup":
+				return a, a.doSwitchTab((a.tabs.Active() - 1 + len(a.views)) % len(a.views))
+			case msg.String() == "ctrl+right" || msg.String() == "ctrl+pgdown":
 				return a, a.doSwitchTab((a.tabs.Active() + 1) % len(a.views))
 			}
 		}
@@ -295,7 +286,7 @@ func (a *App) helpExtras() []pkgtui.HelpBinding {
 
 func (a *App) renderFooter() string {
 	// Get help from active view
-	help := "1-4 tabs  ctrl+p palette  ctrl+c quit"
+	help := "ctrl+left/right tabs  ctrl+pgup/pgdn tabs  ctrl+p palette  F1 help  ctrl+c quit"
 	if len(a.views) > 0 {
 		active := a.tabs.Active()
 		if active < len(a.views) {

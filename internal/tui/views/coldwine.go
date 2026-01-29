@@ -310,7 +310,7 @@ func (v *ColdwineView) Name() string {
 
 // ShortHelp implements View
 func (v *ColdwineView) ShortHelp() string {
-	return "j/k navigate  r refresh  F2 model  Tab focus  Ctrl+B sidebar"
+	return "↑/↓ navigate  ctrl+r refresh  F2 model  Tab focus  ctrl+b sidebar"
 }
 
 // Commands implements CommandProvider

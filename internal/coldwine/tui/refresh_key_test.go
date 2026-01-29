@@ -11,7 +11,7 @@ func TestRefreshKeyDoesNotEnterReview(t *testing.T) {
 	m.ViewMode = ViewFleet
 	m.TaskList = []TaskItem{{ID: "T1", Title: "One", Status: "review"}}
 
-	next, cmd := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'r'}})
+	next, cmd := m.Update(tea.KeyMsg{Type: tea.KeyCtrlR})
 	updated := next.(Model)
 	if updated.ViewMode != ViewFleet {
 		t.Fatalf("expected to stay in fleet view")

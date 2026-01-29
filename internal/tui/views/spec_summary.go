@@ -198,7 +198,7 @@ func (v *SpecSummaryView) Update(msg tea.Msg) (tui.View, tea.Cmd) {
 			}
 			return v, nil
 
-		case msg.String() == "e":
+		case msg.Type == tea.KeyF3:
 			// Edit spec
 			if v.onEditSpec != nil {
 				return v, v.onEditSpec(v.spec)
@@ -211,10 +211,6 @@ func (v *SpecSummaryView) Update(msg tea.Msg) (tui.View, tea.Cmd) {
 				return v, v.onWaitResearch()
 			}
 			return v, v.checkResearchStatus()
-
-		case msg.String() == "ctrl+r":
-			// View research
-			return v, nil // Could open overlay
 
 		case key.Matches(msg, commonKeys.NavDown):
 			maxItems := len(v.spec.Requirements) + len(v.spec.Decisions)
@@ -233,7 +229,7 @@ func (v *SpecSummaryView) Update(msg tea.Msg) (tui.View, tea.Cmd) {
 			v.expanded[v.selected] = !v.expanded[v.selected]
 			return v, nil
 
-		case key.Matches(msg, commonKeys.Back) || msg.String() == "backspace" || msg.String() == "b":
+		case key.Matches(msg, commonKeys.Back):
 			// Back navigation (note: spec_summary may need a back callback)
 			// For now, esc cancels any pending operation
 			return v, nil
@@ -527,22 +523,18 @@ func (v *SpecSummaryView) renderActions() string {
 		descStyle.Render("generate epics")))
 
 	actions = append(actions, fmt.Sprintf("%s %s",
-		enterStyle.Render("e"),
+		enterStyle.Render("F3"),
 		descStyle.Render("edit spec")))
 
 	if !v.researchComplete {
 		actions = append(actions, fmt.Sprintf("%s %s",
-			enterStyle.Render("r"),
+			enterStyle.Render("Ctrl+R"),
 			descStyle.Render("wait for research")))
 	} else {
 		actions = append(actions, fmt.Sprintf("%s %s",
-			enterStyle.Render("r"),
+			enterStyle.Render("Ctrl+R"),
 			descStyle.Render("refresh")))
 	}
-
-	actions = append(actions, fmt.Sprintf("%s %s",
-		enterStyle.Render("Ctrl+R"),
-		descStyle.Render("view research")))
 
 	return strings.Join(actions, "  ")
 }
@@ -562,21 +554,19 @@ func (v *SpecSummaryView) Name() string {
 
 // ShortHelp implements View
 func (v *SpecSummaryView) ShortHelp() string {
-	return "enter generate  e edit  r refresh  ctrl+u revert  F2 model  Tab focus"
+	return "enter generate  F3 edit  ctrl+r refresh  ctrl+u revert  F2 model  Tab focus"
 }
 
 // FullHelp implements FullHelpProvider
 func (v *SpecSummaryView) FullHelp() []tui.HelpBinding {
 	return []tui.HelpBinding{
-		{Key: "j/k", Description: "Navigate down/up"},
+		{Key: "up/down", Description: "Navigate"},
 		{Key: "enter", Description: "Generate epics from spec"},
-		{Key: "e", Description: "Edit spec (go back to interview)"},
-		{Key: "r", Description: "Refresh/wait for research"},
-		{Key: "ctrl+r", Description: "View research findings"},
+		{Key: "F3", Description: "Edit spec (go back to interview)"},
+		{Key: "ctrl+r", Description: "Refresh/wait for research"},
 		{Key: "ctrl+u", Description: "Revert last run"},
-		{Key: "space", Description: "Toggle expand selected"},
+		{Key: "enter", Description: "Toggle expand selected"},
 		{Key: "esc", Description: "Go back"},
-		{Key: "b", Description: "Go back"},
 	}
 }
 

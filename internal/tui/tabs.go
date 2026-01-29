@@ -53,23 +53,18 @@ func (t *TabBar) View() string {
 	var tabs []string
 
 	for i, name := range t.tabs {
-		// Add number prefix
-		numStyle := lipgloss.NewStyle().
-			Foreground(pkgtui.ColorMuted)
-		num := numStyle.Render(string('1' + rune(i)))
-
 		if i == t.active {
 			tabStyle := lipgloss.NewStyle().
 				Background(pkgtui.ColorPrimary).
 				Foreground(pkgtui.ColorBg).
 				Bold(true).
 				Padding(0, 2)
-			tabs = append(tabs, tabStyle.Render(num+" "+name))
+			tabs = append(tabs, tabStyle.Render(name))
 		} else {
 			tabStyle := lipgloss.NewStyle().
 				Foreground(pkgtui.ColorFgDim).
 				Padding(0, 2)
-			tabs = append(tabs, tabStyle.Render(num+" "+name))
+			tabs = append(tabs, tabStyle.Render(name))
 		}
 	}
 

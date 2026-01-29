@@ -133,7 +133,7 @@ func (v *TaskDetailView) Update(msg tea.Msg) (tui.View, tea.Cmd) {
 		}
 
 		switch {
-		case key.Matches(msg, v.keys.Back) || msg.String() == "backspace":
+		case key.Matches(msg, v.keys.Back):
 			if v.onBack != nil {
 				return v, v.onBack()
 			}
@@ -153,13 +153,13 @@ func (v *TaskDetailView) Update(msg tea.Msg) (tui.View, tea.Cmd) {
 			}
 			return v, nil
 
-		case msg.String() == "right" || msg.String() == "l":
+		case msg.String() == "right":
 			if v.selectedAgent < len(v.agents)-1 {
 				v.selectedAgent++
 			}
 			return v, nil
 
-		case msg.String() == "w":
+		case msg.Type == tea.KeyF3:
 			v.useWorktree = !v.useWorktree
 			return v, nil
 		}
@@ -450,19 +450,17 @@ func (v *TaskDetailView) Name() string {
 
 // ShortHelp implements View
 func (v *TaskDetailView) ShortHelp() string {
-	return "enter start  ←→ agent  w worktree  F2 model  Tab focus"
+	return "enter start  ←→ agent  F3 worktree  F2 model  Tab focus"
 }
 
 // FullHelp implements FullHelpProvider
 func (v *TaskDetailView) FullHelp() []tui.HelpBinding {
 	return []tui.HelpBinding{
 		{Key: "enter", Description: "Start task with selected agent"},
-		{Key: "←/h", Description: "Select previous agent"},
-		{Key: "→/l", Description: "Select next agent"},
-		{Key: "w", Description: "Toggle worktree mode"},
+		{Key: "←", Description: "Select previous agent"},
+		{Key: "→", Description: "Select next agent"},
+		{Key: "F3", Description: "Toggle worktree mode"},
 		{Key: "esc", Description: "Go back"},
-		{Key: "b", Description: "Go back"},
-		{Key: "backspace", Description: "Go back"},
 	}
 }
 

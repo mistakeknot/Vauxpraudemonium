@@ -36,26 +36,20 @@ func TestCommonKeysIncludesTopBottomNextPrevAndSections(t *testing.T) {
 	prev := v.FieldByName("Prev").Interface().(key.Binding)
 	sections := v.FieldByName("Sections").Interface().([]key.Binding)
 
-	if !key.Matches(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'g'}}, top) {
-		t.Fatalf("expected Top to match g")
+	if !key.Matches(tea.KeyMsg{Type: tea.KeyHome}, top) {
+		t.Fatalf("expected Top to match home")
 	}
-	if !key.Matches(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'G'}}, bottom) {
-		t.Fatalf("expected Bottom to match G")
+	if !key.Matches(tea.KeyMsg{Type: tea.KeyEnd}, bottom) {
+		t.Fatalf("expected Bottom to match end")
 	}
-	if !key.Matches(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'n'}}, next) {
-		t.Fatalf("expected Next to match n")
+	if !key.Matches(tea.KeyMsg{Type: tea.KeyPgDown}, next) {
+		t.Fatalf("expected Next to match pgdown")
 	}
-	if !key.Matches(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'p'}}, prev) {
-		t.Fatalf("expected Prev to match p")
+	if !key.Matches(tea.KeyMsg{Type: tea.KeyPgUp}, prev) {
+		t.Fatalf("expected Prev to match pgup")
 	}
-	if len(sections) < 2 {
-		t.Fatalf("expected Sections bindings")
-	}
-	if !key.Matches(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'1'}}, sections[0]) {
-		t.Fatalf("expected Sections[0] to match 1")
-	}
-	if !key.Matches(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'9'}}, sections[len(sections)-1]) {
-		t.Fatalf("expected last Sections binding to match 9")
+	if len(sections) != 0 {
+		t.Fatalf("expected Sections to be empty")
 	}
 }
 
@@ -74,7 +68,7 @@ func TestHandleCommonQuitAndHelp(t *testing.T) {
 		t.Fatalf("expected q to no longer trigger quit")
 	}
 
-	helpCmd := HandleCommon(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'?'}}, keys)
+	helpCmd := HandleCommon(tea.KeyMsg{Type: tea.KeyF1}, keys)
 	if helpCmd == nil {
 		t.Fatalf("expected help command")
 	}
