@@ -31,6 +31,7 @@ type ScanProgress struct {
 	Files            []string          // Files found/being analyzed
 	AgentLine        string            // Live output line from agent (if streaming)
 	ValidationErrors []ValidationError // Validation errors on completion
+	PhaseArtifacts   *PhaseArtifacts   // Structured scan artifacts
 }
 
 // ScanProgressFunc is called to report scan progress.

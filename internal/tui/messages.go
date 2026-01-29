@@ -154,6 +154,7 @@ type CodebaseScanResultMsg struct {
 	Language         string
 	Requirements     []string
 	ValidationErrors []ValidationError
+	PhaseArtifacts   *PhaseArtifacts
 	Error            error
 }
 
@@ -162,6 +163,63 @@ type ValidationError struct {
 	Code    string
 	Field   string
 	Message string
+}
+
+type PhaseArtifacts struct {
+	Vision  *VisionArtifact
+	Problem *ProblemArtifact
+	Users   *UsersArtifact
+}
+
+type EvidenceItem struct {
+	Type       string
+	Path       string
+	Quote      string
+	Confidence float64
+}
+
+type QualityScores struct {
+	Clarity      float64
+	Completeness float64
+	Grounding    float64
+	Consistency  float64
+}
+
+type VisionArtifact struct {
+	Phase         string
+	Version       string
+	Summary       string
+	Goals         []string
+	NonGoals      []string
+	Evidence      []EvidenceItem
+	OpenQuestions []string
+	Quality       QualityScores
+}
+
+type ProblemArtifact struct {
+	Phase         string
+	Version       string
+	Summary       string
+	PainPoints    []string
+	Impact        string
+	Evidence      []EvidenceItem
+	OpenQuestions []string
+	Quality       QualityScores
+}
+
+type UsersArtifact struct {
+	Phase         string
+	Version       string
+	Personas      []Persona
+	Evidence      []EvidenceItem
+	OpenQuestions []string
+	Quality       QualityScores
+}
+
+type Persona struct {
+	Name    string
+	Needs   []string
+	Context string
 }
 
 // ScanSignoffCompleteMsg signals scan signoff completion.

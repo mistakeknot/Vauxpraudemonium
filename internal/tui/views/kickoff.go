@@ -195,6 +195,7 @@ func (v *KickoffView) updateDocPanel() {
 					Style:   lipgloss.NewStyle().Foreground(pkgtui.ColorFg),
 				})
 				addedStepSection = true
+				v.addScanEvidenceSections()
 			}
 			if stepLabel == "" && v.scanResult.Vision != "" {
 				lines = append(lines, v.scanResult.Vision)
@@ -282,6 +283,91 @@ func (v *KickoffView) updateDocPanel() {
 				Style:   lipgloss.NewStyle().Foreground(pkgtui.ColorSuccess),
 			})
 		}
+	}
+}
+
+func (v *KickoffView) addScanEvidenceSections() {
+	if v.scanResult == nil || v.scanResult.PhaseArtifacts == nil {
+		return
+	}
+	artifact := v.phaseArtifactForStep()
+	if artifact == nil {
+		return
+	}
+	if len(artifact.Evidence) > 0 {
+		lines := make([]string, 0, len(artifact.Evidence))
+		for _, ev := range artifact.Evidence {
+			if ev.Path == "" && ev.Quote == "" {
+				continue
+			}
+			line := ev.Path
+			if ev.Quote != "" {
+				if line != "" {
+					line += ": "
+				}
+				line += ev.Quote
+			}
+			lines = append(lines, line)
+		}
+		if len(lines) > 0 {
+			v.docPanel.AddSection(pkgtui.DocSection{
+				Title:   "Evidence",
+				Content: strings.Join(lines, "\n"),
+				Style:   lipgloss.NewStyle().Foreground(pkgtui.ColorFg),
+			})
+		}
+	}
+
+	quality := artifact.Quality
+	qualityLines := []string{
+		fmt.Sprintf("Clarity: %.2f", quality.Clarity),
+		fmt.Sprintf("Completeness: %.2f", quality.Completeness),
+		fmt.Sprintf("Grounding: %.2f", quality.Grounding),
+		fmt.Sprintf("Consistency: %.2f", quality.Consistency),
+	}
+	v.docPanel.AddSection(pkgtui.DocSection{
+		Title:   "Quality",
+		Content: strings.Join(qualityLines, "\n"),
+		Style:   lipgloss.NewStyle().Foreground(pkgtui.ColorFg),
+	})
+}
+
+type scanArtifactSummary struct {
+	Evidence []tui.EvidenceItem
+	Quality  tui.QualityScores
+}
+
+func (v *KickoffView) phaseArtifactForStep() *scanArtifactSummary {
+	if v.scanResult == nil || v.scanResult.PhaseArtifacts == nil {
+		return nil
+	}
+	switch v.scanStep {
+	case tui.OnboardingScanVision:
+		if v.scanResult.PhaseArtifacts.Vision == nil {
+			return nil
+		}
+		return &scanArtifactSummary{
+			Evidence: v.scanResult.PhaseArtifacts.Vision.Evidence,
+			Quality:  v.scanResult.PhaseArtifacts.Vision.Quality,
+		}
+	case tui.OnboardingScanProblem:
+		if v.scanResult.PhaseArtifacts.Problem == nil {
+			return nil
+		}
+		return &scanArtifactSummary{
+			Evidence: v.scanResult.PhaseArtifacts.Problem.Evidence,
+			Quality:  v.scanResult.PhaseArtifacts.Problem.Quality,
+		}
+	case tui.OnboardingScanUsers:
+		if v.scanResult.PhaseArtifacts.Users == nil {
+			return nil
+		}
+		return &scanArtifactSummary{
+			Evidence: v.scanResult.PhaseArtifacts.Users.Evidence,
+			Quality:  v.scanResult.PhaseArtifacts.Users.Quality,
+		}
+	default:
+		return nil
 	}
 }
 

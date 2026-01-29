@@ -91,3 +91,31 @@ func TestKickoffScanResultHidesTipsAndHeaders(t *testing.T) {
 		t.Fatalf("did not expect shortcuts section during scan signoff")
 	}
 }
+
+func TestKickoffDocPanelShowsEvidenceForVision(t *testing.T) {
+	v := NewKickoffView()
+	v.docPanel.SetSize(80, 30)
+
+	_, _ = v.Update(tui.CodebaseScanResultMsg{
+		PhaseArtifacts: &tui.PhaseArtifacts{
+			Vision: &tui.VisionArtifact{
+				Summary: "Vision text",
+				Evidence: []tui.EvidenceItem{
+					{Path: "README.md", Quote: "Autarch"},
+				},
+				Quality: tui.QualityScores{Clarity: 0.7, Completeness: 0.7, Grounding: 0.7, Consistency: 0.7},
+			},
+		},
+	})
+
+	view := v.docPanel.View()
+	if !strings.Contains(view, "Evidence") {
+		t.Fatalf("expected evidence section")
+	}
+	if !strings.Contains(view, "README.md") {
+		t.Fatalf("expected evidence path")
+	}
+	if !strings.Contains(view, "Quality") {
+		t.Fatalf("expected quality section")
+	}
+}

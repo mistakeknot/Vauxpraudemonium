@@ -644,6 +644,7 @@ func (a *UnifiedApp) scanCodebase(path string) tea.Cmd {
 					strings.Join(result.Requirements, "|||"),
 				},
 				ValidationErrors: result.ValidationErrors,
+				PhaseArtifacts:   result.PhaseArtifacts,
 			}
 		}
 	}()
@@ -681,6 +682,7 @@ func (a *UnifiedApp) waitForScanProgress(ch <-chan agent.ScanProgress) tea.Cmd {
 				Language:         safeIndex(p.Files, 5),
 				Requirements:     requirements,
 				ValidationErrors: toValidationErrors(p.ValidationErrors),
+				PhaseArtifacts:   toPhaseArtifacts(p.PhaseArtifacts),
 			}
 		}
 
@@ -717,6 +719,103 @@ func toValidationErrors(errs []agent.ValidationError) []ValidationError {
 		})
 	}
 	return out
+}
+
+func toPhaseArtifacts(artifacts *agent.PhaseArtifacts) *PhaseArtifacts {
+	if artifacts == nil {
+		return nil
+	}
+	return &PhaseArtifacts{
+		Vision:  toVisionArtifact(artifacts.Vision),
+		Problem: toProblemArtifact(artifacts.Problem),
+		Users:   toUsersArtifact(artifacts.Users),
+	}
+}
+
+func toVisionArtifact(artifact *agent.VisionArtifact) *VisionArtifact {
+	if artifact == nil {
+		return nil
+	}
+	return &VisionArtifact{
+		Phase:         artifact.Phase,
+		Version:       artifact.Version,
+		Summary:       artifact.Summary,
+		Goals:         append([]string{}, artifact.Goals...),
+		NonGoals:      append([]string{}, artifact.NonGoals...),
+		Evidence:      toEvidenceItems(artifact.Evidence),
+		OpenQuestions: append([]string{}, artifact.OpenQuestions...),
+		Quality:       toQualityScores(artifact.Quality),
+	}
+}
+
+func toProblemArtifact(artifact *agent.ProblemArtifact) *ProblemArtifact {
+	if artifact == nil {
+		return nil
+	}
+	return &ProblemArtifact{
+		Phase:         artifact.Phase,
+		Version:       artifact.Version,
+		Summary:       artifact.Summary,
+		PainPoints:    append([]string{}, artifact.PainPoints...),
+		Impact:        artifact.Impact,
+		Evidence:      toEvidenceItems(artifact.Evidence),
+		OpenQuestions: append([]string{}, artifact.OpenQuestions...),
+		Quality:       toQualityScores(artifact.Quality),
+	}
+}
+
+func toUsersArtifact(artifact *agent.UsersArtifact) *UsersArtifact {
+	if artifact == nil {
+		return nil
+	}
+	return &UsersArtifact{
+		Phase:         artifact.Phase,
+		Version:       artifact.Version,
+		Personas:      toPersonas(artifact.Personas),
+		Evidence:      toEvidenceItems(artifact.Evidence),
+		OpenQuestions: append([]string{}, artifact.OpenQuestions...),
+		Quality:       toQualityScores(artifact.Quality),
+	}
+}
+
+func toEvidenceItems(items []agent.EvidenceItem) []EvidenceItem {
+	if len(items) == 0 {
+		return nil
+	}
+	out := make([]EvidenceItem, 0, len(items))
+	for _, item := range items {
+		out = append(out, EvidenceItem{
+			Type:       item.Type,
+			Path:       item.Path,
+			Quote:      item.Quote,
+			Confidence: item.Confidence,
+		})
+	}
+	return out
+}
+
+func toPersonas(items []agent.Persona) []Persona {
+	if len(items) == 0 {
+		return nil
+	}
+	out := make([]Persona, 0, len(items))
+	for _, item := range items {
+		out = append(out, Persona{
+			Name:    item.Name,
+			Needs:   append([]string{}, item.Needs...),
+			Context: item.Context,
+		})
+	}
+	return out
+}
+
+func toQualityScores(scores agent.QualityScores) QualityScores {
+	return QualityScores{
+		Clarity:      scores.Clarity,
+		Completeness: scores.Completeness,
+		Grounding:    scores.Grounding,
+		Consistency:  scores.Consistency,
+	}
 }
 
 // scanProgressWithContinuation wraps a progress message with a continuation command.
