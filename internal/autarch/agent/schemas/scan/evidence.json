@@ -1,0 +1,13 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://autarch.dev/schemas/scan/evidence.json",
+  "type": "object",
+  "required": ["type", "path", "quote", "confidence"],
+  "properties": {
+    "type": { "type": "string", "enum": ["file", "doc", "commit", "issue"] },
+    "path": { "type": "string", "minLength": 1 },
+    "quote": { "type": "string", "minLength": 5, "maxLength": 300 },
+    "confidence": { "type": "number", "minimum": 0, "maximum": 1 }
+  },
+  "additionalProperties": false
+}

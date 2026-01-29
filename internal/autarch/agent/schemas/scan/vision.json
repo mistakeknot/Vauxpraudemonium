@@ -1,0 +1,11 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://autarch.dev/schemas/scan/vision.json",
+  "allOf": [{ "$ref": "https://autarch.dev/schemas/scan/base.json" }],
+  "required": ["summary", "goals", "non_goals"],
+  "properties": {
+    "summary": { "type": "string", "minLength": 20 },
+    "goals": { "type": "array", "minItems": 1, "items": { "type": "string" } },
+    "non_goals": { "type": "array", "items": { "type": "string" } }
+  }
+}

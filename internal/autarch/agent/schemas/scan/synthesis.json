@@ -1,0 +1,45 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://autarch.dev/schemas/scan/synthesis.json",
+  "type": "object",
+  "required": ["version", "inputs", "consistency_notes", "updates_suggested", "quality"],
+  "properties": {
+    "version": { "type": "string", "pattern": "^v\\d+$" },
+    "inputs": { "type": "array", "minItems": 1, "items": { "type": "string" } },
+    "consistency_notes": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["type", "from", "to", "note"],
+        "properties": {
+          "type": { "type": "string", "enum": ["mismatch", "gap", "ambiguity"] },
+          "from": { "type": "string" },
+          "to": { "type": "string" },
+          "note": { "type": "string", "minLength": 10 }
+        },
+        "additionalProperties": false
+      }
+    },
+    "updates_suggested": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["phase", "patch"],
+        "properties": {
+          "phase": { "type": "string" },
+          "patch": { "type": "string", "minLength": 5 }
+        },
+        "additionalProperties": false
+      }
+    },
+    "quality": {
+      "type": "object",
+      "required": ["cross_phase_alignment"],
+      "properties": {
+        "cross_phase_alignment": { "type": "number", "minimum": 0, "maximum": 1 }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}

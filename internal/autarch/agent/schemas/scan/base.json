@@ -1,0 +1,38 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://autarch.dev/schemas/scan/base.json",
+  "type": "object",
+  "required": ["phase", "version", "quality", "evidence", "open_questions"],
+  "properties": {
+    "phase": {
+      "type": "string",
+      "enum": ["vision", "problem", "users", "features", "requirements", "scope", "cujs", "acceptance"]
+    },
+    "version": { "type": "string", "pattern": "^v\\d+$" },
+    "evidence": {
+      "type": "array",
+      "minItems": 2,
+      "items": { "$ref": "https://autarch.dev/schemas/scan/evidence.json" }
+    },
+    "open_questions": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 5 }
+    },
+    "quality": {
+      "type": "object",
+      "required": ["clarity", "completeness", "grounding", "consistency"],
+      "properties": {
+        "clarity": { "type": "number", "minimum": 0, "maximum": 1 },
+        "completeness": { "type": "number", "minimum": 0, "maximum": 1 },
+        "grounding": { "type": "number", "minimum": 0, "maximum": 1 },
+        "consistency": { "type": "number", "minimum": 0, "maximum": 1 }
+      },
+      "additionalProperties": false
+    },
+    "assumptions": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 5 }
+    }
+  },
+  "additionalProperties": false
+}

@@ -1,0 +1,9 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://autarch.dev/schemas/scan/requirements.json",
+  "allOf": [{ "$ref": "https://autarch.dev/schemas/scan/base.json" }],
+  "required": ["requirements"],
+  "properties": {
+    "requirements": { "type": "array", "minItems": 1, "items": { "type": "string" } }
+  }
+}

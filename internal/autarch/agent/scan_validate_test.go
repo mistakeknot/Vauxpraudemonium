@@ -1,0 +1,136 @@
+package agent
+
+import (
+	"strings"
+	"testing"
+)
+
+type fakeLookup struct {
+	files map[string]string
+}
+
+func (f fakeLookup) Exists(path string) bool {
+	_, ok := f.files[path]
+	return ok
+}
+
+func (f fakeLookup) ContainsQuote(path, quote string) bool {
+	content, ok := f.files[path]
+	if !ok {
+		return false
+	}
+	return strings.Contains(content, quote)
+}
+
+func TestValidatePhaseArtifact_RejectsUnknownField(t *testing.T) {
+	input := []byte(`{
+"phase":"vision",
+"version":"v1",
+"summary":"This is a sufficiently long summary for validation.",
+"goals":["g"],
+"non_goals":[],
+"evidence":[{"type":"file","path":"README.md","quote":"hello world","confidence":0.9},{"type":"doc","path":"docs/ARCHITECTURE.md","quote":"arch","confidence":0.9}],
+"open_questions":[],
+"quality":{"clarity":1,"completeness":1,"grounding":1,"consistency":1},
+"extra":"nope"
+}`)
+	res := ValidatePhaseArtifact("vision", input, fakeLookup{files: map[string]string{"README.md": "hello world", "docs/ARCHITECTURE.md": "arch"}})
+	if res.OK {
+		t.Fatal("expected validation to fail")
+	}
+}
+
+func TestValidatePhaseArtifact_RejectsMissingEvidence(t *testing.T) {
+	input := []byte(`{
+"phase":"vision",
+"version":"v1",
+"summary":"This is a sufficiently long summary for validation.",
+"goals":["g"],
+"non_goals":[],
+"evidence":[{"type":"file","path":"README.md","quote":"hello world","confidence":0.9}],
+"open_questions":[],
+"quality":{"clarity":1,"completeness":1,"grounding":1,"consistency":1}
+}`)
+	res := ValidatePhaseArtifact("vision", input, fakeLookup{files: map[string]string{"README.md": "hello world"}})
+	if res.OK {
+		t.Fatal("expected validation to fail")
+	}
+}
+
+func TestValidatePhaseArtifact_RejectsMissingQuote(t *testing.T) {
+	input := []byte(`{
+"phase":"vision",
+"version":"v1",
+"summary":"This is a sufficiently long summary for validation.",
+"goals":["g"],
+"non_goals":[],
+"evidence":[{"type":"file","path":"README.md","quote":"missing","confidence":0.9},{"type":"doc","path":"docs/ARCHITECTURE.md","quote":"arch","confidence":0.9}],
+"open_questions":[],
+"quality":{"clarity":1,"completeness":1,"grounding":1,"consistency":1}
+}`)
+	res := ValidatePhaseArtifact("vision", input, fakeLookup{files: map[string]string{"README.md": "hello world", "docs/ARCHITECTURE.md": "arch"}})
+	if res.OK {
+		t.Fatal("expected validation to fail")
+	}
+}
+
+func TestValidatePhaseArtifact_RejectsLowConfidence(t *testing.T) {
+	input := []byte(`{
+"phase":"vision",
+"version":"v1",
+"summary":"This is a sufficiently long summary for validation.",
+"goals":["g"],
+"non_goals":[],
+"evidence":[{"type":"file","path":"README.md","quote":"hello world","confidence":0.1},{"type":"doc","path":"docs/ARCHITECTURE.md","quote":"arch","confidence":0.9}],
+"open_questions":[],
+"quality":{"clarity":1,"completeness":1,"grounding":1,"consistency":1}
+}`)
+	res := ValidatePhaseArtifact("vision", input, fakeLookup{files: map[string]string{"README.md": "hello world", "docs/ARCHITECTURE.md": "arch"}})
+	if res.OK {
+		t.Fatal("expected validation to fail")
+	}
+}
+
+func TestValidatePhaseArtifact_QualityRequiresOpenQuestions(t *testing.T) {
+	input := []byte(`{
+"phase":"vision",
+"version":"v1",
+"summary":"This is a sufficiently long summary for validation.",
+"goals":["g"],
+"non_goals":[],
+"evidence":[{"type":"file","path":"README.md","quote":"hello world","confidence":0.9},{"type":"doc","path":"docs/ARCHITECTURE.md","quote":"arch","confidence":0.9}],
+"open_questions":[],
+"quality":{"clarity":0.1,"completeness":1,"grounding":1,"consistency":1}
+}`)
+	res := ValidatePhaseArtifact("vision", input, fakeLookup{files: map[string]string{"README.md": "hello world", "docs/ARCHITECTURE.md": "arch"}})
+	if res.OK {
+		t.Fatal("expected validation to fail")
+	}
+}
+
+func TestValidateSynthesisArtifact_RejectsLowAlignment(t *testing.T) {
+	input := []byte(`{
+"version":"v1",
+"inputs":["vision@v1"],
+"consistency_notes":[],
+"updates_suggested":[],
+"quality":{"cross_phase_alignment":0.1}
+}`)
+	res := ValidateSynthesisArtifact(input)
+	if res.OK {
+		t.Fatal("expected validation to fail")
+	}
+}
+
+func TestSchemaRegistry(t *testing.T) {
+	data, ok := SchemaFor("vision")
+	if !ok {
+		t.Fatal("expected vision schema")
+	}
+	if len(data) == 0 {
+		t.Fatal("expected schema data")
+	}
+	if synth := SynthesisSchema(); len(synth) == 0 {
+		t.Fatal("expected synthesis schema data")
+	}
+}

@@ -1,0 +1,22 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://autarch.dev/schemas/scan/cujs.json",
+  "allOf": [{ "$ref": "https://autarch.dev/schemas/scan/base.json" }],
+  "required": ["journeys"],
+  "properties": {
+    "journeys": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["name", "steps", "success"],
+        "properties": {
+          "name": { "type": "string", "minLength": 3 },
+          "steps": { "type": "array", "minItems": 2, "items": { "type": "string" } },
+          "success": { "type": "string", "minLength": 10 }
+        },
+        "additionalProperties": false
+      }
+    }
+  }
+}

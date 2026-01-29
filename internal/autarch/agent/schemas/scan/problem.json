@@ -1,0 +1,11 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://autarch.dev/schemas/scan/problem.json",
+  "allOf": [{ "$ref": "https://autarch.dev/schemas/scan/base.json" }],
+  "required": ["summary", "pain_points", "impact"],
+  "properties": {
+    "summary": { "type": "string", "minLength": 20 },
+    "pain_points": { "type": "array", "minItems": 1, "items": { "type": "string" } },
+    "impact": { "type": "string", "minLength": 10 }
+  }
+}
