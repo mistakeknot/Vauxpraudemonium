@@ -325,6 +325,17 @@ func (v *KickoffView) nextScanStep(state tui.OnboardingState) tui.OnboardingStat
 	}
 }
 
+func (v *KickoffView) prevScanStep(state tui.OnboardingState) tui.OnboardingState {
+	switch state {
+	case tui.OnboardingScanUsers:
+		return tui.OnboardingScanProblem
+	case tui.OnboardingScanProblem:
+		return tui.OnboardingScanVision
+	default:
+		return 0
+	}
+}
+
 func (v *KickoffView) acceptScanStep() tea.Cmd {
 	if v.scanResult == nil {
 		return nil
@@ -362,6 +373,18 @@ func (v *KickoffView) acceptScanStep() tea.Cmd {
 		return nil
 	}
 	return tea.Batch(cmds...)
+}
+
+func (v *KickoffView) moveScanStepBack() tea.Cmd {
+	prev := v.prevScanStep(v.scanStep)
+	if prev == 0 {
+		return nil
+	}
+	v.scanStep = prev
+	v.updateDocPanel()
+	return func() tea.Msg {
+		return tui.NavigateToStepMsg{State: prev}
+	}
 }
 
 func (v *KickoffView) applyAcceptedToScanResult(msg *tui.CodebaseScanResultMsg) *tui.CodebaseScanResultMsg {
@@ -636,8 +659,11 @@ func (v *KickoffView) Update(msg tea.Msg) (tui.View, tea.Cmd) {
 		// Pass most keys to input if focused
 		if v.focusInput {
 			switch {
-			case v.scanReview && msg.Type == tea.KeyEnter:
+			case v.scanReview && msg.Type == tea.KeyCtrlRight:
 				return v, v.acceptScanStep()
+
+			case v.scanReview && msg.Type == tea.KeyCtrlLeft:
+				return v, v.moveScanStepBack()
 
 			case key.Matches(msg, commonKeys.TabCycle):
 				// Toggle focus to recents
@@ -648,6 +674,9 @@ func (v *KickoffView) Update(msg tea.Msg) (tui.View, tea.Cmd) {
 				return v, nil
 
 			case msg.String() == "ctrl+g":
+				if v.scanReview {
+					return v, nil
+				}
 				// Submit the project description (ctrl+g = "go")
 				val := v.chatPanel.Value()
 				if strings.TrimSpace(val) != "" {
@@ -1071,6 +1100,9 @@ func (v *KickoffView) Name() string {
 // ShortHelp implements View
 func (v *KickoffView) ShortHelp() string {
 	if v.focusInput {
+		if v.scanReview {
+			return "ctrl+left back  ctrl+right next  F2 model  tab switch"
+		}
 		if v.onScanCodebase != nil {
 			return "ctrl+g create  ctrl+s scan  F2 model  tab switch"
 		}
@@ -1082,6 +1114,16 @@ func (v *KickoffView) ShortHelp() string {
 
 // FullHelp implements FullHelpProvider
 func (v *KickoffView) FullHelp() []tui.HelpBinding {
+	if v.scanReview {
+		return []tui.HelpBinding{
+			{Key: "ctrl+right", Description: "Accept and advance to next step"},
+			{Key: "ctrl+left", Description: "Go back to previous step"},
+			{Key: "tab", Description: "Switch between input and recent projects"},
+			{Key: "j/k", Description: "Navigate recent projects list"},
+			{Key: "enter", Description: "Send message to agent"},
+			{Key: "esc", Description: "Switch to recent projects list"},
+		}
+	}
 	return []tui.HelpBinding{
 		{Key: "ctrl+g", Description: "Create new project from description"},
 		{Key: "ctrl+s", Description: "Scan current directory for existing project"},

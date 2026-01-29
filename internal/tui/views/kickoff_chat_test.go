@@ -52,7 +52,7 @@ func TestKickoffAcceptsVisionStepAndAdvances(t *testing.T) {
 	v.scanResult = &tui.CodebaseScanResultMsg{Vision: "Vision text"}
 	v.SetScanStepForTest(tui.OnboardingScanVision)
 
-	_, _ = v.Update(tea.KeyMsg{Type: tea.KeyEnter})
+	_, _ = v.Update(tea.KeyMsg{Type: tea.KeyCtrlRight})
 
 	if v.ScanStepForTest() != tui.OnboardingScanProblem {
 		t.Fatalf("expected step advance to problem")
@@ -74,9 +74,34 @@ func TestKickoffAcceptTriggersResuggest(t *testing.T) {
 		return nil
 	})
 
-	_, _ = v.Update(tea.KeyMsg{Type: tea.KeyEnter})
+	_, _ = v.Update(tea.KeyMsg{Type: tea.KeyCtrlRight})
 
 	if !called {
 		t.Fatalf("expected resuggest callback to fire")
+	}
+}
+
+func TestKickoffCtrlLeftMovesBackWithoutResuggest(t *testing.T) {
+	v := NewKickoffView()
+	v.scanResult = &tui.CodebaseScanResultMsg{
+		Vision:  "Vision text",
+		Problem: "Problem text",
+	}
+	v.scanPath = "/tmp/project"
+	v.SetScanStepForTest(tui.OnboardingScanProblem)
+
+	called := false
+	v.SetScanCodebaseCallback(func(path string) tea.Cmd {
+		called = true
+		return nil
+	})
+
+	_, _ = v.Update(tea.KeyMsg{Type: tea.KeyCtrlLeft})
+
+	if v.ScanStepForTest() != tui.OnboardingScanVision {
+		t.Fatalf("expected step move back to vision")
+	}
+	if called {
+		t.Fatalf("did not expect resuggest when moving back")
 	}
 }
