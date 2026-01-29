@@ -9,6 +9,7 @@ import (
 
 // MinShellWidth is the minimum terminal width required for the shell layout.
 const MinShellWidth = 100
+const sidebarSeparatorWidth = 2
 
 // FocusTarget represents which pane has focus in the shell.
 type FocusTarget int
@@ -59,7 +60,7 @@ func (l *ShellLayout) SetSize(width, height int) {
 	// Content area = width - sidebar - separator (if sidebar visible)
 	contentWidth := width - sidebarW
 	if sidebarW > 0 {
-		contentWidth -= 1 // separator
+		contentWidth -= sidebarSeparatorWidth // separator
 	}
 
 	l.sidebar.SetSize(sidebarW, height)
@@ -184,7 +185,8 @@ func (l *ShellLayout) Render(sidebarItems []SidebarItem, document, chat string) 
 	if l.showSidebar && !l.sidebar.IsCollapsed() {
 		// Add separator between sidebar and content
 		sepStyle := lipgloss.NewStyle().Foreground(ColorBorder)
-		sep := sepStyle.Render(strings.Repeat("│\n", l.height))
+		sepLine := "│" + strings.Repeat(" ", sidebarSeparatorWidth-1)
+		sep := sepStyle.Render(strings.Repeat(sepLine+"\n", l.height))
 		sep = strings.TrimSuffix(sep, "\n")
 
 		return lipgloss.JoinHorizontal(lipgloss.Top, sidebarView, sep, splitView)

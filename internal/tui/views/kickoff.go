@@ -179,42 +179,66 @@ func (v *KickoffView) updateDocPanel() {
 
 	if v.scanResult != nil {
 		var lines []string
-		if v.scanPath != "" {
-			lines = append(lines, fmt.Sprintf("Path: %s", v.scanPath))
-		}
-		if v.scanResult.Description != "" {
-			lines = append(lines, fmt.Sprintf("Description: %s", v.scanResult.Description))
-		}
-		if v.scanResult.Vision != "" {
-			lines = append(lines, fmt.Sprintf("Vision: %s", v.scanResult.Vision))
-		}
-		if v.scanResult.Users != "" {
-			lines = append(lines, fmt.Sprintf("Users: %s", v.scanResult.Users))
-		}
-		if v.scanResult.Problem != "" {
-			lines = append(lines, fmt.Sprintf("Problem: %s", v.scanResult.Problem))
-		}
-		if v.scanResult.Platform != "" {
-			lines = append(lines, fmt.Sprintf("Platform: %s", v.scanResult.Platform))
-		}
-		if v.scanResult.Language != "" {
-			lines = append(lines, fmt.Sprintf("Language: %s", v.scanResult.Language))
-		}
-		if len(v.scanResult.Requirements) > 0 {
-			lines = append(lines, "Requirements:")
-			for _, req := range v.scanResult.Requirements {
-				lines = append(lines, fmt.Sprintf("• %s", req))
+		addedStepSection := false
+		if v.scanReview {
+			stepLabel := ""
+			for _, step := range tui.InterviewSteps() {
+				if step.ID == v.scanStepKey(v.scanStep) {
+					stepLabel = step.Label
+					break
+				}
+			}
+			if stepLabel != "" {
+				v.docPanel.AddSection(pkgtui.DocSection{
+					Title:   stepLabel,
+					Content: v.scanStepValue(v.scanStep),
+					Style:   lipgloss.NewStyle().Foreground(pkgtui.ColorFg),
+				})
+				addedStepSection = true
+			}
+			if stepLabel == "" && v.scanResult.Vision != "" {
+				lines = append(lines, v.scanResult.Vision)
+			}
+		} else {
+			if v.scanPath != "" {
+				lines = append(lines, fmt.Sprintf("Path: %s", v.scanPath))
+			}
+			if v.scanResult.Description != "" {
+				lines = append(lines, fmt.Sprintf("Description: %s", v.scanResult.Description))
+			}
+			if v.scanResult.Vision != "" {
+				lines = append(lines, fmt.Sprintf("Vision: %s", v.scanResult.Vision))
+			}
+			if v.scanResult.Users != "" {
+				lines = append(lines, fmt.Sprintf("Users: %s", v.scanResult.Users))
+			}
+			if v.scanResult.Problem != "" {
+				lines = append(lines, fmt.Sprintf("Problem: %s", v.scanResult.Problem))
+			}
+			if v.scanResult.Platform != "" {
+				lines = append(lines, fmt.Sprintf("Platform: %s", v.scanResult.Platform))
+			}
+			if v.scanResult.Language != "" {
+				lines = append(lines, fmt.Sprintf("Language: %s", v.scanResult.Language))
+			}
+			if len(v.scanResult.Requirements) > 0 {
+				lines = append(lines, "Requirements:")
+				for _, req := range v.scanResult.Requirements {
+					lines = append(lines, fmt.Sprintf("• %s", req))
+				}
 			}
 		}
-		if len(lines) == 0 {
-			lines = append(lines, "Scan completed with no summary.")
+		if len(lines) == 0 && v.scanReview && !addedStepSection {
+			lines = append(lines, "No content detected yet.")
 		}
 
-		v.docPanel.AddSection(pkgtui.DocSection{
-			Title:   "",
-			Content: strings.Join(lines, "\n"),
-			Style:   lipgloss.NewStyle().Foreground(pkgtui.ColorFg),
-		})
+		if len(lines) > 0 {
+			v.docPanel.AddSection(pkgtui.DocSection{
+				Title:   "",
+				Content: strings.Join(lines, "\n"),
+				Style:   lipgloss.NewStyle().Foreground(pkgtui.ColorFg),
+			})
+		}
 	} else {
 		v.docPanel.AddSection(pkgtui.DocSection{
 			Title:   "Autarch",
@@ -239,8 +263,8 @@ func (v *KickoffView) updateDocPanel() {
 		})
 	}
 
-	// If we have a scan result, show quick tech info
-	if v.scanResult != nil {
+	// If we have a scan result, show quick tech info (not during scan review)
+	if v.scanResult != nil && !v.scanReview {
 		techInfo := ""
 		if v.scanResult.Language != "" {
 			techInfo = v.scanResult.Language
@@ -324,6 +348,7 @@ func (v *KickoffView) acceptScanStep() tea.Cmd {
 			}
 		}
 		v.scanStep = next
+		v.updateDocPanel()
 		cmds = append(cmds, func() tea.Msg {
 			return tui.NavigateToStepMsg{State: next}
 		})

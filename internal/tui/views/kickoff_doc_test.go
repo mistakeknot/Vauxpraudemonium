@@ -39,11 +39,17 @@ func TestKickoffScanResultUpdatesDocPanel(t *testing.T) {
 	}
 
 	view := v.docPanel.View()
-	if !strings.Contains(view, "Scanned description") {
-		t.Fatalf("expected doc panel to include scan description")
-	}
 	if !strings.Contains(view, "Vision text") {
 		t.Fatalf("expected doc panel to include scan vision")
+	}
+	if strings.Contains(view, "Scanned description") {
+		t.Fatalf("did not expect description in vision step")
+	}
+	if strings.Contains(view, "Users text") {
+		t.Fatalf("did not expect users in vision step")
+	}
+	if strings.Contains(view, "Problem text") {
+		t.Fatalf("did not expect problem in vision step")
 	}
 }
 

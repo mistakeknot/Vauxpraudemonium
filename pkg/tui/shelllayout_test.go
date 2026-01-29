@@ -30,7 +30,7 @@ func TestShellLayoutDimensionInvariant(t *testing.T) {
 	rightW := l.RightWidth()
 
 	// Content area = total width - sidebar - separator between sidebar and content
-	contentArea := 120 - sidebarW - 1
+	contentArea := 120 - sidebarW - 2
 
 	// The left+right widths come from split layout which uses 0.66 ratio
 	// Left + separator + right should fit within content area
@@ -200,5 +200,17 @@ func TestShellLayoutRenderWithEmptySidebar(t *testing.T) {
 	// Should show empty state
 	if !strings.Contains(view, "No items yet") {
 		t.Fatal("expected empty sidebar message")
+	}
+}
+
+func TestShellLayoutSidebarSeparatorAddsPadding(t *testing.T) {
+	l := NewShellLayout()
+	l.SetSize(120, 40)
+
+	items := []SidebarItem{{ID: "1", Label: "Item One", Icon: "•"}}
+	view := l.Render(items, "DOC", "CHAT")
+
+	if !strings.Contains(view, "│ DOC") {
+		t.Fatalf("expected padding between sidebar and document")
 	}
 }
