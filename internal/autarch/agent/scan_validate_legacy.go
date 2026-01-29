@@ -12,6 +12,9 @@ func ValidateLegacyScanResult(result *ScanResult, files map[string]string) []Val
 	if result == nil {
 		return nil
 	}
+	if result.PhaseArtifacts != nil {
+		return nil
+	}
 
 	evidence := buildEvidenceFromFiles(files)
 	lookup := fileEvidenceLookup{files: files}

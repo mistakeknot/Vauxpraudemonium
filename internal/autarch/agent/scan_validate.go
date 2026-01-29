@@ -89,7 +89,6 @@ func decodeStrict[T any](raw []byte) (T, ValidationResult) {
 
 func decodeBase(raw []byte, base *ScanArtifactBase) error {
 	dec := json.NewDecoder(bytes.NewReader(raw))
-	dec.DisallowUnknownFields()
 	if err := dec.Decode(base); err != nil {
 		return err
 	}

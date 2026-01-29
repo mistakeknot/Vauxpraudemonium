@@ -21,6 +21,7 @@ type ScanResult struct {
 	Language         string            `json:"language"`
 	Requirements     []string          `json:"requirements"`
 	ValidationErrors []ValidationError `json:"validation_errors,omitempty"`
+	PhaseArtifacts   *PhaseArtifacts   `json:"phase_artifacts,omitempty"`
 }
 
 // ScanProgress reports progress during codebase scanning.
@@ -101,7 +102,11 @@ func ScanCodebaseWithProgress(ctx context.Context, agent *Agent, path string, pr
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse scan response: %w", err)
 	}
-	result.ValidationErrors = ValidateLegacyScanResult(result, files)
+	if result.PhaseArtifacts != nil {
+		result.ValidationErrors = ValidateStructuredScanArtifacts(result, files)
+	} else {
+		result.ValidationErrors = ValidateLegacyScanResult(result, files)
+	}
 
 	report("Complete", fmt.Sprintf("Found: %s", result.ProjectName), nil)
 	return result, nil
@@ -195,17 +200,56 @@ Output ONLY valid JSON in this exact format (no markdown, no explanation):
 {
   "project_name": "Name of the project",
   "description": "One-sentence description of what this project does",
-  "vision": "What the project aims to achieve",
-  "users": "Who the primary users are",
-  "problem": "What problem it solves",
   "platform": "Web|CLI|Desktop|Mobile|API/Backend",
   "language": "Go|TypeScript|Python|Rust|Other",
-  "requirements": ["Requirement 1", "Requirement 2", "Requirement 3"]
+  "requirements": ["Requirement 1", "Requirement 2", "Requirement 3"],
+  "artifacts": {
+    "vision": {
+      "phase": "vision",
+      "version": "v1",
+      "summary": "Vision summary (>= 20 chars)",
+      "goals": ["Goal 1"],
+      "non_goals": [],
+      "evidence": [
+        {"type":"file","path":"README.md","quote":"...","confidence":0.7},
+        {"type":"doc","path":"docs/ARCHITECTURE.md","quote":"...","confidence":0.7}
+      ],
+      "open_questions": [],
+      "quality": {"clarity":0.7,"completeness":0.7,"grounding":0.7,"consistency":0.7}
+    },
+    "problem": {
+      "phase": "problem",
+      "version": "v1",
+      "summary": "Problem summary (>= 20 chars)",
+      "pain_points": ["Pain 1"],
+      "impact": "Impact text",
+      "evidence": [
+        {"type":"file","path":"README.md","quote":"...","confidence":0.7},
+        {"type":"doc","path":"docs/ARCHITECTURE.md","quote":"...","confidence":0.7}
+      ],
+      "open_questions": [],
+      "quality": {"clarity":0.7,"completeness":0.7,"grounding":0.7,"consistency":0.7}
+    },
+    "users": {
+      "phase": "users",
+      "version": "v1",
+      "personas": [
+        {"name":"Primary user","needs":["Need 1"],"context":"Context text"}
+      ],
+      "evidence": [
+        {"type":"file","path":"README.md","quote":"...","confidence":0.7},
+        {"type":"doc","path":"docs/ARCHITECTURE.md","quote":"...","confidence":0.7}
+      ],
+      "open_questions": [],
+      "quality": {"clarity":0.7,"completeness":0.7,"grounding":0.7,"consistency":0.7}
+    }
+  }
 }
 
 If you cannot determine a field, use a reasonable guess based on the context.
 For "platform" and "language", choose the most appropriate option from the list.
 List 3-7 key requirements/features based on the documentation.
+Every artifact must include at least 2 evidence items with quotes from the provided files.
 
 Generate the JSON now:`)
 
@@ -225,6 +269,24 @@ func parseScanResponse(content string) (*ScanResult, error) {
 	end := strings.LastIndex(content, "}")
 	if start >= 0 && end > start {
 		content = content[start : end+1]
+	}
+
+	var structured structuredScanResponse
+	if err := json.Unmarshal([]byte(content), &structured); err == nil && (structured.Artifacts != nil || structured.ProjectName != "" || structured.Description != "") {
+		result := &ScanResult{
+			ProjectName:      structured.ProjectName,
+			Description:      structured.Description,
+			Vision:           structured.Vision,
+			Users:            structured.Users,
+			Problem:          structured.Problem,
+			Platform:         structured.Platform,
+			Language:         structured.Language,
+			Requirements:     structured.Requirements,
+			PhaseArtifacts:   structured.Artifacts,
+			ValidationErrors: nil,
+		}
+		applyStructuredDefaults(result)
+		return result, nil
 	}
 
 	var result ScanResult
