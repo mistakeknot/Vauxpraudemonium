@@ -150,11 +150,51 @@ func (v *KickoffView) SetAgentName(name string) {
 func (v *KickoffView) updateDocPanel() {
 	v.docPanel.ClearSections()
 
-	v.docPanel.AddSection(pkgtui.DocSection{
-		Title:   "Autarch",
-		Content: "Autarch is a platform for a suite of agentic tools to help you build better products. Use the chat panel on the right to start creating a PRD that will provide a solid foundation to build upon.",
-		Style:   lipgloss.NewStyle().Foreground(pkgtui.ColorFg),
-	})
+	if v.scanResult != nil {
+		var lines []string
+		if v.scanPath != "" {
+			lines = append(lines, fmt.Sprintf("Path: %s", v.scanPath))
+		}
+		if v.scanResult.Description != "" {
+			lines = append(lines, fmt.Sprintf("Description: %s", v.scanResult.Description))
+		}
+		if v.scanResult.Vision != "" {
+			lines = append(lines, fmt.Sprintf("Vision: %s", v.scanResult.Vision))
+		}
+		if v.scanResult.Users != "" {
+			lines = append(lines, fmt.Sprintf("Users: %s", v.scanResult.Users))
+		}
+		if v.scanResult.Problem != "" {
+			lines = append(lines, fmt.Sprintf("Problem: %s", v.scanResult.Problem))
+		}
+		if v.scanResult.Platform != "" {
+			lines = append(lines, fmt.Sprintf("Platform: %s", v.scanResult.Platform))
+		}
+		if v.scanResult.Language != "" {
+			lines = append(lines, fmt.Sprintf("Language: %s", v.scanResult.Language))
+		}
+		if len(v.scanResult.Requirements) > 0 {
+			lines = append(lines, "Requirements:")
+			for _, req := range v.scanResult.Requirements {
+				lines = append(lines, fmt.Sprintf("• %s", req))
+			}
+		}
+		if len(lines) == 0 {
+			lines = append(lines, "Scan completed with no summary.")
+		}
+
+		v.docPanel.AddSection(pkgtui.DocSection{
+			Title:   "Scan Results",
+			Content: strings.Join(lines, "\n"),
+			Style:   lipgloss.NewStyle().Foreground(pkgtui.ColorFg),
+		})
+	} else {
+		v.docPanel.AddSection(pkgtui.DocSection{
+			Title:   "Autarch",
+			Content: "Autarch is a platform for a suite of agentic tools to help you build better products. Use the chat panel on the right to start creating a PRD that will provide a solid foundation to build upon.",
+			Style:   lipgloss.NewStyle().Foreground(pkgtui.ColorFg),
+		})
+	}
 
 	// Add tips section
 	v.docPanel.AddSection(pkgtui.DocSection{
@@ -170,7 +210,7 @@ func (v *KickoffView) updateDocPanel() {
 		Style:   lipgloss.NewStyle().Foreground(pkgtui.ColorFgDim),
 	})
 
-	// If we have a scan result, show it
+	// If we have a scan result, show quick tech info
 	if v.scanResult != nil {
 		techInfo := ""
 		if v.scanResult.Language != "" {
@@ -182,11 +222,13 @@ func (v *KickoffView) updateDocPanel() {
 			}
 			techInfo += v.scanResult.Platform
 		}
-		v.docPanel.AddSection(pkgtui.DocSection{
-			Title:   "Scanned Project",
-			Content: fmt.Sprintf("Found: %s\nTech: %s", v.scanPath, techInfo),
-			Style:   lipgloss.NewStyle().Foreground(pkgtui.ColorSuccess),
-		})
+		if techInfo != "" {
+			v.docPanel.AddSection(pkgtui.DocSection{
+				Title:   "Tech Snapshot",
+				Content: techInfo,
+				Style:   lipgloss.NewStyle().Foreground(pkgtui.ColorSuccess),
+			})
+		}
 	}
 }
 
@@ -354,7 +396,6 @@ func (v *KickoffView) Update(msg tea.Msg) (tui.View, tea.Cmd) {
 		}
 		// Store scan result and pre-fill the description
 		v.scanResult = &msg
-		v.chatPanel.SetValue(msg.Description)
 		v.updateDocPanel()
 		return v, nil
 
