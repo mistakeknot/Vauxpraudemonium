@@ -403,6 +403,9 @@ func (a *UnifiedApp) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case InterviewCompleteMsg:
 		return a, a.handleInterviewComplete(msg)
 
+	case ScanSignoffCompleteMsg:
+		return a, a.handleInterviewComplete(InterviewCompleteMsg{Answers: msg.Answers})
+
 	case SuggestionsReadyMsg:
 		return a, a.handleSuggestionsReady(msg)
 
@@ -457,6 +460,10 @@ func (a *UnifiedApp) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	case CodebaseScanResultMsg:
 		// Pass to kickoff view - it will handle the result
+		if a.mode == ModeOnboarding {
+			a.onboardingState = OnboardingScanVision
+			a.breadcrumb.SetCurrent(OnboardingScanVision)
+		}
 
 	case scanProgressWithContinuation:
 		// Forward progress to current view and schedule next read
@@ -1092,6 +1099,11 @@ func (a *UnifiedApp) navigateToStep(state OnboardingState) tea.Cmd {
 	case OnboardingKickoff:
 		return a.navigateToKickoff()
 
+	case OnboardingScanVision, OnboardingScanProblem, OnboardingScanUsers:
+		a.onboardingState = state
+		a.breadcrumb.SetCurrent(state)
+		return nil
+
 	case OnboardingEpicReview:
 		// Only if we have generated epics
 		if len(a.generatedEpics) > 0 {
@@ -1323,6 +1335,8 @@ func (a *UnifiedApp) onboardingHeader() string {
 	switch a.onboardingState {
 	case OnboardingKickoff:
 		return "New Project"
+	case OnboardingScanVision, OnboardingScanProblem, OnboardingScanUsers:
+		return "Scan Review"
 	case OnboardingInterview:
 		return "Project Setup"
 	case OnboardingSpecSummary:

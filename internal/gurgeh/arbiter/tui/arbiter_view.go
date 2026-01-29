@@ -10,6 +10,7 @@ import (
 	"github.com/mistakeknot/autarch/internal/gurgeh/specs"
 	pollardquick "github.com/mistakeknot/autarch/internal/pollard/quick"
 	"github.com/mistakeknot/autarch/internal/pollard/research"
+	apptui "github.com/mistakeknot/autarch/internal/tui"
 	pkgtui "github.com/mistakeknot/autarch/pkg/tui"
 )
 
@@ -29,7 +30,7 @@ type ArbiterView struct {
 	// UI components
 	chatPanel   *pkgtui.ChatPanel
 	docPanel    *pkgtui.DocPanel
-	splitLayout *pkgtui.SplitLayout
+	shell       *pkgtui.ShellLayout
 	optionIndex int
 
 	// Callbacks
@@ -64,15 +65,14 @@ func NewArbiterView(projectPath string, coordinator *research.Coordinator) *Arbi
 
 	docPanel := pkgtui.NewDocPanel()
 
-	splitLayout := pkgtui.NewSplitLayout(0.66)
-	splitLayout.SetMinWidth(100)
+	shell := pkgtui.NewShellLayout()
 
 	return &ArbiterView{
 		orchestrator: orch,
 		coordinator:  coordinator,
 		chatPanel:    chatPanel,
 		docPanel:     docPanel,
-		splitLayout:  splitLayout,
+		shell:        shell,
 		width:        120,
 		height:       40,
 	}
@@ -93,6 +93,20 @@ func (v *ArbiterView) SetSuggestions(suggestions map[string]string) {
 	if vision, ok := suggestions["vision"]; ok && vision != "" {
 		v.chatPanel.SetValue(vision)
 	}
+}
+
+// SidebarItems provides the shared interview steps for the left nav.
+func (v *ArbiterView) SidebarItems() []pkgtui.SidebarItem {
+	steps := apptui.InterviewSteps()
+	items := make([]pkgtui.SidebarItem, 0, len(steps))
+	for _, step := range steps {
+		items = append(items, pkgtui.SidebarItem{
+			ID:    step.ID,
+			Label: step.Label,
+			Icon:  "○",
+		})
+	}
+	return items
 }
 
 // SetCompleteCallback satisfies the InterviewViewSetter interface for unified app compatibility.
@@ -377,9 +391,10 @@ func (v *ArbiterView) updateDocPanel() {
 
 // resizePanels updates panel dimensions from the split layout.
 func (v *ArbiterView) resizePanels() {
-	v.splitLayout.SetSize(v.width, v.height)
-	v.docPanel.SetSize(v.splitLayout.LeftWidth(), v.splitLayout.LeftHeight())
-	v.chatPanel.SetSize(v.splitLayout.RightWidth(), v.splitLayout.RightHeight())
+	v.shell.SetSize(v.width, v.height)
+	split := v.shell.SplitLayout()
+	v.docPanel.SetSize(split.LeftWidth(), split.LeftHeight())
+	v.chatPanel.SetSize(split.RightWidth(), split.RightHeight())
 }
 
 // View implements pkgtui.View.
@@ -389,7 +404,7 @@ func (v *ArbiterView) View() string {
 	}
 
 	v.resizePanels()
-	return v.splitLayout.Render(v.docPanel.View(), v.chatPanel.View())
+	return v.shell.Render(v.SidebarItems(), v.docPanel.View(), v.chatPanel.View())
 }
 
 // Focus implements pkgtui.View.

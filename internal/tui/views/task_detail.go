@@ -78,6 +78,15 @@ func (v *TaskDetailView) SetCallbacks(
 	v.onBack = onBack
 }
 
+// SidebarItems provides fixed anchors for task details.
+func (v *TaskDetailView) SidebarItems() []pkgtui.SidebarItem {
+	return []pkgtui.SidebarItem{
+		{ID: "overview", Label: "Overview", Icon: "○"},
+		{ID: "acceptance", Label: "Acceptance", Icon: "○"},
+		{ID: "notes", Label: "Notes", Icon: "○"},
+	}
+}
+
 // Init implements View
 func (v *TaskDetailView) Init() tea.Cmd {
 	return v.loadResearch()
@@ -181,7 +190,7 @@ func (v *TaskDetailView) View() string {
 	document := v.renderDocument()
 	chat := v.renderChat()
 
-	return v.shell.RenderWithoutSidebar(document, chat)
+	return v.shell.Render(v.SidebarItems(), document, chat)
 }
 
 // renderDocument renders the main document pane (task details).

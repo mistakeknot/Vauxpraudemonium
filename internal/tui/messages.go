@@ -155,3 +155,8 @@ type CodebaseScanResultMsg struct {
 	Requirements []string
 	Error        error
 }
+
+// ScanSignoffCompleteMsg signals scan signoff completion.
+type ScanSignoffCompleteMsg struct {
+	Answers map[string]string
+}

@@ -48,6 +48,15 @@ func NewBreadcrumb() *Breadcrumb {
 	}
 }
 
+// LabelsForTest exposes breadcrumb labels for tests.
+func (b *Breadcrumb) LabelsForTest() []string {
+	labels := make([]string, 0, len(b.steps))
+	for _, step := range b.steps {
+		labels = append(labels, step.Label)
+	}
+	return labels
+}
+
 // SetWidth sets the available width
 func (b *Breadcrumb) SetWidth(w int) {
 	b.width = w

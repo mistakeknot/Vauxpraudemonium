@@ -25,6 +25,15 @@ func TestSidebarToggle(t *testing.T) {
 	}
 }
 
+func TestSidebarWidthSupportsArbiterLabels(t *testing.T) {
+	if SidebarWidth < 28 {
+		t.Fatalf("expected SidebarWidth >= 28, got %d", SidebarWidth)
+	}
+	if MaxLabelWidth < 25 {
+		t.Fatalf("expected MaxLabelWidth >= 25, got %d", MaxLabelWidth)
+	}
+}
+
 func TestSidebarWidthWhenCollapsed(t *testing.T) {
 	s := NewSidebar()
 	s.SetSize(100, 40)

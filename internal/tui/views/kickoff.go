@@ -23,7 +23,7 @@ type KickoffView struct {
 	// Shared components for Cursor-style layout
 	chatPanel    *pkgtui.ChatPanel
 	docPanel     *pkgtui.DocPanel
-	splitLayout  *pkgtui.SplitLayout
+	shell        *pkgtui.ShellLayout
 	chatSettings pkgtui.ChatSettings
 
 	recents    []RecentProject
@@ -46,6 +46,9 @@ type KickoffView struct {
 	scanFiles      []string                   // Files found during scan
 	scanAgentName  string                     // Name of agent being used
 	scanAgentLines []string                   // Recent lines of agent output
+	scanReview     bool
+	scanStep       tui.OnboardingState
+	scanAccepted   map[string]string
 
 	// Callbacks for navigation
 	onProjectStart func(project *Project) tea.Cmd
@@ -83,13 +86,12 @@ func NewKickoffView() *KickoffView {
 	docPanel.SetTitle("What do you want to build?")
 	docPanel.SetSubtitle("Describe your project vision and goals")
 
-	splitLayout := pkgtui.NewSplitLayout(0.66) // 2/3 left (doc), 1/3 right (chat) - Cursor style
-	splitLayout.SetMinWidth(100)
+	shell := pkgtui.NewShellLayout()
 
 	v := &KickoffView{
 		chatPanel:    chatPanel,
 		docPanel:     docPanel,
-		splitLayout:  splitLayout,
+		shell:        shell,
 		focusInput:   true,
 		chatSettings: pkgtui.DefaultChatSettings(),
 	}
@@ -146,6 +148,31 @@ func (v *KickoffView) SetAgentName(name string) {
 	v.scanAgentName = name
 }
 
+// SetScanStepForTest sets the scan step in tests.
+func (v *KickoffView) SetScanStepForTest(state tui.OnboardingState) {
+	v.scanStep = state
+	v.scanReview = true
+}
+
+// ScanStepForTest returns the current scan step for tests.
+func (v *KickoffView) ScanStepForTest() tui.OnboardingState {
+	return v.scanStep
+}
+
+// SidebarItems provides shared interview steps for the left nav.
+func (v *KickoffView) SidebarItems() []pkgtui.SidebarItem {
+	steps := tui.InterviewSteps()
+	items := make([]pkgtui.SidebarItem, 0, len(steps))
+	for _, step := range steps {
+		items = append(items, pkgtui.SidebarItem{
+			ID:    step.ID,
+			Label: step.Label,
+			Icon:  "○",
+		})
+	}
+	return items
+}
+
 // updateDocPanel updates the document panel with current content.
 func (v *KickoffView) updateDocPanel() {
 	v.docPanel.ClearSections()
@@ -184,7 +211,7 @@ func (v *KickoffView) updateDocPanel() {
 		}
 
 		v.docPanel.AddSection(pkgtui.DocSection{
-			Title:   "Scan Results",
+			Title:   "",
 			Content: strings.Join(lines, "\n"),
 			Style:   lipgloss.NewStyle().Foreground(pkgtui.ColorFg),
 		})
@@ -196,19 +223,21 @@ func (v *KickoffView) updateDocPanel() {
 		})
 	}
 
-	// Add tips section
-	v.docPanel.AddSection(pkgtui.DocSection{
-		Title:   "Tips",
-		Content: "• Be specific about what you're building\n• Include key features or requirements\n• Mention any constraints or preferences",
-		Style:   lipgloss.NewStyle().Foreground(pkgtui.ColorMuted),
-	})
+	if v.scanResult == nil {
+		// Add tips section
+		v.docPanel.AddSection(pkgtui.DocSection{
+			Title:   "Tips",
+			Content: "• Be specific about what you're building\n• Include key features or requirements\n• Mention any constraints or preferences",
+			Style:   lipgloss.NewStyle().Foreground(pkgtui.ColorMuted),
+		})
 
-	// Add keyboard shortcuts section
-	v.docPanel.AddSection(pkgtui.DocSection{
-		Title:   "Shortcuts",
-		Content: "Ctrl+G → Create project\nCtrl+S → Scan current directory\nTab → Switch between panels",
-		Style:   lipgloss.NewStyle().Foreground(pkgtui.ColorFgDim),
-	})
+		// Add keyboard shortcuts section
+		v.docPanel.AddSection(pkgtui.DocSection{
+			Title:   "Shortcuts",
+			Content: "Ctrl+G → Create project\nCtrl+S → Scan current directory\nTab → Switch between panels",
+			Style:   lipgloss.NewStyle().Foreground(pkgtui.ColorFgDim),
+		})
+	}
 
 	// If we have a scan result, show quick tech info
 	if v.scanResult != nil {
@@ -230,6 +259,130 @@ func (v *KickoffView) updateDocPanel() {
 			})
 		}
 	}
+}
+
+func (v *KickoffView) scanStepKey(state tui.OnboardingState) string {
+	switch state {
+	case tui.OnboardingScanVision:
+		return "vision"
+	case tui.OnboardingScanProblem:
+		return "problem"
+	case tui.OnboardingScanUsers:
+		return "users"
+	default:
+		return ""
+	}
+}
+
+func (v *KickoffView) scanStepValue(state tui.OnboardingState) string {
+	if v.scanResult == nil {
+		return ""
+	}
+	switch state {
+	case tui.OnboardingScanVision:
+		return v.scanResult.Vision
+	case tui.OnboardingScanProblem:
+		return v.scanResult.Problem
+	case tui.OnboardingScanUsers:
+		return v.scanResult.Users
+	default:
+		return ""
+	}
+}
+
+func (v *KickoffView) nextScanStep(state tui.OnboardingState) tui.OnboardingState {
+	switch state {
+	case tui.OnboardingScanVision:
+		return tui.OnboardingScanProblem
+	case tui.OnboardingScanProblem:
+		return tui.OnboardingScanUsers
+	default:
+		return 0
+	}
+}
+
+func (v *KickoffView) acceptScanStep() tea.Cmd {
+	if v.scanResult == nil {
+		return nil
+	}
+	if v.scanAccepted == nil {
+		v.scanAccepted = make(map[string]string)
+	}
+	key := v.scanStepKey(v.scanStep)
+	if key != "" {
+		if value := v.scanStepValue(v.scanStep); value != "" {
+			v.scanAccepted[key] = value
+		}
+	}
+
+	next := v.nextScanStep(v.scanStep)
+	var cmds []tea.Cmd
+	if next != 0 {
+		if v.onScanCodebase != nil && v.scanPath != "" {
+			if cmd := v.onScanCodebase(v.scanPath); cmd != nil {
+				cmds = append(cmds, cmd)
+			}
+		}
+		v.scanStep = next
+		cmds = append(cmds, func() tea.Msg {
+			return tui.NavigateToStepMsg{State: next}
+		})
+	} else {
+		answers := v.buildSignoffAnswers()
+		cmds = append(cmds, func() tea.Msg {
+			return tui.ScanSignoffCompleteMsg{Answers: answers}
+		})
+	}
+	if len(cmds) == 0 {
+		return nil
+	}
+	return tea.Batch(cmds...)
+}
+
+func (v *KickoffView) applyAcceptedToScanResult(msg *tui.CodebaseScanResultMsg) *tui.CodebaseScanResultMsg {
+	if msg == nil {
+		return nil
+	}
+	if len(v.scanAccepted) == 0 {
+		return msg
+	}
+	updated := *msg
+	if val, ok := v.scanAccepted["vision"]; ok {
+		updated.Vision = val
+	}
+	if val, ok := v.scanAccepted["problem"]; ok {
+		updated.Problem = val
+	}
+	if val, ok := v.scanAccepted["users"]; ok {
+		updated.Users = val
+	}
+	return &updated
+}
+
+func (v *KickoffView) buildSignoffAnswers() map[string]string {
+	answers := make(map[string]string)
+	if v.scanResult == nil {
+		return answers
+	}
+	if v.scanResult.Vision != "" {
+		answers["vision"] = v.scanResult.Vision
+	}
+	if v.scanResult.Users != "" {
+		answers["users"] = v.scanResult.Users
+	}
+	if v.scanResult.Problem != "" {
+		answers["problem"] = v.scanResult.Problem
+	}
+	if v.scanResult.Platform != "" {
+		answers["platform"] = v.scanResult.Platform
+	}
+	if v.scanResult.Language != "" {
+		answers["language"] = v.scanResult.Language
+	}
+	if len(v.scanResult.Requirements) > 0 {
+		answers["requirements"] = strings.Join(v.scanResult.Requirements, "\n")
+	}
+	return answers
 }
 
 // Init implements View
@@ -336,9 +489,10 @@ func (v *KickoffView) Update(msg tea.Msg) (tui.View, tea.Cmd) {
 		// Account for unified_app's content padding (Padding(1, 3) = 6 horizontal, 2 vertical)
 		v.width = msg.Width - 6
 		v.height = msg.Height - 4 - 2
-		v.splitLayout.SetSize(v.width, v.height)
-		v.docPanel.SetSize(v.splitLayout.LeftWidth(), v.splitLayout.LeftHeight())
-		v.chatPanel.SetSize(v.splitLayout.RightWidth(), v.splitLayout.RightHeight())
+		v.shell.SetSize(v.width, v.height)
+		split := v.shell.SplitLayout()
+		v.docPanel.SetSize(split.LeftWidth(), split.LeftHeight())
+		v.chatPanel.SetSize(split.RightWidth(), split.RightHeight())
 		return v, nil
 
 	case recentsLoadedMsg:
@@ -395,7 +549,11 @@ func (v *KickoffView) Update(msg tea.Msg) (tui.View, tea.Cmd) {
 			return v, nil
 		}
 		// Store scan result and pre-fill the description
-		v.scanResult = &msg
+		v.scanReview = true
+		if v.scanStep == 0 {
+			v.scanStep = tui.OnboardingScanVision
+		}
+		v.scanResult = v.applyAcceptedToScanResult(&msg)
 		v.updateDocPanel()
 		return v, nil
 
@@ -453,6 +611,9 @@ func (v *KickoffView) Update(msg tea.Msg) (tui.View, tea.Cmd) {
 		// Pass most keys to input if focused
 		if v.focusInput {
 			switch {
+			case v.scanReview && msg.Type == tea.KeyEnter:
+				return v, v.acceptScanStep()
+
 			case key.Matches(msg, commonKeys.TabCycle):
 				// Toggle focus to recents
 				if len(v.recents) > 0 {
@@ -671,7 +832,7 @@ func (v *KickoffView) View() string {
 		leftContent = v.renderScanProgressPane()
 	}
 
-	return v.splitLayout.Render(leftContent, rightContent)
+	return v.shell.Render(v.SidebarItems(), leftContent, rightContent)
 }
 
 // renderScanProgressPane renders the left (main document) pane during scanning.

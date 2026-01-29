@@ -61,6 +61,28 @@ func (v *TaskReviewView) SetBackCallback(cb func() tea.Cmd) {
 	v.onBack = cb
 }
 
+// SidebarItems provides the left nav items for task review.
+func (v *TaskReviewView) SidebarItems() []pkgtui.SidebarItem {
+	if len(v.tasks) == 0 {
+		return []pkgtui.SidebarItem{
+			{ID: "tasks", Label: "Tasks", Icon: "○"},
+		}
+	}
+	items := make([]pkgtui.SidebarItem, 0, len(v.tasks))
+	for _, task := range v.tasks {
+		label := task.Title
+		if label == "" {
+			label = task.ID
+		}
+		items = append(items, pkgtui.SidebarItem{
+			ID:    task.ID,
+			Label: label,
+			Icon:  "○",
+		})
+	}
+	return items
+}
+
 // Init implements View
 func (v *TaskReviewView) Init() tea.Cmd {
 	return nil
@@ -189,7 +211,7 @@ func (v *TaskReviewView) View() string {
 	document := v.renderDocument()
 	chat := v.renderChat()
 
-	return v.shell.RenderWithoutSidebar(document, chat)
+	return v.shell.Render(v.SidebarItems(), document, chat)
 }
 
 // renderDocument renders the main document pane (task list).

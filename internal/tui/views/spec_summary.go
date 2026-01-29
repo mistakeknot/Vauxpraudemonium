@@ -60,6 +60,19 @@ func (v *SpecSummaryView) SetAgentSelector(selector *pkgtui.AgentSelector) {
 	v.agentSelector = selector
 }
 
+// SidebarItems provides section anchors for the spec summary.
+func (v *SpecSummaryView) SidebarItems() []pkgtui.SidebarItem {
+	return []pkgtui.SidebarItem{
+		{ID: "vision", Label: "Vision", Icon: "○"},
+		{ID: "problem", Label: "Problem", Icon: "○"},
+		{ID: "users", Label: "Users", Icon: "○"},
+		{ID: "platform", Label: "Platform", Icon: "○"},
+		{ID: "language", Label: "Language", Icon: "○"},
+		{ID: "requirements", Label: "Requirements", Icon: "○"},
+		{ID: "research", Label: "Research", Icon: "○"},
+	}
+}
+
 // DocumentSnapshot returns a plain-text snapshot of the spec summary.
 func (v *SpecSummaryView) DocumentSnapshot() (string, string) {
 	if v.docOverride != "" {
@@ -251,7 +264,7 @@ func (v *SpecSummaryView) View() string {
 	document := v.renderDocument()
 	chat := v.renderChat()
 
-	return v.shell.RenderWithoutSidebar(document, chat)
+	return v.shell.Render(v.SidebarItems(), document, chat)
 }
 
 // renderDocument renders the main document pane (spec summary).

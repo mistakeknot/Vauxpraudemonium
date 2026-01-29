@@ -43,60 +43,23 @@ func TestColdwineViewShellIntegration(t *testing.T) {
 	}
 }
 
-// TestReviewViewsUseRenderWithoutSidebar tests that review views use chat-only mode.
-func TestReviewViewsUseRenderWithoutSidebar(t *testing.T) {
-	t.Run("EpicReviewView", func(t *testing.T) {
-		view := NewEpicReviewView(nil)
-		view.width = 120
-		view.height = 40
-		view.shell.SetSize(120, 40)
-
-		// View should render without error
-		output := view.View()
-		if output == "" {
-			t.Error("View should render content")
-		}
-	})
-
-	t.Run("TaskReviewView", func(t *testing.T) {
-		view := NewTaskReviewView(nil)
-		view.width = 120
-		view.height = 40
-		view.shell.SetSize(120, 40)
-
-		output := view.View()
-		if output == "" {
-			t.Error("View should render content")
-		}
-	})
-
-	t.Run("SpecSummaryView", func(t *testing.T) {
-		view := NewSpecSummaryView(nil, nil)
-		view.width = 120
-		view.height = 40
-		view.shell.SetSize(120, 40)
-
-		output := view.View()
-		if output == "" {
-			t.Error("View should render content")
-		}
-	})
-
-	t.Run("TaskDetailView", func(t *testing.T) {
-		// TaskDetailView requires a TaskProposal
-		view := &TaskDetailView{
-			shell:   pkgtui.NewShellLayout(),
-			agents:  []AgentType{AgentClaude, AgentCodex},
-			width:   120,
-			height:  40,
-		}
-		view.shell.SetSize(120, 40)
-
-		output := view.View()
-		if output == "" {
-			t.Error("View should render content")
-		}
-	})
+// TestReviewViewsProvideSidebarItems ensures review views expose left-nav content.
+func TestReviewViewsProvideSidebarItems(t *testing.T) {
+	if len(NewSpecSummaryView(nil, nil).SidebarItems()) == 0 {
+		t.Fatalf("expected spec summary sidebar items")
+	}
+	if len(NewEpicReviewView(nil).SidebarItems()) == 0 {
+		t.Fatalf("expected epic review sidebar items")
+	}
+	if len(NewTaskReviewView(nil).SidebarItems()) == 0 {
+		t.Fatalf("expected task review sidebar items")
+	}
+	view := &TaskDetailView{
+		shell: pkgtui.NewShellLayout(),
+	}
+	if len(view.SidebarItems()) == 0 {
+		t.Fatalf("expected task detail sidebar items")
+	}
 }
 
 // TestViewsHandleTabKey tests that all views properly delegate Tab to shell.

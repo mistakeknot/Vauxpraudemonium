@@ -4,6 +4,7 @@ import (
 	"strings"
 	"testing"
 
+	tea "github.com/charmbracelet/bubbletea"
 	"github.com/mistakeknot/autarch/internal/tui"
 )
 
@@ -43,5 +44,39 @@ func TestKickoffScanPreparingMessageRoutesToChat(t *testing.T) {
 	}
 	if !found {
 		t.Fatalf("expected preparing detail in chat messages")
+	}
+}
+
+func TestKickoffAcceptsVisionStepAndAdvances(t *testing.T) {
+	v := NewKickoffView()
+	v.scanResult = &tui.CodebaseScanResultMsg{Vision: "Vision text"}
+	v.SetScanStepForTest(tui.OnboardingScanVision)
+
+	_, _ = v.Update(tea.KeyMsg{Type: tea.KeyEnter})
+
+	if v.ScanStepForTest() != tui.OnboardingScanProblem {
+		t.Fatalf("expected step advance to problem")
+	}
+}
+
+func TestKickoffAcceptTriggersResuggest(t *testing.T) {
+	v := NewKickoffView()
+	v.scanResult = &tui.CodebaseScanResultMsg{Vision: "Vision text"}
+	v.scanPath = "/tmp/project"
+	v.SetScanStepForTest(tui.OnboardingScanVision)
+
+	called := false
+	v.SetScanCodebaseCallback(func(path string) tea.Cmd {
+		if path != "/tmp/project" {
+			t.Fatalf("expected resuggest path %q, got %q", "/tmp/project", path)
+		}
+		called = true
+		return nil
+	})
+
+	_, _ = v.Update(tea.KeyMsg{Type: tea.KeyEnter})
+
+	if !called {
+		t.Fatalf("expected resuggest callback to fire")
 	}
 }

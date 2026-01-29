@@ -14,6 +14,9 @@ type OnboardingState int
 
 const (
 	OnboardingKickoff OnboardingState = iota
+	OnboardingScanVision
+	OnboardingScanProblem
+	OnboardingScanUsers
 	OnboardingInterview
 	OnboardingSpecSummary
 	OnboardingEpicReview
@@ -25,6 +28,9 @@ const (
 func AllOnboardingStates() []OnboardingState {
 	return []OnboardingState{
 		OnboardingKickoff,
+		OnboardingScanVision,
+		OnboardingScanProblem,
+		OnboardingScanUsers,
 		OnboardingInterview,
 		OnboardingSpecSummary,
 		OnboardingEpicReview,
@@ -38,6 +44,12 @@ func (s OnboardingState) ID() string {
 	switch s {
 	case OnboardingKickoff:
 		return "kickoff"
+	case OnboardingScanVision:
+		return "scan-vision"
+	case OnboardingScanProblem:
+		return "scan-problem"
+	case OnboardingScanUsers:
+		return "scan-users"
 	case OnboardingInterview:
 		return "interview"
 	case OnboardingSpecSummary:
@@ -58,6 +70,12 @@ func (s OnboardingState) Label() string {
 	switch s {
 	case OnboardingKickoff:
 		return "Project"
+	case OnboardingScanVision:
+		return "Vision"
+	case OnboardingScanProblem:
+		return "Problem"
+	case OnboardingScanUsers:
+		return "Users"
 	case OnboardingInterview:
 		return "Interview"
 	case OnboardingSpecSummary:
@@ -70,6 +88,26 @@ func (s OnboardingState) Label() string {
 		return "Dashboard"
 	default:
 		return "Unknown"
+	}
+}
+
+// InterviewStep represents a sub-step within the interview flow.
+type InterviewStep struct {
+	ID    string
+	Label string
+}
+
+// InterviewSteps returns the shared Arbiter phase list for onboarding sidebars.
+func InterviewSteps() []InterviewStep {
+	return []InterviewStep{
+		{ID: "vision", Label: "Vision"},
+		{ID: "problem", Label: "Problem"},
+		{ID: "users", Label: "Users"},
+		{ID: "features", Label: "Features + Goals"},
+		{ID: "requirements", Label: "Requirements"},
+		{ID: "scope", Label: "Scope + Assumptions"},
+		{ID: "cujs", Label: "Critical User Journeys"},
+		{ID: "acceptance", Label: "Acceptance Criteria"},
 	}
 }
 

@@ -51,6 +51,28 @@ func (v *EpicReviewView) SetAgentSelector(selector *pkgtui.AgentSelector) {
 	v.agentSelector = selector
 }
 
+// SidebarItems provides the left nav items for epic review.
+func (v *EpicReviewView) SidebarItems() []pkgtui.SidebarItem {
+	if len(v.proposals) == 0 {
+		return []pkgtui.SidebarItem{
+			{ID: "epics", Label: "Epics", Icon: "○"},
+		}
+	}
+	items := make([]pkgtui.SidebarItem, 0, len(v.proposals))
+	for _, epic := range v.proposals {
+		label := epic.Title
+		if label == "" {
+			label = epic.ID
+		}
+		items = append(items, pkgtui.SidebarItem{
+			ID:    epic.ID,
+			Label: label,
+			Icon:  "○",
+		})
+	}
+	return items
+}
+
 // DocumentSnapshot returns a plain-text snapshot of the epic review document.
 func (v *EpicReviewView) DocumentSnapshot() (string, string) {
 	return "Epics.md", v.renderPlainDocument()
@@ -256,7 +278,7 @@ func (v *EpicReviewView) View() string {
 	document := v.renderDocument()
 	chat := v.renderChat()
 
-	return v.shell.RenderWithoutSidebar(document, chat)
+	return v.shell.Render(v.SidebarItems(), document, chat)
 }
 
 // renderDocument renders the main document pane (epic list).

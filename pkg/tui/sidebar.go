@@ -10,9 +10,9 @@ import (
 
 const (
 	// SidebarWidth is the fixed width when expanded
-	SidebarWidth = 20
+	SidebarWidth = 28
 	// MaxLabelWidth is the max label length before truncation (SidebarWidth - padding - icon)
-	MaxLabelWidth = 17
+	MaxLabelWidth = 25
 )
 
 // SidebarItem represents a single item in the sidebar navigation.

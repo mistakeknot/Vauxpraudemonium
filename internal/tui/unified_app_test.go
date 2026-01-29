@@ -102,3 +102,20 @@ func TestAgentStreamMessagesRouteToChat(t *testing.T) {
 		t.Fatalf("expected line to be forwarded")
 	}
 }
+
+func TestScanSignoffCompletesToSpecSummary(t *testing.T) {
+	app := NewUnifiedApp(nil)
+	app.onboardingState = OnboardingScanUsers
+	app.breadcrumb.SetCurrent(OnboardingScanUsers)
+
+	_, _ = app.Update(ScanSignoffCompleteMsg{
+		Answers: map[string]string{
+			"vision": "Vision text",
+			"users":  "Users text",
+		},
+	})
+
+	if app.onboardingState != OnboardingSpecSummary {
+		t.Fatalf("expected to enter spec summary after scan signoff")
+	}
+}
