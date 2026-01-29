@@ -119,3 +119,25 @@ func TestKickoffDocPanelShowsEvidenceForVision(t *testing.T) {
 		t.Fatalf("expected quality section")
 	}
 }
+
+func TestKickoffDocPanelShowsOpenQuestions(t *testing.T) {
+	v := NewKickoffView()
+	v.docPanel.SetSize(80, 30)
+
+	_, _ = v.Update(tui.CodebaseScanResultMsg{
+		PhaseArtifacts: &tui.PhaseArtifacts{
+			Vision: &tui.VisionArtifact{
+				Summary:       "Vision text",
+				OpenQuestions: []string{"What is the primary goal?"},
+			},
+		},
+	})
+
+	view := v.docPanel.View()
+	if !strings.Contains(view, "Open Questions") {
+		t.Fatalf("expected open questions section")
+	}
+	if !strings.Contains(view, "What is the primary goal?") {
+		t.Fatalf("expected open questions content")
+	}
+}

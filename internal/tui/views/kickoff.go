@@ -330,11 +330,20 @@ func (v *KickoffView) addScanEvidenceSections() {
 		Content: strings.Join(qualityLines, "\n"),
 		Style:   lipgloss.NewStyle().Foreground(pkgtui.ColorFg),
 	})
+
+	if len(artifact.OpenQuestions) > 0 {
+		v.docPanel.AddSection(pkgtui.DocSection{
+			Title:   "Open Questions",
+			Content: strings.Join(artifact.OpenQuestions, "\n"),
+			Style:   lipgloss.NewStyle().Foreground(pkgtui.ColorFg),
+		})
+	}
 }
 
 type scanArtifactSummary struct {
-	Evidence []tui.EvidenceItem
-	Quality  tui.QualityScores
+	Evidence      []tui.EvidenceItem
+	Quality       tui.QualityScores
+	OpenQuestions []string
 }
 
 func (v *KickoffView) phaseArtifactForStep() *scanArtifactSummary {
@@ -347,24 +356,27 @@ func (v *KickoffView) phaseArtifactForStep() *scanArtifactSummary {
 			return nil
 		}
 		return &scanArtifactSummary{
-			Evidence: v.scanResult.PhaseArtifacts.Vision.Evidence,
-			Quality:  v.scanResult.PhaseArtifacts.Vision.Quality,
+			Evidence:      v.scanResult.PhaseArtifacts.Vision.Evidence,
+			Quality:       v.scanResult.PhaseArtifacts.Vision.Quality,
+			OpenQuestions: append([]string{}, v.scanResult.PhaseArtifacts.Vision.OpenQuestions...),
 		}
 	case tui.OnboardingScanProblem:
 		if v.scanResult.PhaseArtifacts.Problem == nil {
 			return nil
 		}
 		return &scanArtifactSummary{
-			Evidence: v.scanResult.PhaseArtifacts.Problem.Evidence,
-			Quality:  v.scanResult.PhaseArtifacts.Problem.Quality,
+			Evidence:      v.scanResult.PhaseArtifacts.Problem.Evidence,
+			Quality:       v.scanResult.PhaseArtifacts.Problem.Quality,
+			OpenQuestions: append([]string{}, v.scanResult.PhaseArtifacts.Problem.OpenQuestions...),
 		}
 	case tui.OnboardingScanUsers:
 		if v.scanResult.PhaseArtifacts.Users == nil {
 			return nil
 		}
 		return &scanArtifactSummary{
-			Evidence: v.scanResult.PhaseArtifacts.Users.Evidence,
-			Quality:  v.scanResult.PhaseArtifacts.Users.Quality,
+			Evidence:      v.scanResult.PhaseArtifacts.Users.Evidence,
+			Quality:       v.scanResult.PhaseArtifacts.Users.Quality,
+			OpenQuestions: append([]string{}, v.scanResult.PhaseArtifacts.Users.OpenQuestions...),
 		}
 	default:
 		return nil
