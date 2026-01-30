@@ -130,3 +130,33 @@ func TestScanResultSetsInterviewBreadcrumb(t *testing.T) {
 		t.Fatalf("expected onboarding to move to interview after scan")
 	}
 }
+
+type inputFocusView struct {
+	focused bool
+	seen    bool
+}
+
+func (v *inputFocusView) Init() tea.Cmd                             { return nil }
+func (v *inputFocusView) Update(msg tea.Msg) (pkgtui.View, tea.Cmd) { v.seen = true; return v, nil }
+func (v *inputFocusView) View() string                              { return "content" }
+func (v *inputFocusView) Focus() tea.Cmd                            { return nil }
+func (v *inputFocusView) Blur()                                     {}
+func (v *inputFocusView) Name() string                              { return "input" }
+func (v *inputFocusView) ShortHelp() string                         { return "" }
+func (v *inputFocusView) InputFocused() bool                        { return v.focused }
+
+func TestCommaDoesNotOpenChatSettingsWhenInputFocused(t *testing.T) {
+	app := NewUnifiedApp(nil)
+	view := &inputFocusView{focused: true}
+	app.currentView = view
+
+	updated, _ := app.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{','}})
+	app = updated.(*UnifiedApp)
+
+	if app.chatSettingsOpen {
+		t.Fatalf("expected chat settings to remain closed when input focused")
+	}
+	if !view.seen {
+		t.Fatalf("expected key to be handled by view")
+	}
+}

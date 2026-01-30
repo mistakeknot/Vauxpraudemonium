@@ -354,7 +354,7 @@ func (a *UnifiedApp) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				}
 				return a, nil
 			}
-		case ",", "ctrl+,":
+		case "ctrl+,":
 			a.openChatSettings()
 			return a, nil
 		case "ctrl+u":
@@ -1554,12 +1554,12 @@ func (a *UnifiedApp) renderFooterContent() string {
 	}
 
 	if a.mode == ModeDashboard {
-		help += "  │  ctrl+left/right tabs  ctrl+pgup/pgdn tabs  ctrl+p palette  , settings  F1 help  F2 model  ctrl+c quit"
+		help += "  │  ctrl+left/right tabs  ctrl+pgup/pgdn tabs  ctrl+p palette  ctrl+, settings  F1 help  F2 model  ctrl+c quit"
 	} else {
 		if a.breadcrumb.IsNavigating() {
-			help = "←/→ navigate  enter select  esc cancel  , settings  F1 help  F2 model"
+			help = "←/→ navigate  enter select  esc cancel  ctrl+, settings  F1 help  F2 model"
 		} else {
-			help += "  │  ctrl+b jump  , settings  F1 help  F2 model  ctrl+c quit"
+			help += "  │  ctrl+b jump  ctrl+, settings  F1 help  F2 model  ctrl+c quit"
 		}
 	}
 
