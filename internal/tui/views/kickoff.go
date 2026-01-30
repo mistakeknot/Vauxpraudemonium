@@ -1133,6 +1133,24 @@ func (v *KickoffView) Update(msg tea.Msg) (tui.View, tea.Cmd) {
 			}
 			return v, nil
 		}
+
+	case tea.MouseMsg:
+		switch msg.Type {
+		case tea.MouseWheelUp:
+			if v.focusInput {
+				v.chatPanel.ScrollUp()
+				return v, nil
+			}
+			v.docPanel.ScrollUp()
+			return v, nil
+		case tea.MouseWheelDown:
+			if v.focusInput {
+				v.chatPanel.ScrollDown()
+				return v, nil
+			}
+			v.docPanel.ScrollDown()
+			return v, nil
+		}
 	}
 
 	return v, nil

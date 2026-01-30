@@ -316,6 +316,11 @@ func (p *ChatPanel) ScrollToBottom() {
 	p.scroll = 0
 }
 
+// ScrollOffsetForTest exposes the scroll offset for tests.
+func (p *ChatPanel) ScrollOffsetForTest() int {
+	return p.scroll
+}
+
 // ensureHeight pads or truncates content to exactly n lines.
 func ensureHeight(content string, n int) string {
 	if n <= 0 {

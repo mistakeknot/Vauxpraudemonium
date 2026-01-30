@@ -166,3 +166,18 @@ func TestKickoffEnterSendsOpenQuestionAnswer(t *testing.T) {
 		t.Fatalf("expected resolve callback to fire")
 	}
 }
+
+func TestKickoffMouseWheelScrollsChatWhenFocused(t *testing.T) {
+	v := NewKickoffView()
+	v.focusInput = true
+	v.chatPanel.SetSize(60, 20)
+	v.chatPanel.AddMessage("user", "One")
+	v.chatPanel.AddMessage("user", "Two")
+
+	before := v.chatPanel.ScrollOffsetForTest()
+	_, _ = v.Update(tea.MouseMsg{Type: tea.MouseWheelUp})
+	after := v.chatPanel.ScrollOffsetForTest()
+	if after <= before {
+		t.Fatalf("expected chat scroll offset to increase")
+	}
+}
