@@ -1,6 +1,7 @@
 package views
 
 import (
+	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -177,6 +178,29 @@ func (v *KickoffView) SidebarItems() []pkgtui.SidebarItem {
 		})
 	}
 	return items
+}
+
+// DocumentSnapshot returns a JSON snapshot of the scan result for diff/revert.
+func (v *KickoffView) DocumentSnapshot() (string, string) {
+	if v.scanResult == nil {
+		return "", ""
+	}
+	snap := scanSnapshot{
+		ProjectName:    v.scanResult.ProjectName,
+		Description:    v.scanResult.Description,
+		Vision:         v.scanResult.Vision,
+		Users:          v.scanResult.Users,
+		Problem:        v.scanResult.Problem,
+		Platform:       v.scanResult.Platform,
+		Language:       v.scanResult.Language,
+		Requirements:   append([]string{}, v.scanResult.Requirements...),
+		PhaseArtifacts: v.scanResult.PhaseArtifacts,
+	}
+	payload, err := json.MarshalIndent(snap, "", "  ")
+	if err != nil {
+		return "", ""
+	}
+	return "Scan.json", string(payload)
 }
 
 // updateDocPanel updates the document panel with current content.
@@ -702,6 +726,18 @@ func removeResolvedFromOpen(open []string, resolved []tui.ResolvedQuestion) []st
 	return out
 }
 
+type scanSnapshot struct {
+	ProjectName    string              `json:"project_name"`
+	Description    string              `json:"description"`
+	Vision         string              `json:"vision"`
+	Users          string              `json:"users"`
+	Problem        string              `json:"problem"`
+	Platform       string              `json:"platform"`
+	Language       string              `json:"language"`
+	Requirements   []string            `json:"requirements"`
+	PhaseArtifacts *tui.PhaseArtifacts `json:"phase_artifacts,omitempty"`
+}
+
 // Init implements View
 func (v *KickoffView) Init() tea.Cmd {
 	return tea.Batch(
@@ -892,6 +928,30 @@ func (v *KickoffView) Update(msg tea.Msg) (tui.View, tea.Cmd) {
 			return v, nil
 		}
 		v.applyOpenQuestionResolution(msg)
+		v.updateDocPanel()
+		return v, nil
+
+	case tui.RevertLastRunMsg:
+		if msg.Snapshot == "" {
+			return v, nil
+		}
+		var snap scanSnapshot
+		if err := json.Unmarshal([]byte(msg.Snapshot), &snap); err != nil {
+			v.chatPanel.AddMessage("system", fmt.Sprintf("Failed to revert: %v", err))
+			return v, nil
+		}
+		v.scanResult = &tui.CodebaseScanResultMsg{
+			ProjectName:    snap.ProjectName,
+			Description:    snap.Description,
+			Vision:         snap.Vision,
+			Users:          snap.Users,
+			Problem:        snap.Problem,
+			Platform:       snap.Platform,
+			Language:       snap.Language,
+			Requirements:   append([]string{}, snap.Requirements...),
+			PhaseArtifacts: snap.PhaseArtifacts,
+		}
+		v.scanReview = true
 		v.updateDocPanel()
 		return v, nil
 

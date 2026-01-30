@@ -188,3 +188,18 @@ func TestKickoffRescanKeepsResolvedQuestions(t *testing.T) {
 		}
 	}
 }
+
+func TestKickoffRevertRestoresSnapshot(t *testing.T) {
+	v := NewKickoffView()
+	v.scanResult = &tui.CodebaseScanResultMsg{Vision: "Old"}
+	snapLabel, snap := v.DocumentSnapshot()
+	if snapLabel == "" || snap == "" {
+		t.Fatalf("expected snapshot")
+	}
+
+	v.scanResult.Vision = "New"
+	_, _ = v.Update(tui.RevertLastRunMsg{Snapshot: snap})
+	if v.scanResult.Vision != "Old" {
+		t.Fatalf("expected revert")
+	}
+}
