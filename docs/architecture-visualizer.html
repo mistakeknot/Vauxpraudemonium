@@ -257,7 +257,7 @@ code { background: var(--bg-light); padding: 0.15em 0.4em; border-radius: 4px; f
     <div class="card gurgeh" data-module="gurgeh">
       <h3 style="color:var(--secondary)">Gurgeh</h3>
       <div class="subtitle">TUI-first PRD generation &amp; validation</div>
-      <p style="font-size:0.85rem">Arbiter sprint with 8 phases. Subagents (strategist, navigator, sentinel, etc.) enrich specs. Version history &amp; diff.</p>
+      <p style="font-size:0.85rem">Arbiter sprint with 6 sections (Problem \u2192 Acceptance Criteria). Subagents (strategist, navigator, sentinel, etc.) enrich specs. Version history &amp; diff.</p>
       <div class="paths"><span>cmd/gurgeh</span><span>.gurgeh/specs/</span></div>
     </div>
     <div class="card coldwine" data-module="coldwine">
@@ -664,7 +664,7 @@ code { background: var(--bg-light); padding: 0.15em 0.4em; border-radius: 4px; f
     gurgeh: {
       title: 'Gurgeh Details',
       items: [
-        'Arbiter sprint: 8 phases (Vision \u2192 Acceptance)',
+        'Arbiter sprint: 6 sections (Problem \u2192 Acceptance Criteria)',
         '9 subagents enrich spec sections',
         'Spec versioning with history & structured diff',
         'Confidence scoring per section',
@@ -744,7 +744,7 @@ code { background: var(--bg-light); padding: 0.15em 0.4em; border-radius: 4px; f
   /* ── Diagram node click (safe DOM) ───── */
   var nodeInfo = {
     bigend:    'Mission control. Discovers projects, monitors agent tmux sessions, classifies state (working/waiting/blocked/done). Web (htmx) + TUI (Bubble Tea).',
-    gurgeh:    'Spec generation via Arbiter sprint (8 phases). 9 subagents (strategist, navigator, sentinel, etc.). Version history & diff. Confidence scoring.',
+    gurgeh:    'Spec generation via Arbiter sprint (6 sections). 9 subagents (strategist, navigator, sentinel, etc.). Version history & diff. Confidence scoring.',
     coldwine:  'Reads specs, generates epics/stories/tasks. Assigns agents to git worktrees. Tracks runs & outcomes. Re-prioritizes on signals.',
     pollard:   'Research intelligence. Pluggable hunters (GitHub, OpenAlex, PubMed, etc.). Competitor watch. Emits signals when landscape changes.',
     signals:   '7 signal types across 3 severities (info/warning/critical). Published via REST POST /api/signals. Consumed via WebSocket subscription.',
@@ -783,12 +783,12 @@ code { background: var(--bg-light); padding: 0.15em 0.4em; border-radius: 4px; f
     'new': [
       { title: '1. Empty project directory', desc: 'You start with a new project directory. No specs, no tasks, no research yet.', highlight: [], flows: [] },
       { title: '2. pollard scan runs hunters', desc: 'Pollard\'s pluggable hunters (GitHub Scout, OpenAlex, PubMed, etc.) gather landscape intelligence. Results saved to .pollard/insights/.', highlight: ['wt-pollard'], flows: [] },
-      { title: '3. ./dev gurgeh launches Arbiter sprint', desc: 'The TUI launches with the Arbiter sprint workflow. Eight phases guide spec creation from vision to acceptance criteria.', highlight: ['wt-gurgeh'], flows: ['wt-flow-pollard-gurgeh'] },
-      { title: '4. Phase 1: Vision \u2192 deep research', desc: 'Vision statement triggers Pollard deep research. The strategist subagent provides architecture recommendations.', highlight: ['wt-pollard', 'wt-gurgeh'], flows: ['wt-flow-pollard-gurgeh'] },
-      { title: '5. Phase 2: Problem \u2192 research on problem space', desc: 'Problem definition refined with Pollard insights. Navigator subagent maps user journeys.', highlight: ['wt-pollard', 'wt-gurgeh'], flows: ['wt-flow-pollard-gurgeh'] },
-      { title: '6. Phases 3-4: Users, Features/Goals', desc: 'User personas defined. Features enumerated with priority. Recognizer subagent detects patterns from research.', highlight: ['wt-gurgeh'], flows: [] },
-      { title: '7. Phase 5: Requirements (Given/When/Then)', desc: 'Formal requirements written in Given/When/Then format. Prophet predicts performance implications.', highlight: ['wt-gurgeh'], flows: [] },
-      { title: '8. Phases 6-8: Scope, CUJs, Acceptance', desc: 'Scope bounded. Critical User Journeys mapped. Smith forges acceptance criteria for Coldwine.', highlight: ['wt-gurgeh'], flows: [] },
+      { title: '3. ./dev gurgeh launches Arbiter sprint', desc: 'The TUI launches with the Arbiter sprint workflow. Six sections guide spec creation from problem to acceptance criteria.', highlight: ['wt-gurgeh'], flows: ['wt-flow-pollard-gurgeh'] },
+      { title: '4. Section 1: Problem \u2192 quick scan', desc: 'Problem definition is accepted, triggering an automatic quick scan. Strategist input informs early framing.', highlight: ['wt-pollard', 'wt-gurgeh'], flows: ['wt-flow-pollard-gurgeh'] },
+      { title: '5. Section 2: Users', desc: 'Personas refined with research. Navigator maps user journeys to keep scope grounded.', highlight: ['wt-pollard', 'wt-gurgeh'], flows: ['wt-flow-pollard-gurgeh'] },
+      { title: '6. Section 3: Features + Goals', desc: 'Feature list and goals are drafted and prioritized. Recognizer surfaces relevant patterns.', highlight: ['wt-gurgeh'], flows: [] },
+      { title: '7. Section 4: Scope + Assumptions', desc: 'Boundaries and assumptions are set. Prophet flags performance implications and risks.', highlight: ['wt-gurgeh'], flows: [] },
+      { title: '8. Sections 5-6: CUJs + Acceptance', desc: 'Critical User Journeys are mapped. Smith forges Given/When/Then acceptance criteria for Coldwine.', highlight: ['wt-gurgeh'], flows: [] },
       { title: '9. Spec committed \u2192 .gurgeh/specs/PRD-001.yaml', desc: 'Validated spec written to disk and event spine. spec_revised event published. Version 1 snapshot saved.', highlight: ['wt-gurgeh'], flows: ['wt-flow-pollard-spine'] },
       { title: '10. Coldwine reads spec \u2192 generates epics/stories/tasks', desc: 'Coldwine consumes the spec (via file or Intermute) and decomposes it into an Initiative \u2192 Epic \u2192 Story \u2192 Task hierarchy.', highlight: ['wt-coldwine'], flows: ['wt-flow-gurgeh-coldwine'] },
       { title: '11. Agents assigned \u2192 git worktrees \u2192 execution', desc: 'Tasks assigned to agents (Claude, Codex, Aider). Each gets a git worktree. Runs tracked with state: working \u2192 done.', highlight: ['wt-agents-box'], flows: ['wt-flow-coldwine-agents'] },
