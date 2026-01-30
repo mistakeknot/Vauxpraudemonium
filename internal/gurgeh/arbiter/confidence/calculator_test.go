@@ -3,6 +3,8 @@ package confidence
 import (
 	"math"
 	"testing"
+
+	"github.com/mistakeknot/autarch/pkg/thinking"
 )
 
 func approxEqual(a, b float64) bool {
@@ -11,7 +13,7 @@ func approxEqual(a, b float64) bool {
 
 func TestCalculate_ZeroPhases(t *testing.T) {
 	c := NewCalculator()
-	s := c.Calculate(0, 0, 0, 0.0)
+	s := c.Calculate(0, 0, 0, 0.0, nil)
 	if s.Completeness != 0 || s.Research != 0 {
 		t.Errorf("expected zero score, got %+v", s)
 	}
@@ -20,17 +22,17 @@ func TestCalculate_ZeroPhases(t *testing.T) {
 func TestCalculate_ResearchQuality(t *testing.T) {
 	c := NewCalculator()
 
-	s0 := c.Calculate(5, 3, 0, 0.0)
+	s0 := c.Calculate(5, 3, 0, 0.0, nil)
 	if s0.Research != 0.0 {
 		t.Errorf("expected Research=0.0, got %f", s0.Research)
 	}
 
-	s5 := c.Calculate(5, 3, 0, 0.5)
+	s5 := c.Calculate(5, 3, 0, 0.5, nil)
 	if !approxEqual(s5.Research, 0.5) {
 		t.Errorf("expected Research=0.5, got %f", s5.Research)
 	}
 
-	s1 := c.Calculate(5, 3, 0, 1.0)
+	s1 := c.Calculate(5, 3, 0, 1.0, nil)
 	if !approxEqual(s1.Research, 1.0) {
 		t.Errorf("expected Research=1.0, got %f", s1.Research)
 	}
@@ -39,12 +41,12 @@ func TestCalculate_ResearchQuality(t *testing.T) {
 func TestCalculate_ClampResearch(t *testing.T) {
 	c := NewCalculator()
 
-	sNeg := c.Calculate(5, 3, 0, -0.5)
+	sNeg := c.Calculate(5, 3, 0, -0.5, nil)
 	if sNeg.Research != 0 {
 		t.Errorf("expected clamped to 0, got %f", sNeg.Research)
 	}
 
-	sOver := c.Calculate(5, 3, 0, 1.5)
+	sOver := c.Calculate(5, 3, 0, 1.5, nil)
 	if sOver.Research != 1 {
 		t.Errorf("expected clamped to 1, got %f", sOver.Research)
 	}
@@ -53,13 +55,54 @@ func TestCalculate_ClampResearch(t *testing.T) {
 func TestCalculate_Consistency(t *testing.T) {
 	c := NewCalculator()
 
-	s := c.Calculate(5, 5, 0, 0.5)
+	s := c.Calculate(5, 5, 0, 0.5, nil)
 	if !approxEqual(s.Consistency, 1.0) {
 		t.Errorf("expected 1.0 consistency with 0 conflicts, got %f", s.Consistency)
 	}
 
-	s2 := c.Calculate(5, 5, 2, 0.5)
+	s2 := c.Calculate(5, 5, 2, 0.5, nil)
 	if !approxEqual(s2.Consistency, 1.0/3.0) {
 		t.Errorf("expected ~0.333 consistency with 2 conflicts, got %f", s2.Consistency)
+	}
+}
+
+func TestCalculate_ShapeAwareSpecificity(t *testing.T) {
+	c := NewCalculator()
+
+	// Without shapes: default 0.5
+	sNil := c.Calculate(5, 3, 0, 0.5, nil)
+	if !approxEqual(sNil.Specificity, 0.5) {
+		t.Errorf("expected Specificity=0.5 without shapes, got %f", sNil.Specificity)
+	}
+
+	// With deductive shape: 0.7
+	shapes := map[string]thinking.Shape{"Vision": thinking.ShapeDeductive}
+	sDed := c.Calculate(5, 3, 0, 0.5, shapes)
+	if !approxEqual(sDed.Specificity, 0.7) {
+		t.Errorf("expected Specificity=0.7 with deductive, got %f", sDed.Specificity)
+	}
+
+	// With DSL shape: 0.7
+	shapesDSL := map[string]thinking.Shape{"Features": thinking.ShapeDSL}
+	sDSL := c.Calculate(5, 3, 0, 0.5, shapesDSL)
+	if !approxEqual(sDSL.Specificity, 0.7) {
+		t.Errorf("expected Specificity=0.7 with DSL, got %f", sDSL.Specificity)
+	}
+}
+
+func TestCalculate_ShapeAwareAssumptions(t *testing.T) {
+	c := NewCalculator()
+
+	// Without shapes: default 0.5
+	sNil := c.Calculate(5, 3, 0, 0.5, nil)
+	if !approxEqual(sNil.Assumptions, 0.5) {
+		t.Errorf("expected Assumptions=0.5 without shapes, got %f", sNil.Assumptions)
+	}
+
+	// With contrapositive shape: 0.7
+	shapes := map[string]thinking.Shape{"Problem": thinking.ShapeContrapositive}
+	sContra := c.Calculate(5, 3, 0, 0.5, shapes)
+	if !approxEqual(sContra.Assumptions, 0.7) {
+		t.Errorf("expected Assumptions=0.7 with contrapositive, got %f", sContra.Assumptions)
 	}
 }

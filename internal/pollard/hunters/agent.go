@@ -11,6 +11,8 @@ import (
 	"time"
 
 	"gopkg.in/yaml.v3"
+
+	"github.com/mistakeknot/autarch/pkg/thinking"
 )
 
 // AgentHunter uses the user's AI agent (Claude, Codex) to conduct research.
@@ -102,6 +104,12 @@ func (h *AgentHunter) Hunt(ctx context.Context, cfg HunterConfig) (*HuntResult, 
 // generateResearchBrief creates a prompt for the AI agent.
 func (h *AgentHunter) generateResearchBrief(cfg HunterConfig) string {
 	var brief strings.Builder
+
+	// Apply thinking shape preamble based on query type
+	shape := h.resolveShape(cfg)
+	if preamble := thinking.RenderPreamble(shape, h.shapePhaseName(shape)); preamble != "" {
+		brief.WriteString(thinking.FormatPreamble(preamble))
+	}
 
 	brief.WriteString("# Research Brief\n\n")
 	brief.WriteString("Conduct research on the following topics and return structured findings.\n\n")
@@ -280,4 +288,27 @@ func (h *AgentHunter) saveResults(cfg HunterConfig, sources []AgentSource) (stri
 func (h *AgentHunter) SetAgent(command string, args []string) {
 	h.agentCommand = command
 	h.agentArgs = args
+}
+
+// resolveShape picks a thinking shape based on query characteristics.
+func (h *AgentHunter) resolveShape(cfg HunterConfig) thinking.Shape {
+	for _, q := range cfg.Queries {
+		lower := strings.ToLower(q)
+		if strings.Contains(lower, "competitor") || strings.Contains(lower, "alternative") || strings.Contains(lower, "compare") {
+			return thinking.ShapeContrapositive
+		}
+	}
+	return thinking.ShapeAbductive
+}
+
+// shapePhaseName maps a research shape to a phase name for template lookup.
+func (h *AgentHunter) shapePhaseName(shape thinking.Shape) string {
+	switch shape {
+	case thinking.ShapeContrapositive:
+		return "Problem" // reuse contrapositive template
+	case thinking.ShapeAbductive:
+		return "Critical User Journeys" // reuse abductive template
+	default:
+		return ""
+	}
 }

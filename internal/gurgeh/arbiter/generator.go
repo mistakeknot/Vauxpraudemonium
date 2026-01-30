@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"strings"
 	"time"
+
+	"github.com/mistakeknot/autarch/pkg/thinking"
 )
 
 // ProjectContext holds detected project metadata for draft generation.
@@ -18,17 +20,39 @@ type ProjectContext struct {
 }
 
 // Generator produces section drafts for the propose-first flow.
-type Generator struct{}
+type Generator struct {
+	shapeOverrides map[Phase]thinking.Shape // optional per-sprint overrides
+}
 
 // NewGenerator creates a new Generator.
 func NewGenerator() *Generator {
 	return &Generator{}
 }
 
+// SetShapeOverrides applies per-sprint thinking shape overrides.
+func (g *Generator) SetShapeOverrides(overrides map[Phase]thinking.Shape) {
+	g.shapeOverrides = overrides
+}
+
+// thinkingPreamble resolves the shape for a phase and renders its preamble.
+func (g *Generator) thinkingPreamble(phase Phase) string {
+	// Check overrides first
+	if g.shapeOverrides != nil {
+		if shape, ok := g.shapeOverrides[phase]; ok {
+			return thinking.FormatPreamble(thinking.RenderPreamble(shape, phase.String()))
+		}
+	}
+	// Fall back to phase default
+	return thinking.FormatPreamble(thinking.RenderForPhase(phase.String()))
+}
+
 // GenerateDraft produces a SectionDraft for the given phase using available context.
 func (g *Generator) GenerateDraft(_ context.Context, phase Phase, projectCtx *ProjectContext, userInput string) (*SectionDraft, error) {
 	var content string
 	var options []string
+
+	// Prepend thinking preamble before phase-specific generation
+	preamble := g.thinkingPreamble(phase)
 
 	switch phase {
 	case PhaseVision:
@@ -52,7 +76,7 @@ func (g *Generator) GenerateDraft(_ context.Context, phase Phase, projectCtx *Pr
 	}
 
 	return &SectionDraft{
-		Content:   content,
+		Content:   preamble + content,
 		Options:   options,
 		Status:    DraftProposed,
 		UpdatedAt: time.Now(),

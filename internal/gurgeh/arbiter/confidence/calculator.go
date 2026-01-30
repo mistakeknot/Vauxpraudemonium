@@ -1,5 +1,7 @@
 package confidence
 
+import "github.com/mistakeknot/autarch/pkg/thinking"
+
 // Score holds confidence metrics.
 type Score struct {
 	Completeness float64
@@ -19,7 +21,8 @@ func NewCalculator() *Calculator {
 
 // Calculate computes a confidence score from section stats.
 // researchQuality should be 0.0 (no research) to 1.0 (high-quality findings).
-func (c *Calculator) Calculate(totalPhases, acceptedPhases, conflictCount int, researchQuality float64) Score {
+// shapesUsed maps phase names to the thinking shape used; nil preserves legacy behavior.
+func (c *Calculator) Calculate(totalPhases, acceptedPhases, conflictCount int, researchQuality float64, shapesUsed map[string]thinking.Shape) Score {
 	if totalPhases <= 0 {
 		return Score{}
 	}
@@ -40,11 +43,33 @@ func (c *Calculator) Calculate(totalPhases, acceptedPhases, conflictCount int, r
 		research = 1
 	}
 
+	// Shape-aware specificity: structured thinking produces more specific output
+	specificity := 0.5
+	if shapesUsed != nil {
+		for _, shape := range shapesUsed {
+			if shape == thinking.ShapeDeductive || shape == thinking.ShapeDSL {
+				specificity = 0.7
+				break
+			}
+		}
+	}
+
+	// Shape-aware assumptions: contrapositive thinking surfaces assumptions
+	assumptions := 0.5
+	if shapesUsed != nil {
+		for _, shape := range shapesUsed {
+			if shape == thinking.ShapeContrapositive {
+				assumptions = 0.7
+				break
+			}
+		}
+	}
+
 	return Score{
 		Completeness: completeness,
 		Consistency:  consistency,
-		Specificity:  0.5,
+		Specificity:  specificity,
 		Research:     research,
-		Assumptions:  0.5,
+		Assumptions:  assumptions,
 	}
 }

@@ -11,6 +11,7 @@ import (
 	"github.com/mistakeknot/autarch/internal/gurgeh/arbiter/confidence"
 	"github.com/mistakeknot/autarch/internal/gurgeh/arbiter/consistency"
 	"github.com/mistakeknot/autarch/internal/gurgeh/specs"
+	"github.com/mistakeknot/autarch/pkg/thinking"
 	"gopkg.in/yaml.v3"
 )
 
@@ -521,7 +522,22 @@ func (o *Orchestrator) updateConfidence(state *SprintState) {
 		}
 	}
 
-	score := o.confidence.Calculate(len(phases), accepted, len(state.Conflicts), researchQuality(state))
+	// Build shapes-used map from phase defaults + overrides
+	shapesUsed := make(map[string]thinking.Shape)
+	for _, p := range phases {
+		if s, ok := state.Sections[p]; ok && s.Status == DraftAccepted {
+			if state.ShapeOverrides != nil {
+				if shape, has := state.ShapeOverrides[p]; has {
+					shapesUsed[p.String()] = shape
+					continue
+				}
+			}
+			if shape, has := thinking.PhaseDefault[p.String()]; has {
+				shapesUsed[p.String()] = shape
+			}
+		}
+	}
+	score := o.confidence.Calculate(len(phases), accepted, len(state.Conflicts), researchQuality(state), shapesUsed)
 	state.Confidence = ConfidenceScore{
 		Completeness: score.Completeness,
 		Consistency:  score.Consistency,

@@ -350,6 +350,13 @@ code { background: var(--bg-light); padding: 0.15em 0.4em; border-radius: 4px; f
         <text x="700" y="218" text-anchor="middle" fill="#a9b1d6" font-size="9">strategist, navigator, ...</text>
       </g>
 
+      <!-- Thinking Shapes node -->
+      <g class="node" id="n-thinking" data-info="thinking">
+        <rect x="320" y="180" width="160" height="50" rx="6" fill="#292e42" stroke="#ff9e64"/>
+        <text x="400" y="202" text-anchor="middle" fill="#ff9e64" font-size="12" font-weight="600">Thinking Shapes</text>
+        <text x="400" y="218" text-anchor="middle" fill="#a9b1d6" font-size="9">pkg/thinking — 5 shapes</text>
+      </g>
+
       <!-- Edges -->
       <g class="edge" id="e-bigend-agents"><line x1="100" y1="100" x2="100" y2="180" stroke="#565f89" marker-end="url(#arrow)"/></g>
       <g class="edge" id="e-gurgeh-sub"><line x1="380" y1="70" x2="620" y2="200" stroke="#565f89" stroke-dasharray="4,3" marker-end="url(#arrow)"/></g>
@@ -357,6 +364,8 @@ code { background: var(--bg-light); padding: 0.15em 0.4em; border-radius: 4px; f
       <g class="edge" id="e-coldwine-events"><line x1="500" y1="100" x2="430" y2="340" stroke="#565f89" marker-end="url(#arrow)"/></g>
       <g class="edge" id="e-pollard-signals"><line x1="700" y1="100" x2="330" y2="345" stroke="#565f89" stroke-dasharray="4,3" marker-end="url(#arrow)"/></g>
       <g class="edge" id="e-coldwine-agents"><line x1="420" y1="80" x2="180" y2="200" stroke="#565f89" marker-end="url(#arrow)"/></g>
+      <g class="edge" id="e-gurgeh-thinking"><line x1="300" y1="100" x2="370" y2="180" stroke="#ff9e64" stroke-dasharray="4,3" marker-end="url(#arrow)"/></g>
+      <g class="edge" id="e-pollard-thinking"><line x1="700" y1="100" x2="440" y2="180" stroke="#ff9e64" stroke-dasharray="4,3" marker-end="url(#arrow)"/></g>
       <g class="edge" id="e-events-intermute"><line x1="455" y1="362" x2="470" y2="362" stroke="#565f89" marker-end="url(#arrow)"/></g>
       <g class="edge" id="e-signals-events"><line x1="330" y1="362" x2="345" y2="362" stroke="#565f89" marker-end="url(#arrow)"/></g>
       <g class="edge" id="e-contract-up"><line x1="400" y1="440" x2="400" y2="400" stroke="#3b4261" stroke-dasharray="3,3"/></g>
@@ -664,10 +673,11 @@ code { background: var(--bg-light); padding: 0.15em 0.4em; border-radius: 4px; f
     gurgeh: {
       title: 'Gurgeh Details',
       items: [
-        'Arbiter sprint: 6 sections (Problem \u2192 Acceptance Criteria)',
+        'Arbiter sprint: 8 sections (Vision \u2192 Acceptance Criteria)',
         '9 subagents enrich spec sections',
+        'Thinking Shapes: 5 metacognitive preambles per phase (Deductive, Inductive, Abductive, Contrapositive, DSL)',
         'Spec versioning with history & structured diff',
-        'Confidence scoring per section',
+        'Shape-aware confidence scoring (specificity + assumptions)',
         'Read-only serve mode at :8091',
         'Key paths: cmd/gurgeh, .gurgeh/specs/'
       ]
@@ -686,7 +696,8 @@ code { background: var(--bg-light); padding: 0.15em 0.4em; border-radius: 4px; f
     pollard: {
       title: 'Pollard Details',
       items: [
-        'Pluggable hunters: GitHub Scout, OpenAlex, PubMed, CourtListener, USDA',
+        'Pluggable hunters: GitHub Scout, OpenAlex, PubMed, CourtListener, USDA, Agent',
+        'Thinking Shapes: Contrapositive for competitive queries, Abductive for general research',
         'Competitor watch with continuous monitoring',
         'Weaver synthesizer: parallel agent batch analysis',
         'Emits signals: competitor_shipped, research_invalidation',
@@ -750,6 +761,7 @@ code { background: var(--bg-light); padding: 0.15em 0.4em; border-radius: 4px; f
     signals:   '7 signal types across 3 severities (info/warning/critical). Published via REST POST /api/signals. Consumed via WebSocket subscription.',
     events:    'SQLite event log at ~/.autarch/events.db. 18+ event types. All tools append; any tool queries with filters (type, entity, source, time range).',
     intermute: 'REST + WebSocket server at 127.0.0.1:7338. CRUD for domain entities (Specs, Epics, Tasks, Sessions, Agents). File reservations with TTL. Offline-safe.',
+    thinking:  'Thinking Shapes (pkg/thinking). 5 metacognitive preambles — Deductive, Inductive, Abductive, Contrapositive, DSL — prepended to agent briefs to force quality-standard formulation before content generation. Used by Gurgeh arbiter and Pollard agent hunter.',
     contract:  'Shared Go types in pkg/contract: Initiative, Epic, Story, Task, Run, Outcome, InsightLink. Status enums, SourceTool identifiers.',
     'agents-detail':   'Flat peer network. Registered via Intermute. Agent types: Claude, Codex, Aider, Cursor. 30s heartbeat.',
     'subagents-detail': 'Gurgeh\'s 9 subagents: strategist, navigator, recognizer, prophet, tracer, broker, sentinel, scribe, smith. Spawned with PRAUDE_SUBAGENT=1.'

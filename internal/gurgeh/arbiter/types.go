@@ -5,6 +5,8 @@ import (
 	"crypto/rand"
 	"encoding/hex"
 	"time"
+
+	"github.com/mistakeknot/autarch/pkg/thinking"
 )
 
 // Phase represents a section of the PRD sprint
@@ -126,8 +128,9 @@ type SprintState struct {
 	DeepScan        DeepScanState     // Async deep scan tracking
 	VisionContext   *VisionContext    // loaded vision spec for vertical checks (nil if none)
 	SpecType        string            // "" for PRD, "vision" for vision specs
-	IsReview        bool              // true when reviewing an existing spec
-	ReviewingSpecID string            // ID of spec being reviewed
+	IsReview        bool                        // true when reviewing an existing spec
+	ReviewingSpecID string                      // ID of spec being reviewed
+	ShapeOverrides  map[Phase]thinking.Shape    // per-sprint user overrides for thinking shapes
 	StartedAt       time.Time
 	UpdatedAt       time.Time
 }
