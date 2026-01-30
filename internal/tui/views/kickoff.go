@@ -880,10 +880,10 @@ func (v *KickoffView) Update(msg tea.Msg) (tui.View, tea.Cmd) {
 			}
 		}
 		// Update step info in chat (keep doc pane stable)
-		if msg.Details != "" && msg.Step != "Analyzing" {
+		if msg.Details != "" && msg.Step != "Analyzing" && msg.Step != "Found files" {
 			v.chatPanel.AddMessage("system", msg.Details)
 		}
-		if msg.Step != "" && msg.Step != "Analyzing" {
+		if msg.Step != "" && msg.Step != "Analyzing" && msg.Step != "Found files" {
 			v.loadingMsg = msg.Details
 		}
 		if len(msg.Files) > 0 {

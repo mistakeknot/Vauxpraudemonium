@@ -30,8 +30,8 @@ func TestKickoffScanPreparingMessageRoutesToChat(t *testing.T) {
 
 	_, _ = v.Update(tui.ScanProgressMsg{Step: "Preparing", Details: "Building analysis prompt..."})
 
-	if v.loadingMsg == "Building analysis prompt..." {
-		t.Fatalf("expected preparing detail not to render in main view")
+	if strings.Contains(v.docPanel.View(), "Building analysis prompt...") {
+		t.Fatalf("expected preparing detail not to render in doc pane")
 	}
 
 	msgs := v.ChatMessagesForTest()
@@ -205,21 +205,33 @@ func TestKickoffScanProgressRendersInChatOnly(t *testing.T) {
 	v.scanning = true
 	v.loadingMsg = "Found 5 files to analyze"
 
-	_, _ = v.Update(tui.ScanProgressMsg{Step: "Found files", Details: "Found 5 files to analyze", Files: []string{"README.md"}})
+	_, _ = v.Update(tui.ScanProgressMsg{Step: "Parsing", Details: "Extracting project information...", Files: []string{"README.md"}})
 
 	docView := v.docPanel.View()
-	if strings.Contains(docView, "Found 5 files") {
+	if strings.Contains(docView, "Extracting project information") {
 		t.Fatalf("expected scan progress not to render in doc pane")
 	}
 	msgs := v.ChatMessagesForTest()
 	found := false
 	for _, msg := range msgs {
-		if strings.Contains(msg.Content, "Found 5 files") {
+		if strings.Contains(msg.Content, "Extracting project information") {
 			found = true
 			break
 		}
 	}
 	if !found {
 		t.Fatalf("expected scan progress in chat messages")
+	}
+}
+
+func TestKickoffScanFoundFilesMessageSuppressed(t *testing.T) {
+	v := NewKickoffView()
+	_, _ = v.Update(tui.ScanProgressMsg{Step: "Found files", Details: "Found 5 files to analyze", Files: []string{"README.md"}})
+
+	msgs := v.ChatMessagesForTest()
+	for _, msg := range msgs {
+		if strings.Contains(msg.Content, "Found 5 files") {
+			t.Fatalf("expected found files message to be suppressed")
+		}
 	}
 }
