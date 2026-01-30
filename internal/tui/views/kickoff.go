@@ -331,6 +331,29 @@ func (v *KickoffView) addScanEvidenceSections() {
 		Style:   lipgloss.NewStyle().Foreground(pkgtui.ColorFg),
 	})
 
+	if len(artifact.ResolvedQuestions) > 0 {
+		lines := make([]string, 0, len(artifact.ResolvedQuestions)*2)
+		for _, rq := range artifact.ResolvedQuestions {
+			if rq.Question != "" {
+				lines = append(lines, "Q: "+rq.Question)
+			}
+			if rq.Answer != "" {
+				lines = append(lines, "A: "+rq.Answer)
+			}
+			lines = append(lines, "")
+		}
+		if len(lines) > 0 {
+			if lines[len(lines)-1] == "" {
+				lines = lines[:len(lines)-1]
+			}
+			v.docPanel.AddSection(pkgtui.DocSection{
+				Title:   "Resolved Questions",
+				Content: strings.Join(lines, "\n"),
+				Style:   lipgloss.NewStyle().Foreground(pkgtui.ColorFg),
+			})
+		}
+	}
+
 	if len(artifact.OpenQuestions) > 0 {
 		v.docPanel.AddSection(pkgtui.DocSection{
 			Title:   "Open Questions",
@@ -341,9 +364,10 @@ func (v *KickoffView) addScanEvidenceSections() {
 }
 
 type scanArtifactSummary struct {
-	Evidence      []tui.EvidenceItem
-	Quality       tui.QualityScores
-	OpenQuestions []string
+	Evidence          []tui.EvidenceItem
+	Quality           tui.QualityScores
+	ResolvedQuestions []tui.ResolvedQuestion
+	OpenQuestions     []string
 }
 
 func (v *KickoffView) phaseArtifactForStep() *scanArtifactSummary {
@@ -356,27 +380,30 @@ func (v *KickoffView) phaseArtifactForStep() *scanArtifactSummary {
 			return nil
 		}
 		return &scanArtifactSummary{
-			Evidence:      v.scanResult.PhaseArtifacts.Vision.Evidence,
-			Quality:       v.scanResult.PhaseArtifacts.Vision.Quality,
-			OpenQuestions: append([]string{}, v.scanResult.PhaseArtifacts.Vision.OpenQuestions...),
+			Evidence:          v.scanResult.PhaseArtifacts.Vision.Evidence,
+			Quality:           v.scanResult.PhaseArtifacts.Vision.Quality,
+			ResolvedQuestions: append([]tui.ResolvedQuestion{}, v.scanResult.PhaseArtifacts.Vision.ResolvedQuestions...),
+			OpenQuestions:     append([]string{}, v.scanResult.PhaseArtifacts.Vision.OpenQuestions...),
 		}
 	case tui.OnboardingScanProblem:
 		if v.scanResult.PhaseArtifacts.Problem == nil {
 			return nil
 		}
 		return &scanArtifactSummary{
-			Evidence:      v.scanResult.PhaseArtifacts.Problem.Evidence,
-			Quality:       v.scanResult.PhaseArtifacts.Problem.Quality,
-			OpenQuestions: append([]string{}, v.scanResult.PhaseArtifacts.Problem.OpenQuestions...),
+			Evidence:          v.scanResult.PhaseArtifacts.Problem.Evidence,
+			Quality:           v.scanResult.PhaseArtifacts.Problem.Quality,
+			ResolvedQuestions: append([]tui.ResolvedQuestion{}, v.scanResult.PhaseArtifacts.Problem.ResolvedQuestions...),
+			OpenQuestions:     append([]string{}, v.scanResult.PhaseArtifacts.Problem.OpenQuestions...),
 		}
 	case tui.OnboardingScanUsers:
 		if v.scanResult.PhaseArtifacts.Users == nil {
 			return nil
 		}
 		return &scanArtifactSummary{
-			Evidence:      v.scanResult.PhaseArtifacts.Users.Evidence,
-			Quality:       v.scanResult.PhaseArtifacts.Users.Quality,
-			OpenQuestions: append([]string{}, v.scanResult.PhaseArtifacts.Users.OpenQuestions...),
+			Evidence:          v.scanResult.PhaseArtifacts.Users.Evidence,
+			Quality:           v.scanResult.PhaseArtifacts.Users.Quality,
+			ResolvedQuestions: append([]tui.ResolvedQuestion{}, v.scanResult.PhaseArtifacts.Users.ResolvedQuestions...),
+			OpenQuestions:     append([]string{}, v.scanResult.PhaseArtifacts.Users.OpenQuestions...),
 		}
 	default:
 		return nil

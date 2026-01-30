@@ -186,40 +186,48 @@ type QualityScores struct {
 }
 
 type VisionArtifact struct {
-	Phase         string
-	Version       string
-	Summary       string
-	Goals         []string
-	NonGoals      []string
-	Evidence      []EvidenceItem
-	OpenQuestions []string
-	Quality       QualityScores
+	Phase             string
+	Version           string
+	Summary           string
+	Goals             []string
+	NonGoals          []string
+	Evidence          []EvidenceItem
+	ResolvedQuestions []ResolvedQuestion
+	OpenQuestions     []string
+	Quality           QualityScores
 }
 
 type ProblemArtifact struct {
-	Phase         string
-	Version       string
-	Summary       string
-	PainPoints    []string
-	Impact        string
-	Evidence      []EvidenceItem
-	OpenQuestions []string
-	Quality       QualityScores
+	Phase             string
+	Version           string
+	Summary           string
+	PainPoints        []string
+	Impact            string
+	Evidence          []EvidenceItem
+	ResolvedQuestions []ResolvedQuestion
+	OpenQuestions     []string
+	Quality           QualityScores
 }
 
 type UsersArtifact struct {
-	Phase         string
-	Version       string
-	Personas      []Persona
-	Evidence      []EvidenceItem
-	OpenQuestions []string
-	Quality       QualityScores
+	Phase             string
+	Version           string
+	Personas          []Persona
+	Evidence          []EvidenceItem
+	ResolvedQuestions []ResolvedQuestion
+	OpenQuestions     []string
+	Quality           QualityScores
 }
 
 type Persona struct {
 	Name    string
 	Needs   []string
 	Context string
+}
+
+type ResolvedQuestion struct {
+	Question string
+	Answer   string
 }
 
 // ScanSignoffCompleteMsg signals scan signoff completion.
