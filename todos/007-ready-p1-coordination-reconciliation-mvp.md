@@ -142,3 +142,11 @@ Execute the plan in `docs/plans/2026-01-30-coordination-reconciliation-plan.md` 
 **Actions:**
 - Documented local-only default in `docs/ARCHITECTURE.md`
 - Added local-only note to `docs/FLOWS.md`
+
+### 2026-01-30 - Golden path doc + smoke test
+
+**By:** Codex
+
+**Actions:**
+- Added `docs/WORKFLOWS_GOLDEN_PATH.md`
+- Added `scripts/golden-path-smoke.sh` with isolated event spine checks

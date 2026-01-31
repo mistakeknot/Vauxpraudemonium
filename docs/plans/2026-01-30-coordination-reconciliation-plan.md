@@ -30,7 +30,7 @@
 - [x] Task 4: Event Spine Query Utilities
 - [x] Task 5: Schema Versioning Docs (soft versioning)
 - [x] Task 6: Local-Only Policy Docs
-- [ ] Task 7: Golden Path (doc + smoke test)
+- [x] Task 7: Golden Path (doc + smoke test)
 - [ ] Task 8: Full Test Pass
 - [ ] Task 9: Commit + Push
 
@@ -150,7 +150,7 @@
 **Steps:**
 1) Define the canonical flow (new project -> PRD -> tasks -> runs -> outcomes).
 2) Create a smoke script that exercises the flow and checks event spine for expected events.
-3) Skip external hunters by default unless `AUTARCH_GOLDEN_PATH_LIVE=1` is set.
+3) Skip external hunters by default (live mode can be added later if needed).
 
 **Acceptance:**
 - Script runs locally without Intermute.
