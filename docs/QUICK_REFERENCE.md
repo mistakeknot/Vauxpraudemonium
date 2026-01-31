@@ -19,6 +19,15 @@
 
 ---
 
+## Repo Hooks
+
+| Command | Description |
+|---------|-------------|
+| `./scripts/hooks/install-git-hooks.sh` | Install repo git hooks (updates `docs/plans/STATUS.md` on commit) |
+| `./dev autarch plan-status` | Generate plan status report manually |
+
+---
+
 ## Gurgeh Commands
 
 | Command | Description |
