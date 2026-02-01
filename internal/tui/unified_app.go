@@ -434,7 +434,7 @@ func (a *UnifiedApp) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case GenerationErrorMsg:
 		a.generating = false
 		a.err = msg.Error
-		return a, nil
+		// Fall through to pass to currentView so SprintView can show errors in chat
 
 	case AgentNotFoundMsg:
 		a.err = &agent.NoAgentError{}

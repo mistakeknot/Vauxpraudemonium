@@ -255,6 +255,16 @@ func (v *SprintView) ShortHelp() string {
 	return "enter send  a accept  e revise  d details  F2 model  esc back"
 }
 
+// ChatPanelValueForTest returns the current composer value (test helper).
+func (v *SprintView) ChatPanelValueForTest() string {
+	return v.chatPanel.Value()
+}
+
+// ChatPanelMessagesForTest returns chat messages (test helper).
+func (v *SprintView) ChatPanelMessagesForTest() []pkgtui.ChatMessage {
+	return v.chatPanel.Messages()
+}
+
 // SidebarItems returns the current phase sidebar items.
 func (v *SprintView) SidebarItems() []pkgtui.SidebarItem {
 	return v.sidebar.Items(v.orch.State())
