@@ -221,7 +221,7 @@ Always subtract parent chrome from `WindowSizeMsg` before passing to children. R
 - [x] `internal/tui/views/sprint_view.go` — New file (the main view)
 - [x] `internal/tui/views/doc_panel.go` — New file (draft + details toggle)
 - [x] `internal/tui/views/phase_sidebar.go` — New file (phase list with icons)
-- [ ] `internal/tui/unified_app.go` — Route to `SprintView` after project creation (replace separate kickoff→arbiter handoff)
+- [x] `internal/tui/unified_app.go` — Route to `SprintView` after project creation (replace separate kickoff→arbiter handoff)
 - [x] `internal/tui/messages.go` — Add `SprintDraftUpdatedMsg`, `SprintPhaseAdvancedMsg`, `SprintConflictMsg`
 
 ---

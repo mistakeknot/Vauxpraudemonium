@@ -68,13 +68,13 @@
 | 2026-01-28-kickoff-chat-initial-system-messages-plan.md | commit | paths:2 latest:2026-01-30 |
 | 2026-01-28-kickoff-doc-template-copy-plan.md | commit | paths:2 latest:2026-01-30 |
 | 2026-01-28-refactor-extract-shared-async-jobs-package-plan.md | commit | paths:6 latest:2026-01-31 |
-| 2026-01-29-feat-unified-tui-non-printable-shortcuts-plan.md | commit | paths:8 latest:2026-01-30 |
+| 2026-01-29-feat-unified-tui-non-printable-shortcuts-plan.md | commit | paths:8 latest:2026-01-31 |
 | 2026-01-29-interview-breadcrumb-scan-nav.md | commit | paths:3 latest:2026-01-30 |
-| 2026-01-29-scan-artifact-ui-display.md | commit | paths:4 latest:2026-01-30 |
+| 2026-01-29-scan-artifact-ui-display.md | commit | paths:4 latest:2026-01-31 |
 | 2026-01-29-scan-artifact-validation.md | commit | paths:14 latest:2026-01-29 |
 | 2026-01-29-scan-open-questions-ui.md | commit | paths:2 latest:2026-01-30 |
 | 2026-01-29-scan-signoff-breadcrumb-plan.md | commit | paths:3 latest:2026-01-30 |
-| 2026-01-29-scan-validation-wiring.md | commit | paths:3 latest:2026-01-29 |
+| 2026-01-29-scan-validation-wiring.md | commit | paths:3 latest:2026-01-31 |
 | 2026-01-29-structured-scan-output.md | commit | paths:3 latest:2026-01-29 |
 | 2026-01-30-chat-panel-mouse-scroll.md | commit | paths:2 latest:2026-01-30 |
 | 2026-01-30-coordination-reconciliation-plan.md | todo:ready | 007-ready-p1-coordination-reconciliation-mvp.md |
