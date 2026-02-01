@@ -1,5 +1,7 @@
 # Plan: Autarch Coordination Infrastructure (Gas Town Response)
 
+> **Status: ✅ COMPLETE** (implemented Jan 2026)
+>
 > **Strategy**: Position Autarch as the shared services layer that makes any agent colony smarter. Not an orchestrator — a platform.
 >
 > **Context**: Steve Yegge's Gas Town (Jan 2026) popularized multi-agent coding orchestration. Community debate suggests stronger models may make thick orchestrators obsolete (like LangChain). Autarch's durable value is *domain intelligence* (research, specs, signals) — not agent spawning logic.
@@ -8,177 +10,92 @@
 
 ---
 
-## Phase 0: Documentation Updates
+## Implementation Summary
 
-Update existing docs to reflect the coordination infrastructure strategy and planned API surfaces.
+All 5 phases implemented. Two planned `responses.go` files (Pollard, Gurgeh) were folded inline into `server.go` handlers — a reasonable simplification for small APIs.
 
-### CLAUDE.md
+| Phase | Status | Key Files |
+|-------|--------|-----------|
+| **0: Docs** | ✅ | CLAUDE.md, AGENTS.md, FLOWS.md §17 |
+| **1: Pollard HTTP API** | ✅ | `internal/pollard/server/` (server, cache, jobs), `internal/pollard/cli/serve.go` |
+| **2: Gurgeh Spec API** | ✅ | `internal/gurgeh/server/server.go`, `internal/gurgeh/cli/commands/serve.go` |
+| **3: Bigend Colony Detection** | ✅ | `internal/bigend/colony/` (detector, types), aggregator wired |
+| **4: Signals Broadcast** | ✅ | `pkg/signals/` (broker, server), `cmd/signals/`, `internal/signals/cli/` |
+| **5: Intermute Req/Resp** | ✅ | `internal/pollard/inbox/` (handler, protocol), auto-starts with `INTERMUTE_URL` |
 
-Add to Quick Commands:
-```bash
-# API servers (local-only by default)
-go run ./cmd/pollard serve --addr 127.0.0.1:8090   # Pollard research API
-go run ./cmd/gurgeh serve --addr 127.0.0.1:8091    # Gurgeh spec API (read-only)
-go run ./cmd/signals serve --addr 127.0.0.1:8092   # Signals WS server
-```
+### Deviations from Plan
 
-Add to Key Paths:
-| `internal/pollard/server/` | Pollard HTTP API server |
-| `internal/gurgeh/server/` | Gurgeh Spec API server |
-| `internal/bigend/colony/` | Agent colony detection |
-| `pkg/signals/broker.go` | Signal broadcast (WebSocket) |
-| `internal/signals/` | Signals CLI + server wiring |
-
-Add to Design Decisions:
-- Coordination infrastructure strategy: Autarch provides shared services (research, specs, signals) to local agent colonies — not an orchestrator
-- Local-only by default: bind to loopback; remote/multi-host support deferred
-- Pollard API defaults to 127.0.0.1:8090 (local-only; non-loopback requires explicit opt-in + auth)
-- Gurgeh Spec API is read-only (local-only)
-- Signals broadcast via WebSocket to local subscribers (standalone server; remote subscribers deferred)
-
-### AGENTS.md
-
-Add to Project Status → TODO:
-- Pollard HTTP API server (expose research to external agents)
-- Gurgeh read-only Spec API (agents query acceptance criteria, CUJs)
-- Signal broadcast via WebSocket (external agent colony subscriptions)
-- Bigend colony detection (Git worktrees, agent processes)
-- Intermute request/response pattern (async agent-to-Pollard queries)
-
-Add to Documentation Map:
-| [docs/VISION.md](docs/VISION.md) | Strategic vision and coordination infrastructure |
-| [docs/brainstorms/](docs/brainstorms/) | Design brainstorms |
-
-### docs/FLOWS.md
-
-Add new **Section 17: Coordination Infrastructure (API Surfaces)** after Section 16. Add colony detection note to Section 5 and signal broadcast note to Section 12. See plan file for full content.
+- `responses.go` files not created as separate files — response envelope types integrated into `server.go` handlers directly. Acceptable: avoids premature abstraction until a third server needs shared response types.
+- Gurgeh serve command lives at `internal/gurgeh/cli/commands/serve.go` (not `internal/gurgeh/cli/serve.go`) — follows Gurgeh's existing `commands/` subpackage pattern.
 
 ---
 
-## Phase 1: Pollard HTTP API Server (highest value)
+## Original Plan (for reference)
 
-Wrap existing `Scanner` and `ResearchOrchestrator` in a thin `net/http` server.
-Local-only by default (bind to loopback unless explicitly overridden).
-Use async jobs for scans/research; responses use a standard envelope with typed errors.
+### Phase 0: Documentation Updates ✅
 
-**Create:**
-- `internal/pollard/server/server.go` — HTTP server with routes:
-  - `GET /health`
-  - `POST /api/scan` → enqueue `Scanner.Scan()` job
-  - `POST /api/scan/targeted` → enqueue `Scanner.RunTargetedScan()` job
-  - `POST /api/research` → enqueue `ResearchOrchestrator.Research()` job
-  - `GET /api/jobs/{id}` → job status
-  - `GET /api/jobs/{id}/result` → job result (if complete)
-  - `GET /api/insights` — cached insights from `.pollard/insights/`
-  - `GET /api/hunters` — list available hunters
-- `internal/pollard/server/cache.go` — TTL + size-bounded LRU + singleflight de-dup. Key = hash of scan options (5m quick, 15m balanced, 30m deep).
-- `internal/pollard/server/jobs.go` — in-memory job store (status, timestamps, result/error)
-- `internal/pollard/server/responses.go` — standard API envelope + typed errors
-- `internal/pollard/cli/serve.go` — `pollard serve --addr :8090` cobra subcommand
+Updated CLAUDE.md (serve commands, key paths, design decisions), AGENTS.md (TODO → Done), FLOWS.md (Section 17: Coordination Infrastructure, colony detection note, signal broadcast note).
 
-**Modify:**
-- `internal/pollard/cli/root.go` — add `serveCmd` to `init()`
+### Phase 1: Pollard HTTP API Server ✅
 
-**Reference pattern:** `internal/bigend/daemon/server.go` (existing net/http setup)
+Thin `net/http` server wrapping existing `Scanner` and `ResearchOrchestrator`. Local-only by default (loopback). Async jobs for scans/research.
 
-## Phase 2: Gurgeh Spec API (high value)
+**Created:**
+- `internal/pollard/server/server.go` — routes: `/health`, `/api/scan`, `/api/scan/targeted`, `/api/research`, `/api/jobs/{id}`, `/api/jobs/{id}/result`, `/api/insights`, `/api/hunters`
+- `internal/pollard/server/cache.go` — TTL + size-bounded LRU + singleflight de-dup
+- `internal/pollard/server/jobs.go` — in-memory job store
+- `internal/pollard/cli/serve.go` — `pollard serve --addr 127.0.0.1:8090`
 
-Read-only HTTP endpoints over `.gurgeh/specs/*.yaml` files.
-Local-only by default (bind to loopback unless explicitly overridden).
-Use standard response envelope + typed errors; add basic pagination to list endpoints.
+### Phase 2: Gurgeh Spec API ✅
 
-**Create:**
-- `internal/gurgeh/server/server.go` — HTTP server with routes:
-  - `GET /api/specs` — list specs (summary, paginated)
-  - `GET /api/specs/{id}` — full spec as JSON
-  - `GET /api/specs/{id}/requirements`
-  - `GET /api/specs/{id}/cujs`
-  - `GET /api/specs/{id}/hypotheses`
-  - `GET /api/specs/{id}/history` — version history
-- `internal/gurgeh/server/responses.go` — standard API envelope + typed errors
-- `internal/gurgeh/cli/serve.go` — `gurgeh serve --addr :8091`
+Read-only HTTP endpoints over `.gurgeh/specs/*.yaml`. Local-only.
 
-**Modify:**
-- `internal/gurgeh/cli/root.go` — add `serveCmd`
+**Created:**
+- `internal/gurgeh/server/server.go` — routes: `/health`, `/api/specs`, `/api/specs/{id}`, `/api/specs/{id}/requirements`, `/api/specs/{id}/cujs`, `/api/specs/{id}/hypotheses`, `/api/specs/{id}/history`
+- `internal/gurgeh/cli/commands/serve.go` — `gurgeh serve --addr 127.0.0.1:8091`
 
-Uses existing `specs.LoadSummaries` and `specs.LoadSpec`. No caching needed (small YAML files).
+### Phase 3: Bigend Colony Detection ✅
 
-## Phase 3: Bigend Colony Detection (medium value, parallelizable)
+Git worktree + convention marker detection, integrated into aggregator State.
 
-Detect external agent colonies and display in dashboard.
-Cross-platform baseline: git worktrees + convention markers; Linux-only `/proc` scan behind OS guard.
+**Created:**
+- `internal/bigend/colony/detector.go`, `types.go` (+ tests)
+- `aggregator.go` — `Colonies []colony.Colony` in State
 
-**Create:**
-- `internal/bigend/colony/detector.go` — scans for:
-  - Git worktrees (`git worktree list --porcelain`)
-  - Agent processes (`/proc/PID/cwd` mapping)
-  - Convention markers (`.colony/`, `.agents/` dirs)
-- `internal/bigend/colony/types.go` — `Colony`, `ColonyMember` types
+### Phase 4: Signals Broadcast ✅
 
-**Modify:**
-- `internal/bigend/aggregator/aggregator.go` — add `Colonies []Colony` to `State`, call `loadColonies()` from `Refresh()`
+Standalone WebSocket server for signal fan-out to local subscribers.
 
-## Phase 4: Signals Broadcast (medium-high value, standalone)
+**Created:**
+- `pkg/signals/broker.go` — Subscribe/Publish with type filtering
+- `pkg/signals/server.go` — HTTP+WS server
+- `cmd/signals/main.go`, `internal/signals/cli/` — `signals serve --addr 127.0.0.1:8092`
 
-WebSocket broadcast of signals to local subscribers (remote deferred).
-Run as a standalone server (`signals serve`) to avoid coupling to Pollard/Gurgeh lifecycles.
-
-**Create:**
-- `pkg/signals/broker.go` — fan-out broker with `Subscribe(types)`, `Publish(signal)`, `ServeWS()`
-- `pkg/signals/server.go` — HTTP+WS server wrapping the broker
-- `internal/signals/cli/root.go` — cobra root for `signals`
-- `internal/signals/cli/serve.go` — `signals serve --addr :8092`
-- `cmd/signals/main.go` — entry point for `signals` CLI
-
-**Modify:**
-- `internal/gurgeh/arbiter/orchestrator.go` — optional `broker.Publish()` when signals raised
-- `internal/pollard/watch/` — publish `SignalCompetitorShipped` to broker
-
-## Phase 5: Intermute Request/Response (lowest priority)
+### Phase 5: Intermute Request/Response ✅
 
 Async agent-to-Pollard research queries via Intermute messaging.
 
-**Create:**
-- `internal/pollard/inbox/handler.go` — inbox polling loop, parses `research:` messages, replies with results
-- `internal/pollard/inbox/protocol.go` — `ResearchRequest`/`ResearchResponse` types
-
-**Modify:**
-- `internal/pollard/cli/serve.go` — start inbox handler alongside HTTP server when Intermute available
+**Created:**
+- `internal/pollard/inbox/handler.go` — inbox polling, auto-starts when `INTERMUTE_URL` set
+- `internal/pollard/inbox/protocol.go` — message types
 
 ---
 
-## Build Order
+## Verification Commands
 
+```bash
+# Pollard API
+go run ./cmd/pollard serve --addr 127.0.0.1:8090
+curl localhost:8090/health
+curl -X POST localhost:8090/api/scan -d '{"hunters":["github-scout"],"mode":"quick"}'
+
+# Gurgeh API
+go run ./cmd/gurgeh serve --addr 127.0.0.1:8091
+curl localhost:8091/api/specs
+
+# Signals WS
+go run ./cmd/signals serve --addr 127.0.0.1:8092
+
+# Tests
+go test ./internal/pollard/server/... ./internal/gurgeh/server/... ./pkg/signals/...
 ```
-Phase 0 (Docs)           ── do first
-Phase 1 (Pollard API)  ─┐
-Phase 2 (Gurgeh API)   ─┼── can build in parallel
-Phase 3 (Colony detect) ─┘
-Phase 4 (Signals)       ── independent (standalone server)
-Phase 5 (Intermute)     ── after Phase 1 (reuses Scanner)
-```
-
-## Verification
-
-1. `go build ./cmd/pollard && go run ./cmd/pollard serve --addr 127.0.0.1:8090` — server starts on 127.0.0.1:8090
-2. `curl localhost:8090/health` — returns 200
-3. `curl -X POST localhost:8090/api/scan -d '{"hunters":["github-scout"],"mode":"quick"}'` — returns job id
-4. `curl localhost:8090/api/jobs/<id>` — returns status
-5. `curl localhost:8090/api/jobs/<id>/result` — returns results when complete
-6. `go build ./cmd/gurgeh && go run ./cmd/gurgeh serve --addr 127.0.0.1:8091` — server starts on 127.0.0.1:8091
-7. `curl localhost:8091/api/specs` — returns spec list
-8. `go build ./cmd/signals && go run ./cmd/signals serve --addr 127.0.0.1:8092` — server starts on 127.0.0.1:8092
-9. `go test ./internal/pollard/server/... ./internal/gurgeh/server/... ./pkg/signals/...`
-10. Colony detection: run `./dev bigend` with Git worktrees present, verify they appear in dashboard
-
-## Key Files (read before implementing)
-
-- `internal/pollard/api/scanner.go` — Scanner type the HTTP server wraps
-- `internal/pollard/api/orchestrator.go` — ResearchOrchestrator to expose
-- `internal/pollard/api/targeted.go` — TargetedScanOpts/Result types
-- `internal/gurgeh/specs/schema.go` — Spec struct for JSON serialization
-- `internal/bigend/aggregator/aggregator.go` — State struct to extend
-- `pkg/signals/signal.go` — Signal types for broker
-- `pkg/signals/server.go` — HTTP/WS server for signals
-- `internal/signals/cli/root.go` — Signals CLI root
-- `internal/bigend/daemon/server.go` — Reference net/http pattern
